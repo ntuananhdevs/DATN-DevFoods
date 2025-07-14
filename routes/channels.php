@@ -146,23 +146,25 @@ Broadcast::channel('order.{orderId}', function ($user, $orderId) {
         return false;
     }
 
-    // 1. Cho phép Customer sở hữu đơn hàng được nghe
-    if (Auth::guard('web')->check() && Auth::guard('web')->id() === $order->customer_id) {
+    // 1. Customer sở hữu đơn hàng
+    if ($user instanceof User && $user->id === (int)$order->customer_id) {
         return true;
     }
 
-    // 2. Cho phép Driver ĐÃ ĐƯỢC GÁN vào đơn hàng được nghe
-    if (Auth::guard('driver')->check() && Auth::guard('driver')->id() === $order->driver_id) {
+    // 2. Driver được gán đơn hàng
+    if ($user instanceof Driver && $user->id === (int)$order->driver_id) {
         return true;
     }
 
-    // === BỔ SUNG ĐIỀU KIỆN MỚI ===
-    // 3. Cho phép BẤT KỲ Driver nào cũng được nghe nếu đơn hàng đang ở trạng thái chờ
-    if (Auth::guard('driver')->check() && in_array($order->status, ['confirmed', 'awaiting_driver'])) {
-        return true;
-    }
-
+    // Không cho phép người khác nghe
     return false;
+});
+
+/**
+ * Kênh riêng cho mỗi driver (dành cho DriverAssigned, OrderCancelled)
+ */
+Broadcast::channel('driver.{driverId}', function ($user, $driverId) {
+    return $user instanceof Driver && $user->id === (int)$driverId;
 });
 
 
@@ -170,26 +172,11 @@ Broadcast::channel('order.{orderId}', function ($user, $orderId) {
  * Kênh chung cho tất cả tài xế.
  */
 Broadcast::channel('drivers', function ($user) {
-    // Thay vì kiểm tra "instanceof Driver", ta kiểm tra trực tiếp guard 'driver'.
-    // Điều này chính xác và an toàn hơn.
-    return Auth::guard('driver')->check();
+    // Chỉ tài xế đã đăng nhập mới được nghe
+    return $user instanceof Driver;
 });
 
-// =========================================================================
-// === BỔ SUNG KÊNH MỚI CHO CHI NHÁNH ===
-// =========================================================================
-/**
- * Kênh riêng cho từng chi nhánh.
- * Dùng để nhận thông báo khi có đơn hàng mới được khách hàng đặt cho chi nhánh đó.
- * Chỉ nhân viên/quản lý của chi nhánh đó mới được nghe.
- */
-Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
-    // Giả sử model User của bạn có 'branch_id' và 'role'
-    $isBranchMember = in_array($user->role, ['manager', 'branch_staff']);
-    $isCorrectBranch = (int)$user->branch_id === (int)$branchId;
 
-    return $isBranchMember && $isCorrectBranch;
-});
 
 
 // Wishlist channel for a specific user
@@ -200,12 +187,21 @@ Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
 
 // Branch orders channel
 Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
-    // Only branch managers and staff can listen to their branch orders
-    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+    // User đã được xác thực ở AuthController rồi, chỉ cần kiểm tra branch
+    $userBranch = $user->branch;
+
+    Log::info('[Broadcast] branch.{branchId}.orders authorization', [
+        'user_id' => $user->id,
+        'user_branch_id' => $userBranch ? $userBranch->id : null,
+        'requested_branch_id' => $branchId,
+        'can_access' => $userBranch && (int)$userBranch->id === (int)$branchId
+    ]);
+
+    // Chỉ cần user có branch và branch_id khớp với channel
+    return $userBranch && (int)$userBranch->id === (int)$branchId ? [
         'id' => $user->id,
-        'name' => $user->name,
-        'role' => $user->role,
-        'branch_id' => $user->branch_id,
+        'name' => $user->full_name ?? $user->name ?? 'User',
+        'branch_id' => $userBranch->id,
     ] : false;
 });
 

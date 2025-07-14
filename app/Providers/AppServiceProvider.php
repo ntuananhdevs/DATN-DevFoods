@@ -66,7 +66,7 @@ class AppServiceProvider extends ServiceProvider
         Combo::observe(ComboObserver::class);
 
         // Register OrderObserver
-        Order::observe(OrderObserver::class);
+        // Order::observe(OrderObserver::class);
 
         // Register ReviewReplyObserver
         ReviewReply::observe(ReviewReplyObserver::class);
@@ -91,6 +91,40 @@ class AppServiceProvider extends ServiceProvider
                 'currentRank' => $currentRank,
                 'currentPoints' => $currentPoints,
             ]);
+        });
+
+        // View Composer cho branch notification
+        View::composer([
+            'partials.branch.header',
+            'partials.branch.sidebar',
+        ], function ($view) {
+            $user = Auth::guard('manager')->user();
+            $branch = $user && $user->branch ? $user->branch : null;
+            $branchNotifications = $branch ? $branch->notifications()->latest()->limit(10)->get() : collect();
+            $branchUnreadCount = $branch ? $branch->unreadNotifications()->count() : 0;
+            $view->with([
+                'branchNotifications' => $branchNotifications,
+                'branchUnreadCount' => $branchUnreadCount,
+            ]);
+        });
+
+        // View composer for admin notifications
+        View::composer('partials.admin.header', function ($view) {
+            $admin = Auth::user();
+            if ($admin) {
+                $adminNotifications = $admin->notifications()->latest()->limit(10)->get();
+                $adminUnreadCount = $admin->unreadNotifications()->count();
+                
+                $view->with([
+                    'adminNotifications' => $adminNotifications,
+                    'adminUnreadCount' => $adminUnreadCount
+                ]);
+            } else {
+                $view->with([
+                    'adminNotifications' => collect(),
+                    'adminUnreadCount' => 0
+                ]);
+            }
         });
     }
 }

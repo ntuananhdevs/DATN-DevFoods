@@ -12,7 +12,9 @@ use App\Models\User;
 use App\Models\Address;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Events\Branch\NewOrderReceived;
+use App\Events\Order\NewOrderReceived;
+use App\Models\Payment;
+use App\Services\ShippingService;
 
 class OrderController extends Controller
 {
@@ -88,8 +90,8 @@ class OrderController extends Controller
                 ];
             }
 
-            // Set shipping fee (using same logic as CheckoutController)
-            $shippingFee = $subtotal > 200000 ? 0 : 25000;
+            // Set shipping fee using ShippingService - FIX: Use consistent service-based calculation
+            $shippingFee = ShippingService::calculateFixedShippingFee($subtotal);
             $totalAmount = $subtotal + $shippingFee;
 
             // Create order (Note: payment_method is stored in notes for now since DB only has payment_id)
@@ -119,7 +121,17 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Dispatch event to notify branch
+            // Create payment and link to order
+            $payment = Payment::create([
+                'payment_method' => $request->payment_method,
+                'payment_amount' => $totalAmount,
+                'payment_status' => 'pending',
+                'txn_ref' => 'API-' . time() . '-' . $order->id, // Unique transaction reference
+            ]);
+            $order->payment_id = $payment->id;
+            $order->save();
+
+            // Dispatch event to notify branch (sau khi đã có đầy đủ order_items và payment)
             NewOrderReceived::dispatch($order);
 
             DB::commit();
@@ -129,7 +141,8 @@ class OrderController extends Controller
                 'message' => 'Tạo đơn hàng thành công',
                 'order_id' => $order->id,
                 'order_code' => $order->order_code,
-                'total_amount' => $totalAmount
+                'total_amount' => $totalAmount,
+                'payment' => $payment,
             ], 201);
 
         } catch (\Exception $e) {

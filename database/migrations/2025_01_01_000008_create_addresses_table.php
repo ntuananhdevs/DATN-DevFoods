@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('addresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->string('recipient_name')->nullable();
             $table->string('address_line');
             $table->string('city');
             $table->string('district');

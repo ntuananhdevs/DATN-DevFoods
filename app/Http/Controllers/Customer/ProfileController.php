@@ -12,6 +12,7 @@ use App\Models\UserRank;
 use Illuminate\Validation\Rule; 
 use Illuminate\Support\Facades\Hash;    
 use Illuminate\Validation\Rules\Password; 
+use App\Models\Address;
 
 class ProfileController extends Controller
 {
@@ -152,4 +153,63 @@ class ProfileController extends Controller
 
     return response()->json(['status' => 'password-updated', 'message' => 'Mật khẩu đã được cập nhật thành công!']);
 }
+
+    // API: Lấy danh sách địa chỉ của user
+    public function getAddresses()
+    {
+        $addresses = Auth::user()->addresses()->orderByDesc('is_default')->get();
+        return response()->json($addresses);
+    }
+
+    // API: Thêm địa chỉ mới
+    public function storeAddress(Request $request)
+    {
+        $data = $request->validate([
+            'recipient_name' => 'required|string|max:255',
+            'address_line' => 'required|string|max:255',
+            'city' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'ward' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'is_default' => 'boolean',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+        $data['user_id'] = Auth::id();
+        if (!empty($data['is_default'])) {
+            Address::where('user_id', Auth::id())->update(['is_default' => false]);
+        }
+        $address = Address::create($data);
+        return response()->json($address, 201);
+    }
+
+    // API: Cập nhật địa chỉ
+    public function updateAddress(Request $request, $id)
+    {
+        $address = Auth::user()->addresses()->findOrFail($id);
+        $data = $request->validate([
+            'recipient_name' => 'required|string|max:255',
+            'address_line' => 'required|string|max:255',
+            'city' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'ward' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'is_default' => 'boolean',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
+        if (!empty($data['is_default'])) {
+            Address::where('user_id', Auth::id())->update(['is_default' => false]);
+        }
+        $address->update($data);
+        return response()->json($address);
+    }
+
+    // API: Xóa địa chỉ
+    public function deleteAddress($id)
+    {
+        $address = Auth::user()->addresses()->findOrFail($id);
+        $address->delete();
+        return response()->json(['success' => true]);
+    }
 }

@@ -1,11 +1,5 @@
 @extends('layouts.customer.fullLayoutMaster')
 
-@php
-    if (!isset($search)) {
-        $search = null;
-    }
-@endphp
-
 @section('title', 'FastFood - Trang Chủ')
 
 @section('content')
@@ -86,8 +80,9 @@
     </div>
 
 
-    <div class="container mx-auto px-4 py-8">
 
+
+    <div class="container mx-auto px-4 py-8">
         <!-- Categories Section -->
         <section class="py-10">
             <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">Danh Mục Món Ăn</h2>
@@ -113,293 +108,253 @@
         </div>
     </section>
 
-    @if(isset($search) && isset($products))
-        <section class="py-10">
-            <h2 class="text-2xl font-bold mb-6">Kết quả tìm kiếm cho: "{{ $search }}"</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @forelse ($products as $product)
-                    <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Nổi Bật</h2>
+            <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @forelse ($featuredProducts as $product)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
                     data-product-id="{{ $product->id }}"
                     data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
                     data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
-                        <div class="relative">
-                            <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
-                                @if(isset($product->primary_image) && $product->primary_image && isset($product->primary_image->s3_url) && $product->primary_image->s3_url)
-                                    <img src="{{ $product->primary_image->s3_url }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                                @else
-                                    <img src="{{ asset('images/default-placeholder.png') }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                                @endif
-                            </a>
-                            <div class="absolute top-2 left-2">
-                                @if($product->discount_price && $product->base_price > $product->discount_price)
-                                    @php
-                                        $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
-                                    @endphp
-                                    <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $discountPercent }}%</span>
-                                @elseif($product->created_at->diffInDays(now()) <= 7)
-                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <div class="flex items-center gap-1 mb-2">
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= floor($product->average_rating))
-                                        <i class="fas fa-star text-yellow-400"></i>
-                                    @elseif($i - 0.5 <= $product->average_rating)
-                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                    @else
-                                        <i class="far fa-star text-yellow-400"></i>
-                                    @endif
-                                @endfor
-                                <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
-                            </div>
-                            <a href="{{ route('products.show', $product->id) }}">
-                                <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                    {{ $product->name }}
-                                </h3>
-                            </a>
-                            <p class="text-gray-500 text-sm mb-3 line-clamp-2">
-                                {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
-                            </p>
-                            <div class="flex items-center justify-between">
-                                <div class="flex flex-col">
-                                    @if($product->discount_price && $product->base_price > $product->discount_price)
-                                        <span class="font-bold text-lg text-red-600">{{ number_format($product->discount_price, 0, ',', '.') }}đ</span>
-                                        <span class="text-sm text-gray-500 line-through">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
-                                    @else
-                                        <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
-                                    @endif
+
+                    <div class="relative">
+                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                            @if($product->primary_image && $product->primary_image->s3_url)
+                                <img src="{{ $product->primary_image->s3_url }}"
+                                    alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                            @else
+                                <img src="{{ asset('images/default-placeholder.png') }}"
+                                    alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                {{-- Alternative placeholder like your other list:
+                                <div class="no-image-placeholder flex items-center justify-center h-full bg-gray-100">
+                                    <i class="far fa-image text-3xl text-gray-400"></i>
                                 </div>
-                                @if(isset($product->has_stock) && $product->has_stock)
-                                    <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                                        <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                                        Thêm
-                                    </button>
+                                --}}
+                            @endif
+                        </a>
+
+                        {{-- Favorite Button --}}
+                        {{-- <div class="absolute top-2 right-2">
+                            @auth
+                            <button class="favorite-btn bg-white p-1.5 rounded-full shadow text-gray-600 hover:text-red-500 focus:outline-none" data-product-id="{{ $product->id }}">
+                                @if($product->is_favorite)
+                                    <i class="fas fa-heart text-red-500"></i>
                                 @else
-                                    <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
-                                        <i class="fas fa-ban h-4 w-4 mr-1"></i>
-                                        Hết hàng
-                                    </button>
+                                    <i class="far fa-heart"></i>
                                 @endif
-                            </div>
+                            </button>
+                            @else
+                            <button class="favorite-btn login-prompt-btn bg-white p-1.5 rounded-full shadow text-gray-600 hover:text-red-500 focus:outline-none">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            @endauth
+                        </div> --}}
+
+                        {{-- Badges (Sale/New) --}}
+                        <div class="absolute top-2 left-2">
+                            @if($product->discount_price && $product->base_price > $product->discount_price)
+                                @php
+                                    $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
+                                @endphp
+                                <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $discountPercent }}%</span>
+                            @elseif($product->created_at->diffInDays(now()) <= 7)
+                                <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
+                            @endif
                         </div>
                     </div>
-                @empty
-                    <div class="col-span-full text-center py-8">
-                        <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
-                        <h3 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy sản phẩm phù hợp</h3>
-                        <p class="text-gray-500">Vui lòng thử lại với từ khóa khác.</p>
-                    </div>
-                @endforelse
-            </div>
-            @if(method_exists($products, 'links'))
-                <div class="mt-6">{{ $products->links() }}</div>
-            @endif
-        </section>
-    @else
-        @if(isset($featuredProducts) && count($featuredProducts))
-        <section class="py-10">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Nổi Bật</h2>
-                <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
-                    <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
-                </a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @foreach ($featuredProducts as $product)
-                    <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                        data-product-id="{{ $product->id }}"
-                        data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
-                        data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
-                        <div class="relative">
-                            <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
-                                @if(isset($product->primary_image) && $product->primary_image && isset($product->primary_image->s3_url) && $product->primary_image->s3_url)
-                                    <img src="{{ $product->primary_image->s3_url }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+
+                    <div class="p-4">
+                        <div class="flex items-center gap-1 mb-2">
+                            {{-- Rating Stars --}}
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= floor($product->average_rating))
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                @elseif($i - 0.5 <= $product->average_rating)
+                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
                                 @else
-                                    <img src="{{ asset('images/default-placeholder.png') }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                    <i class="far fa-star text-yellow-400"></i> {{-- or text-gray-300 for empty --}}
                                 @endif
-                            </a>
-                            <div class="absolute top-2 left-2">
+                            @endfor
+                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                        </div>
+
+                        <a href="{{ route('products.show', $product->id) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
+                                {{ $product->name }}
+                            </h3>
+                        </a>
+
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">
+                            {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
+                        </p>
+
+                        <div class="flex items-center justify-between">
+                            {{-- Price --}}
+                            <div class="flex flex-col">
                                 @if($product->discount_price && $product->base_price > $product->discount_price)
-                                    @php
-                                        $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
-                                    @endphp
-                                    <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $discountPercent }}%</span>
-                                @elseif($product->created_at->diffInDays(now()) <= 7)
-                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <div class="flex items-center gap-1 mb-2">
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= floor($product->average_rating))
-                                        <i class="fas fa-star text-yellow-400"></i>
-                                    @elseif($i - 0.5 <= $product->average_rating)
-                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                    @else
-                                        <i class="far fa-star text-yellow-400"></i>
-                                    @endif
-                                @endfor
-                                <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
-                            </div>
-                            <a href="{{ route('products.show', $product->id) }}">
-                                <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                    {{ $product->name }}
-                                </h3>
-                            </a>
-                            <p class="text-gray-500 text-sm mb-3 line-clamp-2">
-                                {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
-                            </p>
-                            <div class="flex items-center justify-between">
-                                <div class="flex flex-col">
-                                    @if($product->discount_price && $product->base_price > $product->discount_price)
-                                        <span class="font-bold text-lg text-red-600">{{ number_format($product->discount_price, 0, ',', '.') }}đ</span>
-                                        <span class="text-sm text-gray-500 line-through">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
-                                    @else
-                                        <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
-                                    @endif
-                                </div>
-                                @if(isset($product->has_stock) && $product->has_stock)
-                                    <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                                        <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                                        Thêm
-                                    </button>
+                                    <span class="font-bold text-lg text-red-600">{{ number_format($product->discount_price, 0, ',', '.') }}đ</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
                                 @else
-                                    <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
-                                        <i class="fas fa-ban h-4 w-4 mr-1"></i>
-                                        Hết hàng
-                                    </button>
+                                    <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
                                 @endif
                             </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </section>
-        @endif
-        @if(isset($topRatedProducts) && count($topRatedProducts))
-        <section class="py-10">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Được Yêu Thích Nhất</h2>
-                <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
-                    <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
-                </a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @foreach ($topRatedProducts as $product)
-                    <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                        data-product-id="{{ $product->id }}"
-                        data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
-                        data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
-                        <div class="relative">
-                            <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
-                                @if(isset($product->primary_image) && $product->primary_image && isset($product->primary_image->s3_url) && $product->primary_image->s3_url)
-                                    <img src="{{ $product->primary_image->s3_url }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                                @else
-                                    <img src="{{ asset('images/default-placeholder.png') }}"
-                                        alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                                @endif
-                            </a>
-                        </div>
-                        <div class="p-4">
-                            <div class="flex items-center gap-1 mb-2">
-                                @for($i = 1; $i <= 5; $i++)
-                                    @if($i <= floor($product->average_rating))
-                                        <i class="fas fa-star text-yellow-400"></i>
-                                    @elseif($i - 0.5 <= $product->average_rating)
-                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                    @else
-                                        <i class="far fa-star text-yellow-400"></i>
-                                    @endif
-                                @endfor
-                                <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count ?? 0 }})</span>
-                            </div>
-                            <a href="{{ route('products.show', $product->id) }}">
-                                <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                    {{ $product->name }}
-                                </h3>
-                            </a>
-                            <p class="text-gray-500 text-sm mb-3 line-clamp-2">
-                                {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
-                            </p>
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+
+                            {{-- Add to Cart Button --}}
+                            @if(isset($product->has_stock) && $product->has_stock)
                                 <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
                                     <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
                                     Thêm
                                 </button>
-                            </div>
+                            @else
+                                <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
+                                    Hết hàng
+                                </button>
+                            @endif
                         </div>
                     </div>
-                @endforeach
-            </div>
-        </section>
-        @endif
-        @if(!isset($search) && isset($combos) && count($combos))
-        <section class="py-10">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl md:text-3xl font-bold">Combo Ưu Đãi</h2>
-                <a href="#" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
-                    <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
-                </a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @foreach ($combos as $combo)
-                    <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                        <div class="relative">
-                            <a href="#" class="block relative h-48 overflow-hidden">
-                                <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                            </a>
+                </div>
+            @empty
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Chưa có sản phẩm nổi bật</h3>
+                    <p class="text-gray-500">Vui lòng quay lại sau để xem các sản phẩm nổi bật nhé!</p>
+                </div>
+            @endforelse
+        </div>
+    </section>
+
+    <!-- Combo Nổi Bật Section -->
+    @if(isset($featuredCombos) && $featuredCombos->count() > 0)
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Combo Nổi Bật</h2>
+            <a href="{{ route('customer.search', ['type' => 'combos']) }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            @foreach ($featuredCombos as $combo)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-combo-id="{{ $combo->id }}"
+                    data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
+                    <div class="relative">
+                        <a href="{{ route('combos.show', $combo->id) }}">
+                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
                             <div class="absolute top-2 left-2">
                                 @if($combo->discount_percent > 0)
                                     <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
+                                @elseif($combo->created_at->diffInDays(now()) <= 7)
+                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
                                 @endif
                             </div>
-                        </div>
-                        <div class="p-4">
-                            <a href="#">
-                                <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                    {{ $combo->name }}
-                                </h3>
-                            </a>
-                            <p class="text-gray-500 text-sm mb-3 line-clamp-2">
-                                {{ $combo->description ? Str::limit($combo->description, 80) : '' }}
-                            </p>
-                            <div class="flex items-center justify-between">
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-lg text-red-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
-                                    @if($combo->original_price && $combo->original_price > $combo->price)
-                                        <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
-                                    @endif
-                                </div>
-                                @if($combo->has_stock)
-                                    <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                                        <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                                        Thêm
-                                    </button>
+                        </a>
+                    </div>
+                    <div class="p-4">
+                        <a href="{{ route('combos.show', $combo->id) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
+                        </a>
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col">
+                                @if($combo->original_price && $combo->original_price > $combo->price)
+                                    <span class="font-bold text-lg text-black-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
                                 @else
-                                    <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
-                                        <i class="fas fa-ban h-4 w-4 mr-1"></i>
-                                        Hết hàng
-                                    </button>
+                                    <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
                                 @endif
                             </div>
+                            @if($combo->has_stock)
+                                <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors" data-combo-id="{{ $combo->id }}">
+                                    <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                    Thêm
+                                </button>
+                            @else
+                                <span class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
+                                    Hết hàng
+                                </span>
+                            @endif
                         </div>
                     </div>
-                @endforeach
-            </div>
-        </section>
-        @endif
+                </div>
+            @endforeach
+        </div>
+    </section>
     @endif
 
-    
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Được Yêu Thích Nhất</h2>
+            <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @forelse ($topRatedProducts as $product)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-product-id="{{ $product->id }}"
+                    data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
+                    data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
+
+                    <div class="relative">
+                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                            <img src="{{ $product->primary_image->s3_url ?? asset('images/default-placeholder.png') }}"
+                                alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                        </a>
+                    </div>
+
+                    <div class="p-4">
+                        <div class="flex items-center gap-1 mb-2">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= floor($product->average_rating))
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                @elseif($i - 0.5 <= $product->average_rating)
+                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                @else
+                                    <i class="far fa-star text-yellow-400"></i>
+                                @endif
+                            @endfor
+                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                        </div>
+
+                        <a href="{{ route('products.show', $product->id) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
+                                {{ $product->name }}
+                            </h3>
+                        </a>
+
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">
+                            {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
+                        </p>
+
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                            <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
+                                <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                Thêm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Chưa có sản phẩm yêu thích</h3>
+                    <p class="text-gray-500">Vui lòng quay lại sau để xem các sản phẩm được yêu thích nhé!</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+    </div>
+    </section>
 
     <!-- Order Now Section -->
     <section class="py-10 container">

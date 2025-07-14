@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('phone_number', 191);
             $table->text('address')->nullable();
             $table->foreignId('application_id')->constrained('driver_applications')->onDelete('cascade');
-            $table->string('status', 50);  // active, inactive, suspended, v.v.
+            $table->enum('status', ['active', 'inactive', 'suspended', 'locked'])->default('active');
             $table->boolean('is_available')->default(true);
             $table->decimal('balance', 12, 2)->default(0);
             $table->decimal('rating', 3, 2)->default(0);

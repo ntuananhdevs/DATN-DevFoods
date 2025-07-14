@@ -264,9 +264,9 @@
                     <!-- Nội dung sẽ được JS render -->
                 </div>
                 <div class="space-y-3 mb-6">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Tạm tính</span>
-                        <span id="subtotal-js">
+                    <div class="flex justify-between font-bold text-lg">
+                        <span class="text-gray-800">Tạm tính</span>
+                        <span id="subtotal-js" class="text-orange-600">
                             @php
                                 $subtotal = 0;
                                 foreach ($cartItems as $item) {
@@ -276,31 +276,32 @@
                             {{ number_format($subtotal, 0, '', '.') }}đ
                         </span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Phí giao hàng</span>
-                        <span id="shipping-js">0đ</span>
-                    </div>
                     <div class="flex justify-between text-green-600 {{ session('discount') ? '' : 'hidden' }}" id="discount-container-js">
                         <span>Giảm giá</span>
                         <span id="discount-js">-0đ</span>
                     </div>
-                    <hr class="border-t border-gray-200">
-                    <div class="flex justify-between font-bold text-lg">
-                        <span>Tổng cộng</span>
-                        <span id="total-js">{{ number_format($subtotal, 0, '', '.') }}đ</span>
-                    </div>
                 </div>
                 <hr class="my-4 border-t-2 border-gray-200">
-                <button type="submit" id="checkout-btn" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors" disabled>Tiến Hành Thanh Toán</button>
-                <div class="mt-4 text-xs text-gray-500 text-center">
-                    Đơn hàng trên 100.000đ được miễn phí giao hàng
+                
+                <!-- Free Shipping Notice -->
+                <div class="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-shipping-fast text-green-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-green-800 font-bold text-sm"> MIỄN PHÍ GIAO HÀNG</p>
+                            <p class="text-green-700 text-xs">Cho đơn hàng từ <span class="font-bold text-green-800">200.000đ</span> trở lên!</p>
+                        </div>
+                    </div>
                 </div>
+                
+                <button type="submit" id="checkout-btn" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors" disabled>Tiến Hành Thanh Toán</button>
             </div>
 
             <div class="mt-6 bg-orange-50 rounded-lg p-4">
                 <h3 class="font-medium mb-2">Chính sách mua hàng</h3>
                 <ul class="text-sm text-gray-600 space-y-1">
-                    <li>Miễn phí giao hàng cho đơn từ 100.000đ</li>
                     <li>Đổi trả trong vòng 30 phút nếu lỗi từ nhà hàng</li>
                     <li>Hỗ trợ 24/7: 1900 1234</li>
                 </ul>
@@ -402,13 +403,9 @@
         </div>
 
         <div class="p-4 border-t">
-            <div class="flex justify-between mb-2">
+            <div class="flex justify-between mb-4">
                 <span>Tạm tính:</span>
                 <span id="mini-cart-subtotal">0đ</span>
-            </div>
-            <div class="flex justify-between mb-4">
-                <span>Phí giao hàng:</span>
-                <span id="mini-cart-shipping">0đ</span>
             </div>
             <a href="{{ route('cart.index') }}" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-4 py-2 rounded-md font-medium transition-colors mb-2">
                 Xem Giỏ Hàng
