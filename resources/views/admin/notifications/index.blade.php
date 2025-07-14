@@ -4,7 +4,7 @@
     <div class="container mx-auto py-4">
         <h2 class="text-xl font-bold mb-4">Tất cả thông báo</h2>
         <div class="space-y-2">
-            @forelse($adminNotifications as $notification)
+            @forelse($notifications as $notification)
                 <div class="p-3 rounded-md border {{ $notification->read_at ? 'bg-white' : 'bg-primary/10' }}">
                     <div class="font-semibold">{{ $notification->data['message'] ?? '' }}</div>
                     <div class="text-xs text-muted-foreground">{{ $notification->created_at->diffForHumans() }}</div>
@@ -14,7 +14,7 @@
             @endforelse
         </div>
         <div class="mt-4">
-            {{ $adminNotifications->links() }}
+            {{ $notifications->links() }}
         </div>
     </div>
-@endsection
+@endsection 
