@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('sku')->unique();
             $table->string('name');
             $table->string('image')->nullable();
+            $table->string('slug')->unique()->nullable();
             $table->foreignId('category_id')->constrained('categories')->onDelete('restrict');
             $table->text('description')->nullable();
             $table->decimal('original_price', 12, 2); // Giá gốc của combo

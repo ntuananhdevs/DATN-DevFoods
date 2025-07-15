@@ -716,6 +716,7 @@ class FastFoodSeeder extends Seeder
             $combo = Combo::create([
                 'sku' => $this->generateSku('', 'combo'),
                 'name' => $comboData['name'],
+                'slug' => Str::slug($comboData['name']),
                 'description' => $comboData['description'],
                 'original_price' => $comboData['original_price'],
                 'price' => $comboData['price'],

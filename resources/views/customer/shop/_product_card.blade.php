@@ -5,7 +5,7 @@
 @if($combos && $combos->count() > 0)
     <div class="flex flex-wrap gap-1 px-4 pt-2 pb-1">
         @foreach($combos->take(2) as $combo)
-            <a href="{{ route('combos.show', $combo->id) }}" class="inline-flex items-center text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded font-semibold hover:bg-orange-200 transition" title="{{ $combo->name }}">
+            <a href="{{ route('combos.show', $combo->slug) }}" class="inline-flex items-center text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded font-semibold hover:bg-orange-200 transition" title="{{ $combo->name }}">
                 <i class="fas fa-layer-group mr-1"></i> {{ \Illuminate\Support\Str::limit($combo->name, 18) }}
             </a>
         @endforeach
@@ -30,7 +30,7 @@
                 <span>Hết hàng</span>
             </div>
         @endif
-        <a href="{{ route('products.show', $product->id) }}" class="block">
+        <a href="{{ route('products.show', $product->slug) }}" class="block">
             @if($product->primary_image)
                 <img src="{{ Storage::disk('s3')->url($product->primary_image->img) }}"
                      alt="{{ $product->name }}"
@@ -104,7 +104,7 @@
             }
         @endphp
         <div class="flex items-center justify-between">
-            <a href="{{ route('products.show', $product->id) }}" class="block">
+            <a href="{{ route('products.show', $product->slug) }}" class="block">
                 <h3 class="product-title">{{ $product->name }}</h3>
             </a>
         </div>

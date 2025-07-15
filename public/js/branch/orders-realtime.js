@@ -466,24 +466,38 @@ class BranchOrdersRealtime {
     createOrderCard(order) {
         const statusColors = {
             'awaiting_confirmation': '#f59e0b',
-            'awaiting_driver': '#3b82f6',
+            'confirmed': '#3b82f6',
+            'awaiting_driver': '#60a5fa',
+            'driver_assigned': '#6366f1',
+            'driver_confirmed': '#2563eb',
+            'waiting_driver_pick_up': '#a78bfa',
             'driver_picked_up': '#8b5cf6',
             'in_transit': '#06b6d4',
             'delivered': '#10b981',
             'item_received': '#059669',
             'cancelled': '#ef4444',
             'refunded': '#6b7280',
+            'payment_failed': '#ef4444',
+            'payment_received': '#84cc16',
+            'order_failed': '#dc2626',
         };
         
         const statusTexts = {
             'awaiting_confirmation': 'Chờ xác nhận',
-            'awaiting_driver': 'Đang chờ tài xế',
-            'driver_picked_up': 'Tài xế đã nhận',
+            'confirmed': 'Đã xác nhận',
+            'awaiting_driver': 'Chờ tài xế',
+            'driver_assigned': 'Đã gán tài xế',
+            'driver_confirmed': 'Tài xế đã xác nhận',
+            'waiting_driver_pick_up': 'Chờ tài xế lấy hàng',
+            'driver_picked_up': 'Tài xế đã nhận đơn',
             'in_transit': 'Đang giao',
             'delivered': 'Đã giao',
-            'item_received': 'Đã nhận',
+            'item_received': 'Đã nhận hàng',
             'cancelled': 'Đã hủy',
             'refunded': 'Đã hoàn tiền',
+            'payment_failed': 'Thanh toán thất bại',
+            'payment_received': 'Đã nhận thanh toán',
+            'order_failed': 'Đơn thất bại',
         };
 
         const statusColor = statusColors[order.status] || '#6b7280';

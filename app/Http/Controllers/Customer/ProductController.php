@@ -228,7 +228,7 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show($slug)
     {
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
@@ -266,7 +266,7 @@ class ProductController extends Controller
                     $query->where('branch_id', $selectedBranchId);
                 }
             }
-        ])->findOrFail($id);
+        ])->where('slug', $slug)->firstOrFail();
 
         // Tính toán thông tin rating
         $product->average_rating = $product->reviews->avg('rating') ?? 0;
@@ -554,7 +554,7 @@ class ProductController extends Controller
             'branches'
         ));
     }
-    public function showComboDetail(Request $request, $id)
+    public function showComboDetail(Request $request, $slug)
 {
     // Lấy branch hiện tại nếu có
     $currentBranch = $this->branchService->getCurrentBranch();
@@ -570,7 +570,7 @@ class ProductController extends Controller
                 $query->where('branch_id', $selectedBranchId);
             }
         }
-    ])->findOrFail($id);
+    ])->where('slug', $slug)->firstOrFail();
 
     // Lấy tồn kho tại chi nhánh hiện tại (nếu có)
     $branchStocks = $combo->comboBranchStocks;
@@ -634,8 +634,8 @@ class ProductController extends Controller
     if ($user) {
         $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
             ->where('status', 'delivered')
-            ->whereHas('orderItems', function($q) use ($id) {
-                $q->where('combo_id', $id);
+            ->whereHas('orderItems', function($q) use ($combo) {
+                $q->where('combo_id', $combo->id);
             })
             ->exists();
         

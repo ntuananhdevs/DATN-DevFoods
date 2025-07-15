@@ -9,7 +9,7 @@
                 <span>Hết hàng</span>
             </div>
         @endif
-        <a href="{{ route('combos.show', $combo->id) }}" class="block">
+        <a href="{{ route('combos.show', $combo->slug) }}" class="block">
             <img src="{{ $imageUrl }}" alt="{{ $combo->name }}" class="product-image">
         </a>
         @if($discountPercent > 0)
@@ -20,7 +20,7 @@
     </div>
     <div class="px-4 py-2">
         <div class="flex items-center justify-between">
-            <a href="{{ route('combos.show', $combo->id) }}" class="block">
+            <a href="{{ route('combos.show', $combo->slug) }}" class="block">
                 <h3 class="product-title">{{ $combo->name }}</h3>
             </a>
         </div>
@@ -37,7 +37,7 @@
                 <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ \Illuminate\Support\Str::limit($combo->description, 60) }}</div>
             </div>
             <div class="flex justify-between items-center mt-2">
-                <a href="{{ route('combos.show', $combo->id) }}" class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
+                <a href="{{ route('combos.show', $combo->slug) }}" class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
                     <i class="fas fa-eye h-4 w-4 mr-1"></i>
                     Xem chi tiết
                 </a>

@@ -22,7 +22,8 @@ class Product extends Model
         'release_at',
         'is_featured',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'slug',
     ];
 
     protected $casts = [

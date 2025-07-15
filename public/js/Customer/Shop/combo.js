@@ -648,18 +648,35 @@ document.addEventListener('DOMContentLoaded', function() {
             // Nếu đang ở trang chi tiết combo, kiểm tra comboId
             const detailComboIdElem = document.getElementById('add-to-cart-combo');
             if (detailComboIdElem && parseInt(detailComboIdElem.getAttribute('data-combo-id')) === parseInt(data.comboId)) {
-                const addToCartBtn = document.getElementById('add-to-cart-combo');
-                const buyNowBtn = document.getElementById('buy-now-combo');
-                const outOfStockMsg = document.getElementById('combo-out-of-stock-message');
-                if (parseInt(data.stockQuantity) > 0) {
-                    if (addToCartBtn) addToCartBtn.disabled = false;
-                    if (buyNowBtn) buyNowBtn.disabled = false;
-                    if (outOfStockMsg) outOfStockMsg.style.display = 'none';
-                } else {
-                    if (addToCartBtn) addToCartBtn.disabled = true;
-                    if (buyNowBtn) buyNowBtn.disabled = true;
-                    if (outOfStockMsg) outOfStockMsg.style.display = 'block';
-                }
+                // Gọi AJAX lấy lại trạng thái combo từ backend
+                fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => response.text())
+                    .then(html => {
+                        // Tạo một DOM ảo để parse lại trạng thái mới
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        // Lấy lại trạng thái mới của nút và thông báo hết hàng
+                        const newAddToCartBtn = doc.getElementById('add-to-cart-combo');
+                        const newBuyNowBtn = doc.getElementById('buy-now-combo');
+                        const newOutOfStockMsg = doc.getElementById('combo-out-of-stock-message');
+                        const addToCartBtn = document.getElementById('add-to-cart-combo');
+                        const buyNowBtn = document.getElementById('buy-now-combo');
+                        const outOfStockMsg = document.getElementById('combo-out-of-stock-message');
+                        if (addToCartBtn && newAddToCartBtn) {
+                            addToCartBtn.disabled = newAddToCartBtn.disabled;
+                            addToCartBtn.setAttribute('data-has-stock', newAddToCartBtn.getAttribute('data-has-stock'));
+                            addToCartBtn.className = newAddToCartBtn.className;
+                            addToCartBtn.innerHTML = newAddToCartBtn.innerHTML;
+                        }
+                        if (buyNowBtn && newBuyNowBtn) {
+                            buyNowBtn.disabled = newBuyNowBtn.disabled;
+                            buyNowBtn.className = newBuyNowBtn.className;
+                            buyNowBtn.innerHTML = newBuyNowBtn.innerHTML;
+                        }
+                        if (outOfStockMsg && newOutOfStockMsg) {
+                            outOfStockMsg.style.display = newOutOfStockMsg.style.display;
+                        }
+                    });
             } else {
                 console.log('[Realtime combo-stock-updated][DETAIL] ComboId mismatch:', {
                     detailComboId: detailComboIdElem ? detailComboIdElem.getAttribute('data-combo-id') : null,

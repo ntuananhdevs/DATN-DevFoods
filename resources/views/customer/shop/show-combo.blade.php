@@ -533,7 +533,7 @@
                         <div
                             class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group border border-gray-100">
                             <div class="relative">
-                                <a href="{{ route('combos.show', $relatedCombo->id) }}" class="block">
+                                <a href="{{ route('combos.show', $relatedCombo->slug) }}" class="block">
                                     <img src="{{ $relatedCombo->image_url ?? asset('images/default-combo.png') }}"
                                         alt="{{ $relatedCombo->name }}"
                                         class="object-cover w-full h-40 group-hover:scale-105 transition-transform duration-300">
@@ -544,7 +544,7 @@
                                 </a>
                             </div>
                             <div class="px-4 py-3 flex flex-col gap-2">
-                                <a href="{{ route('combos.show', $relatedCombo->id) }}" class="block">
+                                <a href="{{ route('combos.show', $relatedCombo->slug) }}" class="block">
                                     <h3 class="font-semibold text-lg text-gray-900 group-hover:text-orange-600 truncate">
                                         {{ $relatedCombo->name }}
                                     </h3>

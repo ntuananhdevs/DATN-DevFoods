@@ -42,8 +42,8 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
-    Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
-    Route::get('/shop/combos/{id}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
+    Route::get('/shop/products/{slug}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::get('/shop/combos/{slug}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
 
     // Wishlist

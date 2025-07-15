@@ -22,7 +22,8 @@ class Combo extends Model
         'status',
         'category_id',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'slug',
     ];
 
     public function productVariants(): BelongsToMany

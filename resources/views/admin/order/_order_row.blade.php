@@ -11,16 +11,50 @@
     </td>
     <td class="py-3 px-4">{{ $order->branch->name ?? 'Không có chi nhánh' }}</td>
     <td class="py-3 px-4 text-right font-bold">{{ number_format($order->total_amount) }}đ</td>
+    <td class="py-3 px-4 text-left">
+        @php
+            $payment = $order->payment;
+            $pm = $payment->payment_method ?? null;
+            $paymentMethodMap = [
+                'cod' => 'COD',
+                'vnpay' => 'VNPay',
+                'balance' => 'Số dư',
+            ];
+            $pmLabel = $paymentMethodMap[$pm] ?? ucfirst($pm ?? 'Không xác định');
+        @endphp
+        @if($pm === 'vnpay')
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
+                    <text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text>
+                    <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
+                </svg>
+            </span>
+        @elseif($pm === 'cod')
+            <span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>
+        @elseif($pm === 'balance')
+            <span class="inline-block px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">Số dư</span>
+        @else
+            <span class="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-semibold">{{ $pmLabel }}</span>
+        @endif
+    </td>
     <td class="py-3 px-4">
         <span class="order-status-badge {{ $order->status }}">
             @php
                 $map = [
                     'awaiting_confirmation' => 'Chờ xác nhận',
-                    'order_confirmed' => 'Đang chuẩn bị',
+                    'confirmed' => 'Đã xác nhận',
+                    'awaiting_driver' => 'Chờ tài xế',
+                    'driver_confirmed' => 'Tài xế đã xác nhận',
+                    'waiting_driver_pick_up' => 'Tài xế đang chờ đơn',
+                    'driver_picked_up' => 'Tài xế đã nhận đơn',
                     'in_transit' => 'Đang giao',
-                    'delivered' => 'Hoàn thành',
+                    'delivered' => 'Đã giao',
+                    'item_received' => 'Khách đã nhận hàng',
                     'cancelled' => 'Đã hủy',
                     'refunded' => 'Đã hoàn tiền',
+                    'payment_failed' => 'Thanh toán thất bại',
+                    'payment_received' => 'Đã nhận thanh toán',
+                    'order_failed' => 'Đơn thất bại',
                 ];
                 echo $map[$order->status] ?? 'Không xác định';
             @endphp
