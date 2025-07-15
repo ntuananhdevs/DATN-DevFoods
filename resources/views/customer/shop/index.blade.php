@@ -290,10 +290,108 @@
     .add-to-cart-btn.disabled:hover {
         background-color: #9CA3AF !important;
     }
+
+    /* Style cho sản phẩm hết hàng */
+    .product-card.out-of-stock {
+        position: relative;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .product-card.out-of-stock .product-image {
+        filter: blur(2px);
+    }
+
+    .product-card.out-of-stock .product-title,
+    .product-card.out-of-stock .product-price,
+    .product-card.out-of-stock .product-original-price,
+    .product-card.out-of-stock .add-to-cart-btn {
+        filter: blur(1px);
+    }
+
+    .out-of-stock-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(220, 38, 38, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 20;
+        white-space: nowrap;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(4px);
+        filter: none !important; /* Đảm bảo overlay không bị blur */
+    }
+
+    .out-of-stock-overlay::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #dc2626, #ef4444);
+        border-radius: 22px;
+        z-index: -1;
+    }
+
+    /* Animation cho overlay */
+
+    /* Đảm bảo sản phẩm hết hàng vẫn hiển thị nhưng bị blur */
+    .product-card.out-of-stock {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* Style cho combo card hết hàng */
+    .product-card[data-combo-id].out-of-stock {
+        position: relative;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .product-card[data-combo-id].out-of-stock .product-image {
+        filter: blur(2px);
+    }
+
+    .product-card[data-combo-id].out-of-stock .product-title,
+    .product-card[data-combo-id].out-of-stock .product-price,
+    .product-card[data-combo-id].out-of-stock .product-original-price,
+    .product-card[data-combo-id].out-of-stock .add-to-cart-btn {
+        filter: blur(1px);
+    }
     .commons {
         color: #000;
         font-size: 0.8rem;
         font-weight: 400;
+    }
+    .fade-in-card {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInCard 0.5s forwards;
+    }
+    @keyframes fadeInCard {
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+    .skeleton-card {
+        background: linear-gradient(90deg, #f3f3f3 25%, #ecebeb 50%, #f3f3f3 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.2s infinite linear;
+        border-radius: 12px;
+        min-height: 270px;
+        width: 100%;
+        margin-bottom: 0;
+    }
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
     }
 </style>
 
@@ -349,237 +447,83 @@
         </div>
     </div>
 
-
-
-    <!-- Danh sách sản phẩm -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-        @forelse($products as $product)
-            <div class="product-card bg-white rounded-lg overflow-hidden"
-                data-product-id="{{ $product->id }}"
-                data-variants="{{ json_encode($product->variants->map(function($variant) {
-                    return [
-                        'id' => $variant->id,
-                        'stock' => $variant->stock_quantity,
-                        'branch_id' => $variant->branch_id
-                    ];
-                })) }}"
-                data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
-                <div class="relative">
-                    <a href="{{ route('products.show', $product->id) }}" class="block">
-                        @if($product->primary_image)
-                            <img src="{{ Storage::disk('s3')->url($product->primary_image->img) }}"
-                                 alt="{{ $product->name }}"
-                                 class="product-image">
-                        @else
-                            <div class="no-image-placeholder">
-                                <i class="far fa-image"></i>
-                            </div>
-                        @endif
-                    </a>
-
-                    @auth
-                    <button class="favorite-btn" data-product-id="{{ $product->id }}">
-                        @if($product->is_favorite)
-                            <i class="fas fa-heart text-red-500"></i>
-                        @else
-                            <i class="far fa-heart"></i>
-                        @endif
-                    </button>
-                    @else
-                    <button class="favorite-btn login-prompt-btn">
-                        <i class="far fa-heart"></i>
-                    </button>
-                    @endauth
-
-                    @if($product->discount_price && $product->base_price > $product->discount_price)
-                        @php
-                            $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
-                        @endphp
-                        <span class="custom-badge badge-sale">-{{ $discountPercent }}%</span>
-                    @elseif($product->created_at->diffInDays(now()) <= 7)
-                        <span class="custom-badge badge-new">Mới</span>
-                    @endif
-
-
+    <!-- Lazy load từng danh mục và sản phẩm -->
+    @php
+        $comboCategory = $categories->first(function($cat) {
+            return stripos($cat->name, 'combo') !== false;
+        });
+        $otherCategories = $categories->filter(function($cat) use ($comboCategory) {
+            return !$comboCategory || $cat->id !== $comboCategory->id;
+        });
+        $sectionIndex = 0;
+    @endphp
+    <div id="category-sections">
+        @if($comboCategory && $comboCategory->combos->count() > 0)
+            <section class="category-section" id="category-section-{{ $comboCategory->id }}" data-section-index="{{ $sectionIndex }}" style="display: block; margin-bottom: 48px;">
+                <h2 class="text-2xl font-bold mb-4 text-orange-600 flex items-center gap-2">
+                    <span>{{ $comboCategory->name }}</span>
+                </h2>
+                <div class="skeletons-container" style="display:none;">
+                    @for($i = 0; $i < $comboCategory->combos->count(); $i++)
+                        <div class="skeleton-card"></div>
+                    @endfor
                 </div>
-
-                <div class="px-4 py-2">
-
-                    @php
-                        $freeship = null;
-                        $otherDiscounts = [];
-                        if(isset($product->applicable_discount_codes)) {
-                            foreach($product->applicable_discount_codes as $discountCode) {
-                                if($discountCode->discount_type === 'free_shipping') {
-                                    $freeship = $discountCode;
-                                } else {
-                                    $otherDiscounts[] = $discountCode;
-                                }
-                            }
-                        }
-
-                        // Tìm mã giảm giá trừ nhiều nhất
-                        $maxDiscount = null;
-                        $maxValue = 0;
-                        foreach($otherDiscounts as $discountCode) {
-                            if($discountCode->discount_type === 'fixed_amount') {
-                                $value = $discountCode->discount_value;
-                            } elseif($discountCode->discount_type === 'percentage') {
-                                $value = isset($product->min_price) ? ($product->min_price * $discountCode->discount_value / 100) : 0;
-                            } else {
-                                $value = 0;
-                            }
-                            if($value > $maxValue) {
-                                $maxValue = $value;
-                                $maxDiscount = $discountCode;
-                            }
-                        }
-
-                        // Giá gốc
-                        $originPrice = $product->discount_price && $product->base_price > $product->discount_price
-                            ? $product->discount_price
-                            : $product->min_price;
-
-                        // Giá sau giảm
-                        $finalPrice = $originPrice;
-                        if($maxDiscount) {
-                            if($maxDiscount->discount_type === 'fixed_amount') {
-                                $finalPrice = max(0, $originPrice - $maxDiscount->discount_value);
-                            } elseif($maxDiscount->discount_type === 'percentage') {
-                                $finalPrice = max(0, $originPrice * (1 - $maxDiscount->discount_value / 100));
-                            }
-                        }
-                    @endphp
-
-                    <div class="flex items-center justify-between">
-                        <a href="{{ route('products.show', $product->id) }}" class="block">
-                            <h3 class="product-title">{{ $product->name }}</h3>
-                        </a>
-                    </div>
-
-                    <!-- <p class="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {{ $product->short_description ?? Str::limit($product->description, 80) }}
-                    </p> -->
-
-                    <div>
-                        <div class="flex flex-col">
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <span class="product-price">{{ number_format($finalPrice) }}đ</span>
-                                    @if($finalPrice < $originPrice)
-                                        <span class="product-original-price">{{ number_format($originPrice) }}đ</span>
-                                    @endif
-                                </div>
-                                @if($freeship)
-                            <img src="{{ asset('images/free-shipping.png') }}" alt="Free Shipping" style="height: 16px;">
-                        @endif
-                            </div>
-                            <div class="discount-tag">
-                                <span class="text-xs font-semibold text-orange-500 mr-2 px-1 py-1 quality">Rẻ vô địch</span>
-                                @if($maxDiscount)
-                                    @php
-                                        $badgeClass = 'discount-badge';
-                                        $icon = 'fa-percent';
-                                        if($maxDiscount->discount_type === 'fixed_amount') {
-                                            $badgeClass .= ' fixed-amount';
-                                            $icon = 'fa-money-bill-wave';
-                                        } else {
-                                            $badgeClass .= ' percentage';
-                                        }
-                                    @endphp
-                                    <div class="{{ $badgeClass }}" title="{{ $maxDiscount->name }}" data-discount-code="{{ $maxDiscount->code }}">
-                                        <i class="fas {{ $icon }}"></i>
-                                        @if($maxDiscount->discount_type === 'percentage')
-                                            Giảm {{ $maxDiscount->discount_value }}%
-                                        @elseif($maxDiscount->discount_type === 'fixed_amount')
-                                            Giảm {{ number_format($maxDiscount->discount_value) }}đ
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                        @if(isset($product->has_stock) && $product->has_stock)
-                            <!-- <a href="{{ route('products.show', ['id' => $product->id]) }}" class="add-to-cart-btn">
-                                <i class="fas fa-shopping-cart"></i>
-                                Mua hàng
-                            </a> -->
-                        @else
-                            <button class="add-to-cart-btn disabled" disabled>
-                                <i class="fas fa-ban"></i>
-                                Hết hàng
-                            </button>
-                        @endif
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center">
-                            <i class="fas fa-star text-yellow-400 text-xs"></i>
-                            <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="commons">Đã bán 46k</span>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                    @foreach($comboCategory->combos as $combo)
+                        @include('customer.shop._combo_card', ['combo' => $combo])
+                    @endforeach
                 </div>
-            </div>
-        @empty
-            <div class="col-span-4 text-center py-8">
-                <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
-                <h3 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy sản phẩm</h3>
-                @if($currentBranch)
-                    @php
-                        $branch = $currentBranch;
-                    @endphp
-                    @if($branch)
-                        <p class="text-gray-500">Không tìm thấy sản phẩm nào tại chi nhánh {{ $branch->name }}.</p>
-                        <button id="change-branch-empty" class="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
-                            <i class="fas fa-exchange-alt mr-2"></i>Đổi chi nhánh khác
-                        </button>
-                    @else
-                        <p class="text-gray-500">Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
-                    @endif
-                @else
-                    <p class="text-gray-500">Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
-                @endif
-            </div>
-        @endforelse
-    </div>
-
-    <!-- Phân trang -->
-    <div class="pagination-container">
-        @if ($products->hasPages())
-            {{-- Previous Page Link --}}
-            @if ($products->onFirstPage())
-                <span class="pagination-item disabled">
-                    <i class="fas fa-chevron-left"></i>
-                </span>
-            @else
-                <a href="{{ $products->previousPageUrl() }}" class="pagination-item">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            @endif
-
-            {{-- Pagination Elements --}}
-            @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                @if ($page == $products->currentPage())
-                    <span class="pagination-item active">{{ $page }}</span>
-                @else
-                    <a href="{{ $url }}" class="pagination-item">{{ $page }}</a>
-                @endif
-            @endforeach
-
-            {{-- Next Page Link --}}
-            @if ($products->hasMorePages())
-                <a href="{{ $products->nextPageUrl() }}" class="pagination-item">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            @else
-                <span class="pagination-item disabled">
-                    <i class="fas fa-chevron-right"></i>
-                </span>
-            @endif
+            </section>
+            @php $sectionIndex++; @endphp
         @endif
+        @foreach($otherCategories as $category)
+            @if($category->products->count() > 0)
+            <section class="category-section" id="category-section-{{ $category->id }}" data-section-index="{{ $sectionIndex }}" style="display: {{ $sectionIndex === 0 ? 'block' : 'none' }}; margin-bottom: 48px;">
+                <h2 class="text-2xl font-bold mb-4 text-orange-600 flex items-center gap-2">
+                    <span>{{ $category->name }}</span>
+                </h2>
+                <div class="skeletons-container" style="display:none;">
+                    @for($i = 0; $i < $category->products->count(); $i++)
+                        <div class="skeleton-card"></div>
+                    @endfor
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                    @foreach($category->products as $product)
+                        @include('customer.shop._product_card', ['product' => $product])
+                    @endforeach
+                </div>
+            </section>
+            @php $sectionIndex++; @endphp
+            @endif
+        @endforeach
     </div>
+    
+    @php
+        $hasAnyProducts = false;
+        foreach($categories as $category) {
+            if (stripos($category->name, 'combo') !== false) {
+                if ($category->combos->count() > 0) {
+                    $hasAnyProducts = true;
+                    break;
+                }
+            } else {
+                if ($category->products->count() > 0) {
+                    $hasAnyProducts = true;
+                    break;
+                }
+            }
+        }
+    @endphp
+    
+    @if(!$hasAnyProducts)
+        <div class="text-center py-12">
+            <div class="text-gray-500 text-lg mb-4">
+                <i class="fas fa-box-open text-4xl mb-4"></i>
+                <p>Không có sản phẩm nào có sẵn tại chi nhánh này.</p>
+                <p class="text-sm text-gray-400 mt-2">Vui lòng thử chọn chi nhánh khác hoặc quay lại sau.</p>
+            </div>
+        </div>
+    @endif
 </div>
 
 <!-- Login Popup Modal -->

@@ -22,7 +22,8 @@ class Combo extends Model
         'status',
         'category_id',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'slug',
     ];
 
     public function productVariants(): BelongsToMany
@@ -115,5 +116,13 @@ class Combo extends Model
     public function comboBranchStocks()
     {
         return $this->hasMany(\App\Models\ComboBranchStock::class, 'combo_id');
+    }
+
+    /**
+     * Get reviews for this combo
+     */
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\ProductReview::class, 'combo_id');
     }
 }
