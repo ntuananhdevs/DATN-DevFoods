@@ -163,9 +163,9 @@
                     data-price="{{ $item->productVariant ? $item->product->base_price + $item->productVariant->variantValues->sum('price_adjustment') : $item->product->base_price }}"
                     data-name="{{ $item->product->name }}"
                     data-date="{{ $item->added_at ? $item->added_at->toDateString() : '' }}"
-                    data-wishlist-id="{{ $item->id }}">
+                    data-product-id="{{ $item->product->id }}">
                     <div class="relative">
-                        <a href="{{ route('products.show', $item->product->id) }}" class="block relative h-48 overflow-hidden">
+                        <a href="{{ route('products.show', $item->product->slug) }}" class="block relative h-48 overflow-hidden">
                             @php
                                 $image = $item->productVariant && $item->productVariant->image 
                                     ? asset('storage/' . $item->productVariant->image)
@@ -177,7 +177,7 @@
                         </a>
                         
                         <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md heart-icon active" 
-                                data-wishlist-id="{{ $item->id }}">
+                                data-product-id="{{ $item->product->id }}">
                             <i class="fas fa-heart text-sm"></i>
                         </button>
                         
@@ -205,7 +205,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $item->product->reviews->count() }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $item->product->id) }}">
+                        <a href="{{ route('products.show', $item->product->slug) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $item->product->name }}
                             </h3>
@@ -351,9 +351,9 @@ document.addEventListener('DOMContentLoaded', function() {
         heart.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const wishlistId = this.dataset.wishlistId;
-            if (!wishlistId) return;
-            fetch(`/wishlist/${wishlistId}`, {
+            const productId = this.dataset.productId;
+            if (!productId) return;
+            fetch(`/wishlist/${productId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -369,12 +369,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     wishlistItem.remove();
                     updateWishlistStats();
                     checkEmptyState();
-                    showNotification(data.message, 'success');
+                    if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: data.message });
                 }, 300);
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
+                if (window.dtmodalShowToast) dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi xảy ra, vui lòng thử lại!' });
             });
         });
     });
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             const productName = this.closest('.wishlist-item').querySelector('h3').textContent;
-            showNotification(`Đã thêm "${productName}" vào giỏ hàng`, 'success');
+            if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: `Đã thêm "${productName}" vào giỏ hàng` });
             
             // Add cart animation
             this.style.transform = 'scale(0.95)';
@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('button[title="Thêm tất cả vào giỏ hàng"]').addEventListener('click', function() {
         const visibleItems = document.querySelectorAll('.wishlist-item:not(.hidden)');
         if (visibleItems.length > 0) {
-            showNotification(`Đã thêm ${visibleItems.length} món vào giỏ hàng`, 'success');
+            if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: `Đã thêm ${visibleItems.length} món vào giỏ hàng` });
         }
     });
 
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 300);
                 }, index * 100);
             });
-            showNotification('Đã xóa tất cả khỏi danh sách yêu thích', 'success');
+            if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: 'Đã xóa tất cả khỏi danh sách yêu thích' });
         }
     });
 
@@ -525,30 +525,6 @@ document.addEventListener('DOMContentLoaded', function() {
             wishlistContainer.classList.remove('hidden');
             emptyWishlist.classList.add('hidden');
         }
-    }
-
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transform translate-x-full transition-transform duration-300 ${
-            type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-        }`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Show notification
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // Hide notification
-        setTimeout(() => {
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
     }
 
     // Initialize stats
