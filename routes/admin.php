@@ -355,6 +355,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
         Route::post('/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('cancel');
     });
+
+    // Reviews Management
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('index');
+        Route::match(['get', 'post'], '/filter', [\App\Http\Controllers\Admin\ReviewController::class, 'filter'])->name('filter');
+        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('approve');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('destroy');
+        Route::get('/reports', [\App\Http\Controllers\Admin\ReviewController::class, 'reports'])->name('reports');
+        Route::get('/{id}/show', [\App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('show');
+        Route::get('/report/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'showReport'])->name('report.show');
+    });
 });
 
 

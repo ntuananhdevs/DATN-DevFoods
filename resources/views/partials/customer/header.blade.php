@@ -224,8 +224,8 @@ header.search-active {
 
 <script>
 window.LaravelRoutes = {
-    productShow: "{{ route('products.show', ['id' => 'REPLACE_ID']) }}",
-    comboShow: "{{ route('combos.show', ['id' => 'REPLACE_ID']) }}"
+    productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
+    comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
 };
 </script>
 

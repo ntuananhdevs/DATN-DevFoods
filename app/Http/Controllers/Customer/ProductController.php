@@ -18,6 +18,7 @@ use App\Models\UserDiscountCode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\BranchService;
+use App\Models\ReviewReport;
 
 class ProductController extends Controller
 {
@@ -36,108 +37,63 @@ class ProductController extends Controller
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
 
-        // Lấy tất cả categories để hiển thị filter
+        // Lấy tất cả categories để hiển thị filter và lazy load
         $categories = Category::where('status', true)
-            ->withCount(['products' => function($query) {
-                $query->where('status', 'selling');
+            ->with(['products' => function($query) use ($selectedBranchId) {
+                $query->where('status', 'selling')
+                    ->with([
+                        'category',
+                        'combos', // Thêm dòng này để eager load combos
+                        'images' => function($q) { $q->orderBy('is_primary', 'desc'); },
+                        'reviews' => function($q) { $q->where('approved', true); },
+                        'variants.branchStocks' => function($q) use ($selectedBranchId) {
+                            if ($selectedBranchId) $q->where('branch_id', $selectedBranchId);
+                        },
+                        'variants.variantValues'
+                    ]);
+                
+                // Filter sản phẩm theo stock nếu có branch được chọn
+                // Không filter theo stock để hiển thị tất cả sản phẩm (kể cả hết hàng)
+                if ($selectedBranchId) {
+                    $query->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId);
+                    });
+                }
+                // Không phân trang
+            }, 'combos' => function($query) use ($selectedBranchId) {
+                $query->where('status', 'selling')
+                    ->where('active', true)
+                    ->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
+                        if ($selectedBranchId) {
+                            $q->where('branch_id', $selectedBranchId);
+                        }
+                    }]);
+                
+                // Không filter theo stock để hiển thị tất cả combo (kể cả hết hàng)
+                if ($selectedBranchId) {
+                    $query->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId);
+                    });
+                }
             }])
             ->get();
 
-        // Query cơ bản cho products
-        $query = Product::with([
-            'category',
-            'images' => function($query) {
-                $query->orderBy('is_primary', 'desc');
-            },
-            'reviews' => function($query) {
-                $query->where('approved', true);
-            },
-            'variants.branchStocks' => function($query) use ($selectedBranchId) {
-                if ($selectedBranchId) {
-                    $query->where('branch_id', $selectedBranchId);
-                }
-            },
-            'variants.variantValues'
-        ])
-        ->where('status', 'selling');
-
-        // Filter by branch but show all products (including out of stock)
-        if ($selectedBranchId) {
-            $query->whereHas('variants.branchStocks', function($query) use ($selectedBranchId) {
-                $query->where('branch_id', $selectedBranchId);
-            });
-        }
-
-        // Filter theo category nếu có
-        $selectedCategoryIds = [];
-        if ($request->has('category') && $request->category != '') {
-            $catParam = $request->category;
-            if (strpos($catParam, ',') !== false) {
-                $selectedCategoryIds = array_filter(explode(',', $catParam));
-                $query->whereIn('category_id', $selectedCategoryIds);
-            } else {
-                $selectedCategoryIds = [$catParam];
-                $query->where('category_id', $catParam);
-            }
-        }
-
-        // Search theo nhiều trường liên quan đến sản phẩm
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                  ->orWhere('sku', 'like', "%$search%")
-                  ->orWhere('short_description', 'like', "%$search%")
-                  ->orWhere('description', 'like', "%$search%")
-                  ->orWhereRaw("JSON_EXTRACT(ingredients, '$[*]') like ?", ["%$search%"])
-                  ->orWhereRaw("CAST(base_price AS CHAR) like ?", ["%$search%"])
-                  ->orWhereRaw("CAST(preparation_time AS CHAR) like ?", ["%$search%"]);
-            });
-        }
-
-        // Sắp xếp
-        $sortBy = $request->get('sort', 'created_at');
-        switch ($sortBy) {
-            case 'price-asc':
-                $query->orderBy('base_price', 'asc');
-                break;
-            case 'price-desc':
-                $query->orderBy('base_price', 'desc');
-                break;
-            case 'name-asc':
-                $query->orderBy('name', 'asc');
-                break;
-            case 'popular':
-                $query->withCount('reviews')
-                      ->orderBy('reviews_count', 'desc');
-                break;
-            default:
-                $query->orderBy('created_at', 'desc');
-        }
-
-        $products = $query->paginate(15);
-
-        // Lấy danh sách mã giảm giá đang hoạt động
+        // Lấy danh sách mã giảm giá đang hoạt động (giữ nguyên logic cũ)
         $now = Carbon::now();
-        $currentDayOfWeek = $now->dayOfWeekIso;
         $currentTime = $now->format('H:i:s');
         $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
             ->where(function($query) use ($selectedBranchId) {
-                // Nếu có branch được chọn, chỉ lấy mã giảm giá áp dụng cho branch đó hoặc tất cả branch
                 if ($selectedBranchId) {
-                    $query->whereDoesntHave('branches') // Không có branch nào = áp dụng cho tất cả
+                    $query->whereDoesntHave('branches')
                         ->orWhereHas('branches', function($q) use ($selectedBranchId) {
                             $q->where('branches.id', $selectedBranchId);
                         });
                 }
             });
-
-        // Chỉ lấy mã giảm giá công khai hoặc mã riêng tư được gán cho người dùng hiện tại
         $activeDiscountCodesQuery->where(function($query) {
             $query->where('usage_type', 'public');
-
             if (Auth::check()) {
                 $query->orWhere(function($q) {
                     $q->where('usage_type', 'personal')
@@ -147,173 +103,132 @@ class ProductController extends Controller
                 });
             }
         });
-
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
             ->get()
-            // Filter theo ngày trong tuần và giờ hợp lệ (đồng nhất với index)
             ->filter(function($discountCode) use ($currentTime) {
-                // Kiểm tra giờ hợp lệ
                 if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
                     $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
                     $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
                     if ($from < $to) {
-                        // Khoảng thời gian trong cùng 1 ngày
-                        if (!($currentTime >= $from && $currentTime <= $to)) {
-                            return false;
-                        }
+                        if (!($currentTime >= $from && $currentTime <= $to)) return false;
                     } else {
-                        // Khoảng thời gian qua đêm (ví dụ: 22:00 - 02:00)
-                        if (!($currentTime >= $from || $currentTime <= $to)) {
-                            return false;
-                        }
+                        if (!($currentTime >= $from || $currentTime <= $to)) return false;
                     }
                 }
                 return true;
             });
 
-        // Log discount codes for debugging
-        \Illuminate\Support\Facades\Log::debug('Active Discount Codes in index page:', [
-            'total_codes' => $activeDiscountCodes->count(),
-            'public_codes' => $activeDiscountCodes->where('usage_type', 'public')->count(),
-            'personal_codes' => $activeDiscountCodes->where('usage_type', 'personal')->count(),
-            'codes' => $activeDiscountCodes->map(function($code) {
-                return [
-                    'id' => $code->id,
-                    'code' => $code->code,
-                    'usage_type' => $code->usage_type,
-                    'applicable_scope' => $code->applicable_scope,
-                ];
-            })
-        ]);
-
-        // Obtener favoritos del usuario
+        // Lấy favorites
         $favorites = [];
         if (Auth::check()) {
-            // Si el usuario está autenticado, obtener de la base de datos
             $favorites = Favorite::where('user_id', Auth::id())
                 ->pluck('product_id')
                 ->toArray();
         } elseif ($request->session()->has('wishlist_items')) {
-            // Si no está autenticado pero tiene favoritos en sesión
             $favorites = $request->session()->get('wishlist_items', []);
         }
 
-        // Thêm thông tin rating trung bình cho mỗi sản phẩm
-        $products->getCollection()->transform(function ($product) use ($favorites, $selectedBranchId, $activeDiscountCodes) {
-            $product->average_rating = $product->reviews->avg('rating') ?? 0;
-            $product->reviews_count = $product->reviews->count();
-            $product->primary_image = $product->images->where('is_primary', true)->first()
-                                    ?? $product->images->first();
-
-            // Transform image URL to S3 URL if using S3
-            if ($product->primary_image) {
-                $product->primary_image->s3_url = asset('storage/' . $product->primary_image->img);
-            }
-
-            // Marcar como favorito si está en la lista
-            $product->is_favorite = in_array($product->id, $favorites);
-
-            // Check if the product has stock
-            if ($selectedBranchId) {
-                // Find any variant with stock > 0
-                $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
-                    return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
-                        return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
+        // Thêm thông tin cho từng product trong từng category
+        foreach ($categories as $category) {
+            foreach ($category->products as $product) {
+                $product->average_rating = $product->reviews->avg('rating') ?? 0;
+                $product->reviews_count = $product->reviews->count();
+                $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                if ($product->primary_image) {
+                    $product->primary_image->s3_url = asset('storage/' . $product->primary_image->img);
+                }
+                $product->is_favorite = in_array($product->id, $favorites);
+                // Tính toán has_stock dựa trên branch hiện tại
+                if ($selectedBranchId) {
+                    $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                        return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
+                            return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
+                        });
                     });
-                });
-
-                // Get first variant (regardless of stock)
-                $product->first_variant = ProductVariant::where('product_id', $product->id)
-                                        ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
-                                            $query->where('branch_id', $selectedBranchId);
-                                        })
-                                        ->orderBy('id', 'asc')
-                                        ->first();
-            } else {
-                // If no branch selected, check for any stock
-                $product->has_stock = $product->variants->contains(function($variant) {
-                    return $variant->branchStocks->contains(function($stock) {
-                        return $stock->stock_quantity > 0;
+                } else {
+                    $product->has_stock = $product->variants->contains(function($variant) {
+                        return $variant->branchStocks->contains(function($stock) {
+                            return $stock->stock_quantity > 0;
+                        });
                     });
-                });
-
-                // Get first variant (regardless of stock)
-                $product->first_variant = ProductVariant::where('product_id', $product->id)
-                                        ->whereHas('branchStocks')
-                                        ->orderBy('id', 'asc')
-                                        ->first();
-            }
-
-            // Tính giá thấp nhất bao gồm cả biến thể
-            $product->min_price = $product->base_price;
-            $product->max_price = $product->base_price;
-
-            if ($product->variants && $product->variants->count() > 0) {
-                $variantPrices = [];
-
-                foreach ($product->variants as $variant) {
-                    // Tính giá của biến thể này
-                    $variantPrice = $product->base_price;
-                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
-                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                }
+                // Giá min/max
+                $product->min_price = $product->base_price;
+                $product->max_price = $product->base_price;
+                if ($product->variants && $product->variants->count() > 0) {
+                    $variantPrices = [];
+                    foreach ($product->variants as $variant) {
+                        $variantPrice = $product->base_price;
+                        if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                            $variantPrice += $variant->variantValues->sum('price_adjustment');
+                        }
+                        $variantPrices[] = $variantPrice;
                     }
-                    $variantPrices[] = $variantPrice;
+                    if (!empty($variantPrices)) {
+                        $product->min_price = min($variantPrices);
+                        $product->max_price = max($variantPrices);
+                    }
                 }
-
-                if (!empty($variantPrices)) {
-                    $product->min_price = min($variantPrices);
-                    $product->max_price = max($variantPrices);
-                }
-            }
-
-            // Lấy các mã giảm giá áp dụng cho sản phẩm này
-            $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
-                // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
-                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
-                    // Kiểm tra điều kiện tối thiểu nếu có
-                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
-                        if ($discountCode->min_requirement_type === 'order_amount') {
-                            // Không kiểm tra ở đây, chỉ kiểm tra khi checkout
-                            return true;
-                        } elseif ($discountCode->min_requirement_type === 'product_price') {
-                            // Sử dụng giá thấp nhất để kiểm tra điều kiện
-                            if ($product->min_price < $discountCode->min_requirement_value) {
-                                return false;
+                // Discount codes
+                $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                        if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                            if ($discountCode->min_requirement_type === 'order_amount') {
+                                return true;
+                            } elseif ($discountCode->min_requirement_type === 'product_price') {
+                                if ($product->min_price < $discountCode->min_requirement_value) return false;
                             }
                         }
+                        return true;
                     }
-                    return true;
-                }
-                // Kiểm tra áp dụng cụ thể cho sản phẩm
-                $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
-                    if ($discountProduct->product_id === $product->id) {
-                        return true; // Áp dụng trực tiếp cho sản phẩm này
-                    }
-                    if ($discountProduct->category_id === $product->category_id) {
-                        return true; // Áp dụng cho danh mục của sản phẩm này
-                    }
-                    return false;
-                });
-                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
-                    if ($product->min_price < $discountCode->min_requirement_value) {
+                    $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
+                        if ($discountProduct->product_id === $product->id) return true;
+                        if ($discountProduct->category_id === $product->category_id) return true;
                         return false;
+                    });
+                    if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                        if ($product->min_price < $discountCode->min_requirement_value) return false;
+                    }
+                    return $applies;
+                });
+            }
+            
+            // Thêm thông tin cho từng combo trong category
+            if ($category->combos) {
+                foreach ($category->combos as $combo) {
+                    // Thêm thông tin ảnh
+                    if ($combo->image) {
+                        $combo->image_url = \Storage::disk('s3')->url($combo->image);
+                    } else {
+                        $combo->image_url = asset('images/default-combo.png');
+                    }
+                    
+                    // Tính toán has_stock cho combo
+                    if ($selectedBranchId) {
+                        $combo->has_stock = $combo->comboBranchStocks->where('branch_id', $selectedBranchId)->sum('quantity') > 0;
+                    } else {
+                        $combo->has_stock = $combo->comboBranchStocks->sum('quantity') > 0;
+                    }
+                    
+                    // Tính phần trăm giảm giá nếu có
+                    if ($combo->original_price && $combo->original_price > $combo->price) {
+                        $combo->discount_percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
+                    } else {
+                        $combo->discount_percent = 0;
                     }
                 }
-                return $applies;
-            });
+            }
+        }
 
-            return $product;
-        });
-
-        return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
+        return view("customer.shop.index", compact('categories', 'selectedBranchId'));
     }
 
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show($slug)
     {
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
@@ -351,7 +266,7 @@ class ProductController extends Controller
                     $query->where('branch_id', $selectedBranchId);
                 }
             }
-        ])->findOrFail($id);
+        ])->where('slug', $slug)->firstOrFail();
 
         // Tính toán thông tin rating
         $product->average_rating = $product->reviews->avg('rating') ?? 0;
@@ -639,7 +554,7 @@ class ProductController extends Controller
             'branches'
         ));
     }
-    public function showComboDetail(Request $request, $id)
+    public function showComboDetail(Request $request, $slug)
 {
     // Lấy branch hiện tại nếu có
     $currentBranch = $this->branchService->getCurrentBranch();
@@ -655,10 +570,13 @@ class ProductController extends Controller
                 $query->where('branch_id', $selectedBranchId);
             }
         }
-    ])->findOrFail($id);
+    ])->where('slug', $slug)->firstOrFail();
 
     // Lấy tồn kho tại chi nhánh hiện tại (nếu có)
     $branchStocks = $combo->comboBranchStocks;
+
+    // Tính trạng thái còn hàng cho combo ở branch hiện tại
+    $combo->has_stock = $branchStocks->sum('quantity') > 0;
 
     // Chuẩn bị dữ liệu sản phẩm trong combo
     $items = $combo->comboItems->map(function($item) {
@@ -698,12 +616,47 @@ class ProductController extends Controller
         $combo->category->setRelation('combos', $combo->category->combos->where('status', 'selling'));
     }
 
+    // Lấy reviews cho combo
+    $reviews = \App\Models\ProductReview::with(['user', 'replies.user'])
+        ->where('combo_id', $combo->id)
+        ->where('approved', true)
+        ->orderBy('review_date', 'desc')
+        ->get();
+
+    // Tính toán rating trung bình
+    $combo->average_rating = $reviews->avg('rating') ?? 0;
+    $combo->reviews_count = $reviews->count();
+
+    // Kiểm tra user đã mua combo này chưa (để hiển thị form review)
+    $user = auth()->user();
+    $hasPurchased = false;
+    $canReview = false;
+    if ($user) {
+        $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
+            ->where('status', 'delivered')
+            ->whereHas('orderItems', function($q) use ($combo) {
+                $q->where('combo_id', $combo->id);
+            })
+            ->exists();
+        
+        if ($hasPurchased) {
+            // Kiểm tra đã review chưa
+            $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
+                ->where('combo_id', $combo->id)
+                ->first();
+            $canReview = !$existingReview;
+        }
+    }
+
     return view('customer.shop.show-combo', [
         'combo' => $combo,
         'items' => $items,
         'branchStocks' => $branchStocks,
         'selectedBranch' => $currentBranch,
         'relatedProducts' => $relatedProducts,
+        'reviews' => $reviews,
+        'hasPurchased' => $hasPurchased,
+        'canReview' => $canReview,
     ]);
 }
 
@@ -922,30 +875,69 @@ class ProductController extends Controller
             'review' => 'nullable|string|max:2000',
             'review_image' => 'nullable|image|max:2048',
             'is_anonymous' => 'nullable|boolean',
+            'type' => 'required|in:product,combo', // Thêm validation cho type
         ]);
 
-        $product = Product::findOrFail($id);
         $user = $request->user();
+        $type = $request->input('type');
+        $item = null;
+        $order = null;
+        $itemType = '';
 
-        // Kiểm tra user đã mua sản phẩm này chưa (đã có đơn hàng delivered chứa product này)
-        $order = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
-            ->whereHas('orderItems.productVariant', function($q) use ($id) {
-                $q->where('product_id', $id);
-            })
-            ->orderByDesc('order_date')
-            ->first();
-        if (!$order) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Bạn chỉ có thể đánh giá sản phẩm đã mua!'], 403);
-            }
-            return redirect()->back()->with('error', 'Bạn chỉ có thể đánh giá sản phẩm đã mua!');
+        if ($type === 'product') {
+            $item = Product::findOrFail($id);
+            $itemType = 'sản phẩm';
+            
+            // Kiểm tra user đã mua sản phẩm này chưa
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems.productVariant', function($q) use ($id) {
+                    $q->where('product_id', $id);
+                })
+                ->orderByDesc('order_date')
+                ->first();
+        } else {
+            $item = \App\Models\Combo::findOrFail($id);
+            $itemType = 'combo';
+            
+            // Kiểm tra user đã mua combo này chưa
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems', function($q) use ($id) {
+                    $q->where('combo_id', $id);
+                })
+                ->orderByDesc('order_date')
+                ->first();
         }
 
-        // TẠM THỜI BỎ QUA KIỂM TRA ORDER
+        if (!$order) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua!"], 403);
+            }
+            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua!");
+        }
+
+        // Kiểm tra xem user đã review item này chưa
+        $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
+            ->where('order_id', $order->id);
+        
+        if ($type === 'product') {
+            $existingReview->where('product_id', $item->id);
+        } else {
+            $existingReview->where('combo_id', $item->id);
+        }
+        
+        $existingReview = $existingReview->first();
+        
+        if ($existingReview) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này rồi!"], 409);
+            }
+            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này rồi!");
+        }
+
         $review = new \App\Models\ProductReview();
         $review->user_id = $user->id;
-        $review->product_id = $product->id;
         $review->order_id = $order->id;
         $review->branch_id = $request->input('branch_id');
         $review->rating = $request->input('rating');
@@ -957,6 +949,13 @@ class ProductController extends Controller
         $review->helpful_count = 0;
         $review->report_count = 0;
         $review->is_featured = false;
+
+        // Set product_id hoặc combo_id tùy theo type
+        if ($type === 'product') {
+            $review->product_id = $item->id;
+        } else {
+            $review->combo_id = $item->id;
+        }
 
         if ($request->hasFile('review_image')) {
             // Nếu có ảnh cũ thì xóa khỏi S3
@@ -972,7 +971,13 @@ class ProductController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Đánh giá của bạn đã được gửi và đang chờ duyệt!']);
         }
-        return redirect()->route('products.show', $product->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        
+        // Redirect về trang tương ứng
+        if ($type === 'product') {
+            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        } else {
+            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        }
     }
 
     public function destroyReview(Request $request, $id)
@@ -1054,5 +1059,64 @@ class ProductController extends Controller
             'review_id' => $review->id
         ]);
     }
+
+    /**
+     * Báo cáo review sản phẩm
+     */
+    public function reportReview(Request $request, $id)
+    {
+        $user = $request->user();
+        $review = \App\Models\ProductReview::findOrFail($id);
+
+        // Kiểm tra user đã mua sản phẩm này chưa (đã có đơn hàng delivered chứa product này)
+        $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
+            ->where('status', 'delivered')
+            ->whereHas('orderItems.productVariant', function($q) use ($review) {
+                $q->where('product_id', $review->product_id);
+            })
+            ->exists();
+        if (!$hasPurchased) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chỉ có thể báo cáo đánh giá của sản phẩm đã mua!'
+            ], 403);
+        }
+
+        // Validate lý do mới
+        $request->validate([
+            'reason_type' => 'required|string|max:32',
+            'reason_detail' => 'nullable|string|max:1000',
+        ]);
+
+        // Kiểm tra user đã báo cáo review này chưa
+        $already = \App\Models\ReviewReport::where('user_id', $user->id)->where('review_id', $review->id)->exists();
+        if ($already) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã báo cáo đánh giá này trước đó!'
+            ], 409);
+        }
+
+        // Lưu báo cáo
+        \App\Models\ReviewReport::create([
+            'user_id' => $user->id,
+            'review_id' => $review->id,
+            'reason_type' => $request->input('reason_type'),
+            'reason_detail' => $request->input('reason_detail'),
+        ]);
+
+        // Tăng report_count cho review (nếu có trường này)
+        if (isset($review->report_count)) {
+            $review->report_count = $review->report_count + 1;
+            $review->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Báo cáo của bạn đã được ghi nhận. Cảm ơn bạn đã phản hồi!'
+        ]);
+    }
+
+
 }
 

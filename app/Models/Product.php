@@ -22,7 +22,8 @@ class Product extends Model
         'release_at',
         'is_featured',
         'created_by',
-        'updated_by'
+        'updated_by',
+        'slug',
     ];
 
     protected $casts = [
@@ -84,6 +85,18 @@ class Product extends Model
     {
         return $this->belongsToMany(Topping::class, 'product_toppings')
             ->withTimestamps();
+    }
+
+    public function combos()
+    {
+        return $this->belongsToMany(Combo::class, 'combo_items', 'product_variant_id', 'combo_id')
+            ->using(\App\Models\ComboItem::class)
+            ->withPivot('quantity')
+            ->withTimestamps()
+            ->where('combos.status', 'selling')
+            ->join('product_variants', 'product_variants.id', '=', 'combo_items.product_variant_id')
+            ->where('product_variants.product_id', $this->id)
+            ->select('combos.*');
     }
 
     public function isActiveInBranch($branchId)

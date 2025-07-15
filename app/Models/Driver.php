@@ -66,10 +66,10 @@ class Driver extends Model implements Authenticatable
     ];
 
     // Mutator để tự động hash mật khẩu khi được gán
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = bcrypt($value);
-    }
+    // public function setPasswordAttribute($value)
+    // {
+    //     $this->attributes['password'] = bcrypt($value);
+    // }
 
     // Relationships
     public function user()

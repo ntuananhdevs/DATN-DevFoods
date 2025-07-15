@@ -16,6 +16,7 @@ use App\Models\Branch;
 use App\Models\Address;
 use App\Services\BranchService;
 use App\Services\ShippingService;
+use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
 
 class CheckoutController extends Controller
@@ -38,6 +39,17 @@ class CheckoutController extends Controller
 
         $userId = Auth::id();
         $sessionId = session()->getId();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController, falling back to session-based cart');
+            }
+        }
 
         $cartQuery = Cart::query()->where('status', 'active');
         if ($userId) {
@@ -54,6 +66,7 @@ class CheckoutController extends Controller
             $query = CartItem::with([
                 'variant.product.images',
                 'variant.variantValues.attribute',
+                'combo', // Thêm eager load cho combo
                 'toppings'
             ])->where('cart_id', $cart->id);
 
@@ -67,10 +80,17 @@ class CheckoutController extends Controller
             $subtotal = $this->applyDiscountsToCartItems($cartItems);
 
             foreach ($cartItems as $item) {
-                // Đặt primary image
-                $item->variant->product->primary_image = $item->variant->product->images
-                    ->where('is_primary', true)
-                    ->first() ?? $item->variant->product->images->first();
+                // Xử lý cho sản phẩm lẻ
+                if ($item->variant && $item->variant->product) {
+                    // Đặt primary image
+                    $item->variant->product->primary_image = $item->variant->product->images
+                        ->where('is_primary', true)
+                        ->first() ?? $item->variant->product->images->first();
+                }
+                // Xử lý cho combo (nếu cần)
+                elseif ($item->combo) {
+                    // Combo không cần xử lý primary image ở đây
+                }
             }
         } else {
             $cartItems = collect([]);
@@ -105,6 +125,17 @@ class CheckoutController extends Controller
     {
         // Get user ID to determine validation rules
         $userId = Auth::id();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController process, falling back to session-based cart');
+            }
+        }
         
         // Validate checkout data with different rules for authenticated vs guest users
         if ($userId) {
@@ -169,8 +200,8 @@ class CheckoutController extends Controller
                 throw new \Exception('Không tìm thấy giỏ hàng.');
             }
             
-            // Get cart items
-            $cartItems = CartItem::with(['variant.product'])
+            // Get cart items - Thêm eager load cho combo
+            $cartItems = CartItem::with(['variant.product', 'combo'])
                 ->where('cart_id', $cart->id)
                 ->get();
             
@@ -344,14 +375,29 @@ class CheckoutController extends Controller
                 NewOrderReceived::dispatch($order);
             }
             
-            // Create order items
+            // Create order items - Sửa để hỗ trợ cả combo và sản phẩm lẻ
             foreach ($cartItems as $cartItem) {
                 $orderItem = new OrderItem();
                 $orderItem->order_id = $order->id;
-                $orderItem->product_variant_id = $cartItem->variant_id;
                 $orderItem->quantity = $cartItem->quantity;
-                $orderItem->unit_price = $cartItem->variant->price;
-                $orderItem->total_price = $cartItem->variant->price * $cartItem->quantity;
+                
+                // Xử lý cho sản phẩm lẻ
+                if ($cartItem->variant) {
+                    $orderItem->product_variant_id = $cartItem->variant_id;
+                    $orderItem->unit_price = $cartItem->variant->price;
+                    $orderItem->total_price = $cartItem->variant->price * $cartItem->quantity;
+                }
+                // Xử lý cho combo
+                elseif ($cartItem->combo) {
+                    $orderItem->combo_id = $cartItem->combo_id;
+                    $orderItem->unit_price = $cartItem->combo->price;
+                    $orderItem->total_price = $cartItem->combo->price * $cartItem->quantity;
+                }
+                // Nếu không phải sản phẩm lẻ cũng không phải combo, bỏ qua
+                else {
+                    continue;
+                }
+                
                 $orderItem->save();
             }
             
@@ -791,70 +837,113 @@ class CheckoutController extends Controller
 
         // === CALCULATE MIN PRICE FOR EACH PRODUCT (needed for product_price requirement) ===
         foreach ($cartItems as $item) {
-            $product = $item->variant->product;
-            $product->min_price = $product->base_price;
-            if ($product->variants && $product->variants->count()) {
-                $variantPrices = [];
-                foreach ($product->variants as $variant) {
-                    $variantPrice = $product->base_price;
-                    if ($variant->variantValues && $variant->variantValues->count()) {
-                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+            // Xử lý cho sản phẩm lẻ
+            if ($item->variant && $item->variant->product) {
+                $product = $item->variant->product;
+                $product->min_price = $product->base_price;
+                if ($product->variants && $product->variants->count()) {
+                    $variantPrices = [];
+                    foreach ($product->variants as $variant) {
+                        $variantPrice = $product->base_price;
+                        if ($variant->variantValues && $variant->variantValues->count()) {
+                            $variantPrice += $variant->variantValues->sum('price_adjustment');
+                        }
+                        $variantPrices[] = $variantPrice;
                     }
-                    $variantPrices[] = $variantPrice;
+                    if ($variantPrices) {
+                        $product->min_price = min($variantPrices);
+                    }
                 }
-                if ($variantPrices) {
-                    $product->min_price = min($variantPrices);
-                }
+            }
+            // Xử lý cho combo - combo không cần tính min_price
+            elseif ($item->combo) {
+                // Combo không cần xử lý min_price
             }
         }
 
         // === APPLY DISCOUNT TO EACH ITEM ===
         $subtotal = 0;
         foreach ($cartItems as $item) {
-            $originPrice = $item->variant->price;
+            // Xử lý cho sản phẩm lẻ
+            if ($item->variant) {
+                $originPrice = $item->variant->price;
 
-            $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
-                // Scope ALL
-                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
-                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
-                        if ($discountCode->min_requirement_type === 'product_price') {
-                            if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
-                                return false;
+                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                    // Scope ALL
+                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                        if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                            if ($discountCode->min_requirement_type === 'product_price') {
+                                if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                                    return false;
+                                }
                             }
                         }
+                        return true;
                     }
-                    return true;
-                }
-                // Scope specific products/categories
-                $applies = $discountCode->products->contains(function($dp) use ($item){
-                    if ($dp->product_id === $item->variant->product->id) return true;
-                    if ($dp->category_id === $item->variant->product->category_id) return true;
-                    return false;
-                });
-                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
-                    if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                    // Scope specific products/categories
+                    $applies = $discountCode->products->contains(function($dp) use ($item){
+                        if ($dp->product_id === $item->variant->product->id) return true;
+                        if ($dp->category_id === $item->variant->product->category_id) return true;
                         return false;
+                    });
+                    if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                        if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                            return false;
+                        }
                     }
-                }
-                return $applies;
-            });
+                    return $applies;
+                });
 
-            // Get best discount value
-            $maxValue = 0;
-            foreach ($applicableDiscounts as $d) {
-                $value = 0;
-                if ($d->discount_type === 'fixed_amount') {
-                    $value = $d->discount_value;
-                } elseif ($d->discount_type === 'percentage') {
-                    $value = $originPrice * $d->discount_value / 100;
+                // Get best discount value
+                $maxValue = 0;
+                foreach ($applicableDiscounts as $d) {
+                    $value = 0;
+                    if ($d->discount_type === 'fixed_amount') {
+                        $value = $d->discount_value;
+                    } elseif ($d->discount_type === 'percentage') {
+                        $value = $originPrice * $d->discount_value / 100;
+                    }
+                    if ($value > $maxValue) $maxValue = $value;
                 }
-                if ($value > $maxValue) $maxValue = $value;
+
+                $finalPrice = max(0, $originPrice - $maxValue);
+                $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
+                $item->final_price = $finalPrice;
+                $subtotal += $finalPrice * $item->quantity;
             }
+            // Xử lý cho combo
+            elseif ($item->combo) {
+                $originPrice = $item->combo->price;
 
-            $finalPrice = max(0, $originPrice - $maxValue);
-            $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
-            $item->final_price = $finalPrice;
-            $subtotal += $finalPrice * $item->quantity;
+                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                    // Scope ALL
+                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                        return true;
+                    }
+                    // Scope specific products/categories - combo có thể áp dụng discount cho category
+                    $applies = $discountCode->products->contains(function($dp) use ($item){
+                        if ($dp->category_id === $item->combo->category_id) return true;
+                        return false;
+                    });
+                    return $applies;
+                });
+
+                // Get best discount value
+                $maxValue = 0;
+                foreach ($applicableDiscounts as $d) {
+                    $value = 0;
+                    if ($d->discount_type === 'fixed_amount') {
+                        $value = $d->discount_value;
+                    } elseif ($d->discount_type === 'percentage') {
+                        $value = $originPrice * $d->discount_value / 100;
+                    }
+                    if ($value > $maxValue) $maxValue = $value;
+                }
+
+                $finalPrice = max(0, $originPrice - $maxValue);
+                $item->final_price = $finalPrice;
+                $subtotal += $finalPrice * $item->quantity;
+            }
         }
 
         return $subtotal;
