@@ -5,6 +5,25 @@
     use App\Models\Order;
 @endphp
 @section('content')
+@if(session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof dtmodalShowToast === 'function') {
+                dtmodalShowToast('success', {
+                    title: 'Thành công',
+                    message: @json(session('success'))
+                });
+            } else if (typeof showToast === 'function') {
+                showToast('success', {
+                    title: 'Thành công',
+                    message: @json(session('success'))
+                });
+            } else {
+                alert(@json(session('success')));
+            }
+        });
+    </script>
+@endif
     <div id="order-details-card" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}"
         data-customer-latitude="{{ $latitude }}"
         data-customer-longitude="{{ $longitude }}"
@@ -145,7 +164,7 @@
                             Bắt đầu di chuyển đến điểm lấy hàng
                         </button>
                         {{-- Nút "Xem bản đồ lớn" --}}
-                     
+
                     @break
 
                     @case('waiting_driver_pick_up')

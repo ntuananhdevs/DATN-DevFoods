@@ -232,15 +232,12 @@ function dtmodalCreateModal(options) {
 
 // Xử lý action của modal
 function dtmodalHandleAction(modalId, isConfirm) {
-    console.log('dtmodalHandleAction', modalId, isConfirm);
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
     if (isConfirm && typeof modal.onConfirm === "function") {
-        console.log('Calling modal.onConfirm');
         modal.onConfirm();
     } else if (!isConfirm && typeof modal.onCancel === "function") {
-        console.log('Calling modal.onCancel');
         modal.onCancel();
     }
 
@@ -393,104 +390,3 @@ function updateSelectedBannerStatus(status) {
         },
     });
 }
-
-function dtmodalHandleCategoryStatusToggle(options) {
-    const {
-        button,
-        categoryName,
-        currentStatus,
-        formSelector = 'form',
-        confirmTitle = 'Xác nhận thay đổi trạng thái',
-        confirmSubtitle = 'Bạn có chắc chắn muốn thay đổi trạng thái danh mục này?',
-        confirmMessage = 'Hành động này sẽ thay đổi trạng thái hiển thị của danh mục.',
-        successMessage = 'Đã thay đổi trạng thái danh mục thành công',
-        errorMessage = 'Có lỗi xảy ra khi thay đổi trạng thái danh mục'
-    } = options;
-
-    const newStatus = !currentStatus;
-    const statusText = newStatus ? 'hiển thị' : 'ẩn';
-
-    dtmodalConfirmIndex({
-        title: confirmTitle,
-        subtitle: confirmSubtitle || `Bạn có chắc chắn muốn ${statusText} danh mục này?`,
-        message: confirmMessage,
-        itemName: categoryName,
-        onConfirm: () => {
-            const form = button.closest(formSelector);
-            form.submit();
-        }
-    });
-}
-
-
-function updateSelectedCategoryStatus(status) {
-    const checkboxes = document.getElementsByClassName('category-row-checkbox');
-    const selectedIds = [];
-
-    for (let checkbox of checkboxes) {
-        if (checkbox.checked) {
-            selectedIds.push(checkbox.value);
-        }
-    }
-
-    if (selectedIds.length === 0) {
-        dtmodalShowToast('warning', {
-            title: 'Cảnh báo',
-            message: 'Vui lòng chọn ít nhất một danh mục'
-        });
-        return;
-    }
-
-    const statusText = status === 1 ? 'hiển thị' : 'ẩn';
-
-    dtmodalCreateModal({
-        type: 'warning',
-        title: `Xác nhận ${statusText} danh mục`,
-        message: `Bạn có chắc chắn muốn ${statusText} ${selectedIds.length} danh mục đã chọn không?`,
-        confirmText: 'Xác nhận',
-        cancelText: 'Hủy',
-        onConfirm: function () {
-            document.getElementById('selectedCategoryIds').value = selectedIds.join(',');
-            document.getElementById('selectedCategoryStatus').value = status;
-            document.getElementById('bulkCategoryStatusForm').submit();
-        }
-    });
-}
-
-function dtmodalCloseAllToasts() {
-    const container = document.getElementById('dtmodalToastContainer');
-    if (container) {
-        Array.from(container.children).forEach(dtmodalCloseToast);
-    }
-}
-
-/**
- * Hiển thị modal xác nhận thay đổi trạng thái đơn hàng
- * @param {Object} options
- *   - orderCode: mã đơn hàng (hiển thị)
- *   - newStatusText: tên trạng thái mới (VD: 'Đã lấy hàng', 'Đang giao', ...)
- *   - message: nội dung bổ sung (tùy chọn)
- *   - onConfirm: callback khi xác nhận
- *   - onCancel: callback khi hủy
- */
-function dtmodalConfirmOrderStatus(options) {
-    const {
-        orderCode = "",
-        newStatusText = "",
-        message = "",
-        onConfirm = null,
-        onCancel = null
-    } = options;
-
-    return dtmodalCreateModal({
-        type: "success",
-        title: "Xác nhận thay đổi trạng thái đơn hàng",
-        subtitle: orderCode ? `Đơn hàng #${orderCode}` : "",
-        message: `Bạn có chắc chắn muốn chuyển đơn hàng sang trạng thái <strong>${newStatusText}</strong>?<br>${message || ""}`,
-        confirmText: "Xác nhận",
-        cancelText: "Hủy bỏ",
-        onConfirm: onConfirm,
-        onCancel: onCancel
-    });
-}
-
