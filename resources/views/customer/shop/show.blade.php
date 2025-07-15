@@ -1276,7 +1276,7 @@
             @endphp
             <div class="product-card bg-white rounded-lg overflow-hidden" data-product-id="{{ $relatedProduct->id }}">
                 <div class="relative">
-                    <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
+                    <a href="{{ route('products.show', $relatedProduct->slug) }}" class="block">
                         @if($relatedProduct->primary_image)
                             <img src="{{ $relatedProduct->primary_image->s3_url }}" alt="{{ $relatedProduct->name }}" class="product-image">
                         @else
@@ -1296,7 +1296,7 @@
                 </div>
                 <div class="px-4 py-2">
                     <div class="flex items-center justify-between">
-                        <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
+                        <a href="{{ route('products.show', $relatedProduct->slug) }}" class="block">
                             <h3 class="product-title">{{ $relatedProduct->name }}</h3>
                         </a>
                     </div>

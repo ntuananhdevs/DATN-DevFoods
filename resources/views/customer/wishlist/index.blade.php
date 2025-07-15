@@ -165,7 +165,7 @@
                     data-date="{{ $item->added_at ? $item->added_at->toDateString() : '' }}"
                     data-product-id="{{ $item->product->id }}">
                     <div class="relative">
-                        <a href="{{ route('products.show', $item->product->id) }}" class="block relative h-48 overflow-hidden">
+                        <a href="{{ route('products.show', $item->product->slug) }}" class="block relative h-48 overflow-hidden">
                             @php
                                 $image = $item->productVariant && $item->productVariant->image 
                                     ? asset('storage/' . $item->productVariant->image)
@@ -205,7 +205,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $item->product->reviews->count() }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $item->product->id) }}">
+                        <a href="{{ route('products.show', $item->product->slug) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $item->product->name }}
                             </h3>
