@@ -3,12 +3,6 @@
 @section('title', 'FastFood - Chi Nhánh')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
 
 @php
     $branchBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('branch');

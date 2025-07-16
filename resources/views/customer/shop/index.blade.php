@@ -21,10 +21,6 @@
     </script>
 @endif
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-    }
 
     /* CSS cho badge */
     .custom-badge {

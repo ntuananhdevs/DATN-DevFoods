@@ -2,12 +2,6 @@
 @section('title', 'FastFood - Trung Tâm Hỗ Trợ')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
     @php
         $supportBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('supports');
     @endphp

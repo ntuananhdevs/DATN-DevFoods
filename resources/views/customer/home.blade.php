@@ -4,10 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
    /* Example for badges - adjust to your styling system */
     .custom-badge {
         font-size: 0.75rem; /* 12px */

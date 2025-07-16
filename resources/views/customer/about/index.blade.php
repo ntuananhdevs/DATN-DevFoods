@@ -3,12 +3,6 @@
 @section('title', 'FastFood - Về Chúng Tôi')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
 {{-- <div class="relative h-[300px] md:h-[400px] overflow-hidden">
     <img src="/placeholder.svg?height=800&width=1600" alt="Về chúng tôi" class="object-cover w-full h-full">
     <div class="absolute inset-0 bg-black/50 flex items-center justify-center">

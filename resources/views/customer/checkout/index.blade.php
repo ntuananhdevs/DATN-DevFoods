@@ -59,16 +59,6 @@
         #addAddressModal.flex {
             display: flex !important;
         }
-    </style>
-@endsection
-
-@section('content')
-    <style>
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
         .form-control {
             display: block;
             width: 100%;
@@ -100,7 +90,9 @@
             margin-left: 0.25rem;
         }
     </style>
+@endsection
 
+@section('content')
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-2">Thanh Toán</h1>
         <p class="text-gray-500 mb-8">Hoàn tất đơn hàng của bạn</p>
