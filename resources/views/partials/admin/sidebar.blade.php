@@ -210,10 +210,6 @@
 
                 </a>
 
-
-
-                //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-
                 <!-- Orders -->
                 <a href="{{ route('admin.orders.index') }}"
                     class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.orders.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"

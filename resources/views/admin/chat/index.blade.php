@@ -65,28 +65,21 @@
                         <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
                             @php
                                 $statusLabels = [
-                                    'new' => [
-                                        'label' => 'Chờ phản hồi',
-                                        'class' => 'badge badge-waiting',
-                                    ],
-                                    'distributed' => [
-                                        'label' => 'Đã phân phối',
-                                        'class' => 'badge badge-distributed',
-                                    ],
-                                    'active' => [
-                                        'label' => 'Đang xử lý',
-                                        'class' => 'badge badge-active',
-                                    ],
-                                    'resolved' => [
-                                        'label' => 'Đã giải quyết',
-                                        'class' => 'badge badge-resolved',
-                                    ],
-                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed'],
+                                    'new' => 'Chờ phản hồi',
+                                    'distributed' => 'Đã phân phối',
+                                    'active' => 'Đang xử lý',
+                                    'resolved' => 'Đã giải quyết',
+                                    'closed' => 'Đã đóng',
                                 ];
+                                $lastMsg = $conv->messages->last();
+                                $isAdminMsg =
+                                    $lastMsg &&
+                                    ($lastMsg->sender_type === 'super_admin' || $lastMsg->sender_type === 'admin');
+                                $isCustomerMsg = $lastMsg && $lastMsg->sender_type === 'customer';
                             @endphp
                             <span class="{{ $statusLabels[$conv->status]['class'] ?? 'badge' }}">
                                 {{ $statusLabels[$conv->status]['icon'] ?? '' }}
-                                {{ $statusLabels[$conv->status]['label'] ?? $conv->status }}
+                                {{ $statusLabels[$conv->status] }}
                             </span>
                             <span class="badge badge-branch">{{ $conv->branch?->name }}</span>
                         </div>
@@ -119,8 +112,9 @@
                         </div>
                     </div>
                     <div class="chat-header-actions" id="chat-header-actions">
-                        <span
-                            class="badge status-badge status-{{ $currentConversation->status }}">{{ ucfirst($currentConversation->status) }}</span>
+                        <span class="badge status-badge status-{{ $currentConversation->status }}">
+                            {{ $statusLabels[$currentConversation->status] ?? $currentConversation->status }}
+                        </span>
                         @if ($currentConversation->branch)
                             <span class="badge badge-xs branch-badge ml-2"
                                 id="main-branch-badge">{{ $currentConversation->branch->name }}</span>
@@ -178,7 +172,7 @@
                 </div>
                 <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold" id="chat-info-status">
                         @if ($hasConversation && $currentConversation)
-                            {{ ucfirst($currentConversation->status) }}
+                            {{ $statusLabels[$currentConversation->status] ?? $currentConversation->status }}
                         @endif
                     </span></div>
                 <div class="text-xs text-gray-500">Lần cuối hoạt động: @if ($hasConversation && $currentConversation)
@@ -295,8 +289,8 @@
         }
     </style>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            @if ($hasConversation && $currentConversation)
+        @if ($hasConversation && $currentConversation)
+            document.addEventListener('DOMContentLoaded', function() {
                 window.adminChat = new ChatCommon({
                     conversationId: '{{ $currentConversation->id }}',
                     userId: {{ auth()->id() }},
@@ -307,8 +301,8 @@
                         distribute: '/admin/chat/distribute'
                     }
                 });
-            @endif
-        });
+            });
+        @endif
 
         window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
         window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
@@ -325,7 +319,10 @@
                     const reader = new FileReader();
                     reader.onload = function(ev) {
                         imagePreview.innerHTML =
-                            `<div class='relative inline-block'><img src='${ev.target.result}' class='w-24 h-24 object-cover rounded-lg border'><button type='button' class='absolute -top-2 -right-2 bg-white border border-gray-300 rounded-full p-1 shadow remove-preview-btn' title='Xóa'><i class='fas fa-times text-red-500'></i></button></div>`;
+                            `<div class='relative inline-block'><img src='${ev.target.result}'
+                class='w-24 h-24 object-cover rounded-lg border'><button type='button'
+                class='absolute -top-2 -right-2 bg-white border border-gray-300 rounded-full p-1 shadow remove-preview-btn'
+                title='Xóa'><i class='fas fa-times text-red-500'></i></button></div>`;
                         imagePreview.classList.remove('hidden');
                         imagePreview.querySelector('.remove-preview-btn').onclick = function() {
                             imageInput.value = '';
@@ -343,4 +340,3 @@
         }
     </script>
 @endsection
-//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

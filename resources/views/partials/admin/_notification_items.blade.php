@@ -48,6 +48,9 @@
                     <p class="text-xs text-muted-foreground truncate">
                         Khách hàng: {{ $notification->data['customer_name'] ?? '' }}
                     </p>
+                    <p class="text-xs text-muted-foreground truncate">
+                        Chi nhánh: {{ $notification->data['branch_name'] ?? '' }}
+                    </p>
                 @elseif ($conversationId)
                     <p class="text-xs text-muted-foreground truncate">
                         Nội dung: {{ $notification->data['content'] ?? '' }}

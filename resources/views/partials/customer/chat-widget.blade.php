@@ -386,7 +386,7 @@
                     if (list.conversations && list.conversations.length > 0) {
                         conversationId = list.conversations[0].id;
                         window.conversationId = conversationId;
-                        
+
                         loadMessages();
                         initCustomerChatRealtime(conversationId);
                     } else {
@@ -814,10 +814,10 @@
         // Hàm khởi tạo CustomerChatRealtime sau khi đã có conversationId
         function initCustomerChatRealtime(conversationId) {
             const customerUserId = window.customerUserId;
-           
+
             if (!conversationId || !customerUserId) return;
             if (window.customerChatInstance) return; // Không khởi tạo lại nếu đã có
-            
+
             window.customerChatInstance = new CustomerChatRealtime({
                 conversationId: conversationId,
                 userId: customerUserId,
@@ -846,22 +846,22 @@
                 // Ghi đè hàm setupPusherChannel để thêm log
                 setupPusherChannel: function() {
                     try {
-                       
+
                         const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
                         channel.bind("pusher:subscription_succeeded", () => {
-                            
+
                         });
                         channel.bind("pusher:subscription_error", (err) => {
-                            
+
                         });
                         channel.bind("new-message", (data) => {
-                            
+
                             if (data.message) {
                                 this.appendMessage(data.message);
                             }
                         });
                         channel.bind("user.typing", (data) => {
-                            
+
                             if (
                                 data.user_id !== this.userId &&
                                 String(data.conversation_id) === String(this.conversationId)
@@ -878,7 +878,7 @@
                     }
                 },
                 showTypingIndicator: function(userName) {
-                    
+
                     let typingDiv = document.getElementById("customer-typing-indicator");
                     const msgContainer = document.getElementById("messagesContainer");
                     const typingHTML = `
@@ -1126,4 +1126,3 @@
         }
     }
 </style>
-//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

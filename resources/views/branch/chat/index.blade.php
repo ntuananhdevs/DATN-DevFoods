@@ -143,7 +143,7 @@
                                 class="fas fa-image"></i></button>
                         <button type="button" id="attachFileBtn" class="chat-tools-btn" title="Gửi file"><i
                                 class="fas fa-paperclip"></i></button>
-                        <button type="submit" id="chat-send-btn" class="chat-send-btn"><i
+                        <button type="button" id="chat-send-btn" class="chat-send-btn"><i
                                 class="fas fa-paper-plane"></i></button>
                     </form>
                 </div>

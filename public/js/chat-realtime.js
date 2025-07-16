@@ -191,9 +191,7 @@ class ChatCommon {
         if (this.sendBtn) {
             this.sendBtn.addEventListener("click", (e) => {
                 e.preventDefault();
-                if (this.messageInput && this.messageInput.value.trim()) {
-                    this.sendMessage();
-                }
+                this.sendMessage();
             });
         }
 
@@ -202,9 +200,7 @@ class ChatCommon {
         if (chatForm) {
             chatForm.addEventListener("submit", (e) => {
                 e.preventDefault();
-                if (this.messageInput && this.messageInput.value.trim()) {
-                    this.sendMessage();
-                }
+                this.sendMessage();
             });
         }
 
@@ -481,7 +477,9 @@ class ChatCommon {
                         statusLabel = "Chờ phản hồi";
                 }
                 badges.innerHTML =
-                    `<span class="badge badge-distributed">${statusLabel}</span>` +
+                    `<span class="badge badge-distributed">${this.getStatusText(
+                        message.status
+                    )}</span>` +
                     (chatItem.dataset.branchName
                         ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
                         : "");
@@ -555,9 +553,13 @@ class ChatCommon {
             return;
         }
         const message = this.messageInput.value.trim();
-
-        if (!message) {
-            return;
+        // Ngăn gửi tin nhắn rỗng (không nhập gì và không có file/ảnh)
+        if (
+            !message &&
+            !(this.fileInput?.files?.length || this.imageInput?.files?.length)
+        ) {
+            this.showError("Bạn phải nhập nội dung hoặc đính kèm file/ảnh!");
+            return false; // Không gửi, không reload
         }
         // Hiển thị tin nhắn tạm thời ngay lập tức
         const tempId = "temp-" + Date.now();
@@ -861,7 +863,7 @@ class ChatCommon {
 
     getStatusText(status) {
         const statusTexts = {
-            new: "Mới",
+            new: "Chờ phản hồi",
             distributed: "Đã phân phối",
             active: "Đang xử lý",
             resolved: "Đã giải quyết",
@@ -2116,7 +2118,9 @@ class ChatCommon {
             }</span>
             <div class="chat-item-footer mt-2">
                 <div class="chat-item-badges">
-                    <span class="badge badge-distributed">${statusLabel}</span>
+                    <span class="badge badge-distributed">${this.getStatusText(
+                        message.status
+                    )}</span>
                     ${
                         div.dataset.branchName
                             ? `<span class="badge" style="background:#374151;color:#fff;">${div.dataset.branchName}</span>`
@@ -2635,7 +2639,9 @@ class BranchChat {
                         statusLabel = "Chờ phản hồi";
                 }
                 badges.innerHTML =
-                    `<span class="badge badge-distributed">${statusLabel}</span>` +
+                    `<span class="badge badge-distributed">${this.getStatusText(
+                        message.status
+                    )}</span>` +
                     (chatItem.dataset.branchName
                         ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
                         : "");
@@ -2765,6 +2771,13 @@ class BranchChat {
             return;
         }
         const message = this.messageInput.value.trim();
+        if (
+            !message &&
+            !(this.fileInput?.files?.length || this.imageInput?.files?.length)
+        ) {
+            this.showError("Bạn phải nhập nội dung hoặc đính kèm file/ảnh!");
+            return false; // Không gửi, không reload
+        }
 
         if (!message) {
             return;
@@ -3063,18 +3076,14 @@ class BranchChat {
     }
 
     getStatusText(status) {
-        switch (status) {
-            case "active":
-                return "Đang xử lý";
-            case "new":
-                return "Chờ phản hồi";
-            case "closed":
-                return "Đã đóng";
-            case "resolved":
-                return "Đã giải quyết";
-            default:
-                return status;
-        }
+        const statusTexts = {
+            new: "Chờ phản hồi",
+            distributed: "Đã phân phối",
+            active: "Đang xử lý",
+            resolved: "Đã giải quyết",
+            closed: "Đã đóng",
+        };
+        return statusTexts[status] || status;
     }
 
     async loadConversation(conversationId) {
@@ -3248,7 +3257,9 @@ class BranchChat {
             }</span>
             <div class="chat-item-footer mt-2">
                 <div class="chat-item-badges">
-                    <span class="badge badge-distributed">${statusLabel}</span>
+                    <span class="badge badge-distributed">${this.getStatusText(
+                        message.status
+                    )}</span>
                     ${
                         div.dataset.branchName
                             ? `<span class="badge" style="background:#374151;color:#fff;">${div.dataset.branchName}</span>`
