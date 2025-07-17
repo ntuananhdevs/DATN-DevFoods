@@ -22,6 +22,7 @@ use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Customer\Auth\RegisterController;
+use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Customer\ReviewReplyController;
@@ -170,6 +171,10 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [ChatController::class, 'typingIndicator'])->name('customer.chat.typing');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
 
     Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
