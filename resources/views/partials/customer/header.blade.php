@@ -67,10 +67,6 @@
                         </span>
                     </a>
                 </div>
-                
-                <button class="icon-btn flex items-center" id="notificationBtn" title="Thông báo" aria-label="Thông báo">
-                    <ion-icon class="h-6 w-6" name="notifications-outline"></ion-icon>
-                </button>
 
                 @auth
                     <div class="relative" id="user-dropdown-container">
