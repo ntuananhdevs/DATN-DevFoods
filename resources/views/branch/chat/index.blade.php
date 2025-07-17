@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/css/admin/branchs/chat.css">
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <div id="chat-container" class="chat-container" data-branch-id="{{ $branch->id }}">
+    <div id="chat-container" class="chat-container" data-branch-id="{{ auth()->id() }}">
         <!-- Sidebar: Danh sách cuộc trò chuyện -->
         <div class="chat-sidebar" style="width:26%">
             <div class="chat-sidebar-header">

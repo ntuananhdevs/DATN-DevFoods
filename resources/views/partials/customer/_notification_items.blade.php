@@ -11,7 +11,7 @@
         </div>
         <div class="flex-1 min-w-0">
             <div class="noti-title">
-                {{ $notification->data['title'] ?? 'Tin nhắn mới từ ' . ($notification->data['sender_name'] ?? 'Hệ thống') }}
+                {{ $notification->data['title'] ?? 'Tin nhắn mới từ Hệ thống' }}
             </div>
             <div class="noti-body">
                 Nội dung: {{ $notification->data['content'] ?? '' }}
@@ -59,5 +59,3 @@
         });
     });
 </script>
-
-

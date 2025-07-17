@@ -265,8 +265,10 @@ class BranchChatController extends Controller
                         $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
                         $existing->created_at = now();
                         $existing->save();
+                    } else {
+                        $customer->notify(new NewChatMessageNotification($message));
                     }
-                    // Không tạo notification mới nếu đã đọc
+
                     // Broadcast lên channel tổng cho customer
                     broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
                 }
