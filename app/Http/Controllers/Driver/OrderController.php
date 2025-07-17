@@ -269,14 +269,24 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận đã lấy hàng (waiting_driver_pick_up -> driver_picked_up)
      */
-    public function confirmPickup(Order $order)
+    public function confirmPickup(Order $order, Request $request)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'waiting_driver_pick_up') {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            }
             return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'driver_picked_up';
         $order->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Bạn đã lấy hàng thành công! Đang giao hàng.'
+            ]);
+        }
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Bạn đã lấy hàng thành công!');
@@ -298,15 +308,25 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận giao thành công (in_transit -> delivered)
      */
-    public function confirmDelivery(Order $order)
+    public function confirmDelivery(Order $order, Request $request)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'in_transit') {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            }
             return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
         $order->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã giao hàng thành công!'
+            ]);
+        }
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Đã giao hàng thành công!');
