@@ -127,7 +127,7 @@ class ChatController extends Controller
                     $existing->created_at = now();
                     $existing->save();
                 }
-                // Không tạo notification mới nếu đã đọc
+
                 // Broadcast lên channel tổng cho customer
                 broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
             }
