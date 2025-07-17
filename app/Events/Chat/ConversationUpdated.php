@@ -5,8 +5,6 @@ namespace App\Events\Chat;
 use App\Models\Conversation;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -30,17 +28,12 @@ class ConversationUpdated implements ShouldBroadcast
     public function broadcastOn()
     {
         $channels = [
-            new PrivateChannel('chat.' . $this->conversation->id),
+            new Channel('chat.' . $this->conversation->id),
+            new Channel('admin.conversations'),
         ];
-
-        // Broadcast to admin channel
-        $channels[] = new PrivateChannel('admin.conversations');
-
-        // Broadcast to branch channel if assigned
         if ($this->conversation->branch_id) {
-            $channels[] = new PrivateChannel('branch.' . $this->conversation->branch_id . '.conversations');
+            $channels[] = new Channel('branch.' . $this->conversation->branch_id . '.conversations');
         }
-
         return $channels;
     }
 
@@ -61,6 +54,7 @@ class ConversationUpdated implements ShouldBroadcast
                     'id' => $this->conversation->customer->id,
                     'full_name' => $this->conversation->customer->full_name,
                     'email' => $this->conversation->customer->email,
+
                 ] : null,
                 'assigned_to' => $this->conversation->assigned_to,
                 'updated_at' => $this->conversation->updated_at,

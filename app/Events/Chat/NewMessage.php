@@ -4,8 +4,6 @@ namespace App\Events\Chat;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -28,14 +26,21 @@ class NewMessage implements ShouldBroadcast
     {
         $channels = [
             new Channel('chat.' . $this->conversationId),
-            new PrivateChannel('admin.conversations'),
+            new Channel('admin.conversations'),
         ];
 
         // Nếu có branch_id thì broadcast cho branch
         $conversation = $this->message->conversation ?? null;
         if ($conversation && !empty($conversation->branch_id)) {
-            $channels[] = new PrivateChannel('branch.' . $conversation->branch_id . '.conversations');
+            $channels[] = new Channel('branch.' . $conversation->branch_id . '.conversations');
         }
+
+        Log::info('[NewMessage] broadcastOn channels', [
+            'channels' => array_map(function ($c) {
+                return $c->name ?? (string)$c;
+            }, $channels),
+            'conversationId' => $this->conversationId,
+        ]);
 
         return $channels;
     }
@@ -57,6 +62,8 @@ class NewMessage implements ShouldBroadcast
                 'conversation_id' => $this->message->conversation_id,
                 'sender_id' => $this->message->sender_id,
                 'message' => $this->message->message,
+                'attachment' => $this->message->attachment ?? null,
+                'attachment_type' => $this->message->attachment_type ?? null,
                 'created_at' => $this->message->created_at,
                 'sender' => [
                     'id' => $this->message->sender->id,
