@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;    
 use Illuminate\Validation\Rules\Password; 
 use App\Models\Address;
+use App\Models\Branch;
 
 class ProfileController extends Controller
 {
@@ -211,5 +212,14 @@ class ProfileController extends Controller
         $address = Auth::user()->addresses()->findOrFail($id);
         $address->delete();
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Lấy danh sách branch (nhà hàng) cho view địa chỉ
+     */
+    public function getBranchesForMap()
+    {
+        $branches = Branch::select('id', 'name', 'latitude', 'longitude')->get();
+        return response()->json($branches);
     }
 }

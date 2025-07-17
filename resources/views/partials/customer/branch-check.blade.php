@@ -1,13 +1,14 @@
 {{-- Branch checking logic partial --}}
+@php
+    $branches = $branches ?? \App\Models\Branch::where('active', 1)->orderBy('id')->get();
+@endphp
 @if(session('selected_branch') || request()->cookie('selected_branch'))
     {{-- Branch is already selected, no action needed --}}
-    @include('partials.customer.branch-selector-modal')
-
+    @include('partials.customer.branch-selector-modal', ['branches' => $branches])
 @else
     {{-- Include branch selector modal --}}
-    @include('partials.customer.branch-selector-modal')
+    @include('partials.customer.branch-selector-modal', ['branches' => $branches])
    
-
     {{-- Auto-show modal if no branch is selected --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {

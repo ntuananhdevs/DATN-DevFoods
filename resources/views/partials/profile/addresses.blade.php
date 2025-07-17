@@ -75,6 +75,9 @@
 <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
 <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
 
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
 <script>
 var MAPBOX_TOKEN = "{{ config('services.mapbox.access_token') }}";
 const addressList = document.getElementById('address-list');
@@ -127,46 +130,56 @@ function fetchAddresses() {
 
 // Lấy tỉnh/thành phố
 function fetchCities(selected = null) {
-    fetch('https://provinces.open-api.vn/api/p/')
-        .then(res => res.json())
-        .then(data => {
-            citySelect.innerHTML = '<option value="">Chọn tỉnh/thành</option>' + data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            if (selected) citySelect.value = selected;
-        });
+    // Chỉ cho phép chọn Hà Nội
+    citySelect.innerHTML = '<option value="Hà Nội">Hà Nội</option>';
+    citySelect.value = 'Hà Nội';
 }
 // Lấy quận/huyện
-function fetchDistricts(cityName, selected = null) {
-    fetch('https://provinces.open-api.vn/api/p/').then(res => res.json()).then(provinces => {
-        const province = provinces.find(p => p.name === cityName);
-        if (!province) return districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-        fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>' + data.districts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-                if (selected) districtSelect.value = selected;
-                // Gọi fetchWards nếu có selected (khi edit)
-                if (selected) fetchWards(cityName, selected);
-            });
-    });
+function fetchDistricts(selected = null) {
+    const hanoiCode = 1;
+    fetch(`https://provinces.open-api.vn/api/p/${hanoiCode}?depth=2`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.districts || !Array.isArray(data.districts)) {
+                districtSelect.innerHTML = '<option value="">Không có quận/huyện</option>';
+                return;
+            }
+            districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>' + data.districts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+            if (selected) districtSelect.value = selected;
+        })
+        .catch(err => {
+            districtSelect.innerHTML = '<option value="">Lỗi tải quận/huyện</option>';
+            console.error('Lỗi fetchDistricts:', err);
+        });
 }
 // Lấy phường/xã
 function fetchWards(cityName, districtName, selected = null) {
-    fetch('https://provinces.open-api.vn/api/p/').then(res => res.json()).then(provinces => {
-        const province = provinces.find(p => p.name === cityName);
-        if (!province) return wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-        fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`)
-            .then(res => res.json())
-            .then(data => {
-                const district = data.districts.find(d => d.name === districtName);
-                if (!district) return wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-                fetch(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`)
-                    .then(res => res.json())
-                    .then(districtData => {
-                        wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>' + districtData.wards.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
-                        if (selected) wardSelect.value = selected;
-                    });
-            });
-    });
+    const hanoiCode = 1;
+    fetch(`https://provinces.open-api.vn/api/p/${hanoiCode}?depth=2`)
+        .then(res => res.json())
+        .then(data => {
+            const district = data.districts && Array.isArray(data.districts)
+                ? data.districts.find(d => d.name === districtName)
+                : null;
+            if (!district) {
+                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                return;
+            }
+            fetch(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`)
+                .then(res => res.json())
+                .then(districtData => {
+                    if (!districtData.wards || !Array.isArray(districtData.wards)) {
+                        wardSelect.innerHTML = '<option value="">Không có phường/xã</option>';
+                        return;
+                    }
+                    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>' + districtData.wards.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
+                    if (selected) wardSelect.value = selected;
+                });
+        })
+        .catch(err => {
+            wardSelect.innerHTML = '<option value="">Lỗi tải phường/xã</option>';
+            console.error('Lỗi fetchWards:', err);
+        });
 }
 
 // Khi chọn xã/phường, tự động geocode địa chỉ và nhảy marker
@@ -205,23 +218,92 @@ function geocodeAddress(address, callback) {
         });
 }
 
-// Đổi style map sang tông cam và marker cam
-let map, marker;
+// Thêm hàm tạo icon cửa hàng
+function createStoreIcon() {
+    const el = document.createElement('div');
+    el.className = 'store-marker';
+    el.style.width = '35px';
+    el.style.height = '35px';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+    el.innerHTML = '<ion-icon name="storefront-sharp" style="font-size:28px;color:#ff8800;"></ion-icon>';
+    return el;
+}
+
+// Thêm hàm vẽ marker và vòng tròn cho các branch
+function drawBranchMarkersAndCircles(map) {
+    fetch('/customer/profile/branches-map') // endpoint mới
+        .then(res => res.json())
+        .then(branches => {
+            branches.forEach(branch => {
+                if (!branch.latitude || !branch.longitude) return;
+                // Marker
+                new mapboxgl.Marker({ element: createStoreIcon() })
+                    .setLngLat([branch.longitude, branch.latitude])
+                    .setPopup(new mapboxgl.Popup().setText(branch.name))
+                    .addTo(map);
+                // Circle
+                map.addSource('circle-' + branch.id, {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: [{
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [branch.longitude, branch.latitude]
+                            }
+                        }]
+                    }
+                });
+                map.addLayer({
+                    id: 'circle-fill-' + branch.id,
+                    type: 'circle',
+                    source: 'circle-' + branch.id,
+                    paint: {
+                        'circle-radius': {
+                            stops: [
+                                [0, 0],
+                                [20, 10000 / 0.075]
+                            ],
+                            base: 2
+                        },
+                        'circle-color': '#ff8800',
+                        'circle-opacity': 0.06, // nhạt hơn
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#ff8800'
+                    }
+                });
+            });
+        });
+}
+
+let map = null;
+let marker = null;
+
 function initMap(lat = 21.028511, lng = 105.804817) {
     mapboxgl.accessToken = MAPBOX_TOKEN;
     if (!map) {
         map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v12', // giống Google Maps
+            style: 'mapbox://styles/mapbox/streets-v12',
             center: [lng, lat],
             zoom: 14
+        });
+        map.on('load', function () {
+            drawBranchMarkersAndCircles(map);
         });
         map.on('click', function(e) {
             setMarker(e.lngLat.lat, e.lngLat.lng);
         });
     } else {
-        map.setCenter([lng, lat]);
-        map.setZoom(14);
+        // Nếu map đã tồn tại, chỉ set lại center và zoom
+        if (typeof map.setCenter === 'function') {
+            map.setCenter([lng, lat]);
+            map.setZoom(14);
+        }
         if (marker) marker.setLngLat([lng, lat]);
     }
     setMarker(lat, lng);
@@ -264,7 +346,8 @@ addNewAddressBtn.onclick = function() {
     fetchCities();
     districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
     wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-    setTimeout(() => initMap(), 300); // Đợi modal render xong mới khởi tạo map
+    fetchDistricts(); // Không truyền gì để giữ dòng 'Chọn quận/huyện'
+    setTimeout(() => initMap(), 300);
     modal.classList.remove('hidden');
 };
 addressList.addEventListener('click', function(e) {
@@ -283,11 +366,11 @@ addressList.addEventListener('click', function(e) {
                 setDefaultCheckbox.checked = !!addr.is_default;
 
                 // Đảm bảo load đúng dữ liệu dropdown
-                fetchCities(addr.city);
+                fetchCities('Hà Nội');
                 setTimeout(() => {
-                    fetchDistricts(addr.city, addr.district);
+                    fetchDistricts('Hà Nội', addr.district);
                     setTimeout(() => {
-                        fetchWards(addr.city, addr.district, addr.ward);
+                        fetchWards('Hà Nội', addr.district, addr.ward);
                     }, 300);
                 }, 300);
 
