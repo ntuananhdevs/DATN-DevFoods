@@ -127,25 +127,69 @@ body {
 }
 
 .badge {
-    font-size: 0.75rem;
-    padding: 4px 10px;
-    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    height: 24px;
+    font-size: 13px;
+    border-radius: 12px;
     font-weight: 500;
+    background: #f3f4f6;
+    color: #374151;
+    margin-right: 4px;
+    gap: 4px;
 }
-
 .badge-waiting {
-    background-color: var(--badge-waiting);
-    color: var(--badge-waiting-text);
+    background: #fef3c7;
+    color: #b45309;
 }
-
-.badge-high {
-    background-color: var(--badge-high);
-    color: var(--badge-high-text);
-}
-
 .badge-distributed {
-    background-color: var(--badge-distributed);
-    color: var(--badge-distributed-text);
+    background: #dbeafe;
+    color: #1e40af;
+}
+.badge-active {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.badge-resolved {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+.badge-closed {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+.badge-branch {
+    background: #374151;
+    color: #fff;
+}
+.badge i {
+    font-size: 13px;
+    margin-right: 3px;
+}
+
+/* Dropdown filter cải tiến */
+#chat-status-filter,
+.chat-status-filter {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 7px 32px 7px 12px;
+    font-size: 15px;
+    background: #fff
+        url('data:image/svg+xml;utf8,<svg fill="none" stroke="%236b7280" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>')
+        no-repeat right 10px center/18px 18px;
+    appearance: none;
+    transition: border 0.2s;
+}
+#chat-status-filter:focus,
+.chat-status-filter:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 2px #dbeafe;
+}
+#chat-status-filter:hover,
+.chat-status-filter:hover {
+    border-color: #a5b4fc;
 }
 
 .unread-badge {
