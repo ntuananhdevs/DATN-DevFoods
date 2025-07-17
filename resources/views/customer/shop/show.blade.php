@@ -4,11 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-   
    /* Discount code styles */
    .discount-code-animation {
        animation: pulse 2s infinite;

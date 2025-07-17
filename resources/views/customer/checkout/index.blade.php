@@ -64,11 +64,6 @@
 
 @section('content')
     <style>
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
         .form-control {
             display: block;
             width: 100%;
@@ -363,54 +358,25 @@
                             @foreach ($cartItems as $item)
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($item->combo_id && $item->combo)
-                                            {{-- Combo Image --}}
-                                            @if ($item->combo->image)
-                                                <img src="{{ Storage::disk('s3')->url($item->combo->image) }}"
-                                                    alt="{{ $item->combo->name }}"
-                                                    class="object-cover w-full h-full">
-                                            @else
-                                                <div class="h-full w-full bg-gray-200 flex items-center justify-center">
-                                                    <i class="fas fa-box text-gray-400"></i>
-                                                </div>
-                                            @endif
-                                        @elseif ($item->variant && $item->variant->product)
-                                            {{-- Product Image --}}
-                                            @if ($item->variant->product->primary_image)
-                                                <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}"
-                                                    alt="{{ $item->variant->product->name }}"
-                                                    class="object-cover w-full h-full">
-                                            @else
-                                                <div class="h-full w-full bg-gray-200 flex items-center justify-center">
-                                                    <i class="fas fa-image text-gray-400"></i>
-                                                </div>
-                                            @endif
+                                        @if ($item->variant->product->primary_image)
+                                            <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}"
+                                                alt="{{ $item->variant->product->name }}"
+                                                class="object-cover w-full h-full">
                                         @else
-                                            {{-- Fallback --}}
                                             <div class="h-full w-full bg-gray-200 flex items-center justify-center">
-                                                <i class="fas fa-question text-gray-400"></i>
+                                                <i class="fas fa-image text-gray-400"></i>
                                             </div>
                                         @endif
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        @if ($item->combo_id && $item->combo)
-                                            {{-- Combo Info --}}
-                                            <h3 class="font-medium text-sm truncate">{{ $item->combo->name }}</h3>
-                                            <p class="text-xs text-gray-500">Combo</p>
-                                        @elseif ($item->variant && $item->variant->product)
-                                            {{-- Product Info --}}
-                                            <h3 class="font-medium text-sm truncate">{{ $item->variant->product->name }}</h3>
-                                            <p class="text-xs text-gray-500">
-                                                @if ($item->variant->variant_description)
-                                                    {{ $item->variant->variant_description }}
-                                                @else
-                                                    {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
-                                                @endif
-                                            </p>
-                                        @else
-                                            <h3 class="font-medium text-sm truncate text-red-500">Sản phẩm không xác định</h3>
-                                        @endif
-                                        
+                                        <h3 class="font-medium text-sm truncate">{{ $item->variant->product->name }}</h3>
+                                        <p class="text-xs text-gray-500">
+                                            @if ($item->variant->variant_description)
+                                                {{ $item->variant->variant_description }}
+                                            @else
+                                                {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
+                                            @endif
+                                        </p>
                                         @if ($item->toppings && $item->toppings->count() > 0)
                                             <p class="text-xs text-orange-600 mt-1">
                                                 +{{ $item->toppings->count() }} topping
@@ -420,13 +386,7 @@
                                     <div class="text-right">
                                         <div class="text-sm font-medium">
                                             @php
-                                                if ($item->combo_id && $item->combo) {
-                                                    $itemPrice = $item->combo->price;
-                                                } elseif ($item->variant) {
-                                                    $itemPrice = $item->final_price ?? ($item->variant->price + $item->toppings->sum('price'));
-                                                } else {
-                                                    $itemPrice = 0;
-                                                }
+                                                $itemPrice = $item->final_price ?? ($item->variant->price + $item->toppings->sum('price'));
                                                 $itemTotal = $itemPrice * $item->quantity;
                                             @endphp
                                             {{ number_format($itemTotal) }}đ

@@ -3,12 +3,6 @@
 @section('title', 'FastFood - Liên Hệ')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
 {{-- <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>

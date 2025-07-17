@@ -33,7 +33,6 @@
         margin: 0;
         padding-left: 20px;
     }
-
     .alert-danger li {
         margin-bottom: 5px;
     }
