@@ -126,6 +126,9 @@ class ChatController extends Controller
                     $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
                     $existing->created_at = now();
                     $existing->save();
+                } else {
+                    // Tạo notification mới nếu chưa có
+                    $customer->notify(new NewChatMessageNotification($message));
                 }
 
                 // Broadcast lên channel tổng cho customer
