@@ -353,6 +353,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/export', [OrderController::class, 'export'])->name('export');
         // Route để lấy HTML partial cho order row (cho realtime)
         Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
+        Route::post('/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('cancel');
     });
 
     // Reviews Management
