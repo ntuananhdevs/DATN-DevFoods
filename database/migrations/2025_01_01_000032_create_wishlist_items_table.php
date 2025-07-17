@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('wishlist_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->foreignId('product_id')->nullable()->constrained('products')->onDelete('cascade');
+            $table->foreignId('combo_id')->nullable()->constrained('combos')->onDelete('cascade');
             $table->timestamps();
             
-            // Cada usuario solo puede tener un favorito por producto
-            $table->unique(['user_id', 'product_id']);
+            // Mỗi user chỉ có thể có 1 mục yêu thích cho mỗi product hoặc combo
+            $table->unique(['user_id', 'product_id', 'combo_id']);
         });
     }
 

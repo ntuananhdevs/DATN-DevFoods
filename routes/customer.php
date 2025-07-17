@@ -42,20 +42,22 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
-    Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
-    Route::get('/shop/combos/{id}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
+    Route::get('/shop/products/{slug}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::get('/shop/combos/{slug}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
 
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
-    Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
+    Route::delete('/wishlist', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
 
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/add-combo', [CustomerCartController::class, 'addComboToCart'])->name('cart.addCombo');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/clear', [CustomerCartController::class, 'clear'])->name('cart.clear');
 
     // Coupon
     Route::post('/coupon/apply', [CustomerCouponController::class, 'apply'])->name('coupon.apply');
@@ -109,6 +111,7 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::delete('/review-replies/{reply}', [ReviewReplyController::class, 'destroy'])->name('review-replies.destroy');
     Route::post('/reviews/{id}/helpful', [CustomerProductController::class, 'markHelpful'])->name('reviews.helpful');
     Route::delete('/reviews/{id}/helpful', [CustomerProductController::class, 'unmarkHelpful'])->name('reviews.unhelpful');
+    Route::post('/reviews/{id}/report', [CustomerProductController::class, 'reportReview'])->name('reviews.report');
     // Route để hiển thị trang "Tất cả đơn hàng"
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 
@@ -173,3 +176,8 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
         return Broadcast::auth($request);
     })->middleware(['web']);
 });
+
+// Route for guest to track order
+Route::get('/track', [CustomerOrderController::class, 'showTrackingForm'])->name('customer.order.track.form');
+Route::post('/track', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track.submit');
+Route::get('/track/{order_code}', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track');

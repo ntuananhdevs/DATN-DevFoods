@@ -119,4 +119,49 @@ class EmailFactory
         SendEmailJob::dispatch($to, $mailable);
     }
 
+    public static function sendOrderConfirmation($order)
+    {
+        // Debug: Log order info
+        \Log::info('EmailFactory: Order ID ' . $order->id);
+        \Log::info('EmailFactory: OrderItems count before load: ' . $order->orderItems->count());
+        
+        // Reload order from DB to ensure latest relations
+        $order->refresh();
+
+        // Eager load all necessary relations
+        $order->load([
+            'orderItems' => function($q){
+                $q->with(['productVariant' => function($pv) {
+                    $pv->with(['product' => function($p) {
+                        $p->with('images');
+                    }]);
+                }, 'combo']);
+            },
+            'payment',
+            'customer'
+        ]);
+        
+        // Debug: Log after load
+        \Log::info('EmailFactory: OrderItems count after load: ' . $order->orderItems->count());
+        foreach($order->orderItems as $item) {
+            \Log::info('EmailFactory: Item - variant_id: ' . $item->product_variant_id . ', combo_id: ' . $item->combo_id);
+        }
+        
+        // Determine recipient email
+        $to = $order->customer->email ?? $order->guest_email;
+        if (!$to) {
+            return; // no email
+        }
+
+        $mailable = new NotificationMail(
+            'order_confirmation',
+            [
+                'order' => $order
+            ],
+            'Thông báo đơn hàng mới'
+        );
+
+        SendEmailJob::dispatch($to, $mailable);
+    }
+
 } 

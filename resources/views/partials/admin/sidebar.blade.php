@@ -225,6 +225,20 @@
             </span>
             <span class="sidebar-text">Đơn hàng</span>
             </a>
+                <!-- Quản lý bình luận -->
+                <a href="{{ route('admin.reviews.index') }}"
+                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.reviews.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                    data-tooltip="Quản lý bình luận">
+                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square-dots">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="8" cy="12" r="1"/>
+                            <circle cx="12" cy="12" r="1"/>
+                            <circle cx="16" cy="12" r="1"/>
+                        </svg>
+                    </span>
+                    <span class="sidebar-text">Quản lý bình luận</span>
+                </a>
                 <!-- Driver -->
                 <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Drivers">
                     <button

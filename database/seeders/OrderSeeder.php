@@ -153,15 +153,12 @@ class OrderSeeder extends Seeder
         // Các trạng thái mới cho enum
         $statuses = [
             'awaiting_confirmation',
-            'awaiting_driver',
-            'driver_picked_up',
-            'in_transit',
             'delivered',
             'item_received',
             'cancelled',
             'refunded'
         ];
-        $statusWeights = [15, 15, 10, 10, 20, 10, 10, 10]; // Tỷ lệ phân bố trạng thái
+        $statusWeights = [25, 25, 20, 15, 15]; // Cập nhật lại tỷ lệ cho phù hợp
 
         echo "Creating 50 orders...\n";
 

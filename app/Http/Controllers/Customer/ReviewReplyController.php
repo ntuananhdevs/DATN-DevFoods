@@ -21,19 +21,34 @@ class ReviewReplyController extends Controller
 
         $review = ProductReview::findOrFail($reviewId);
         $user = Auth::user();
-        $productId = $review->product_id;
-        // Kiểm tra user đã mua sản phẩm này chưa
-        $order = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
-            ->whereHas('orderItems.productVariant', function($q) use ($productId) {
-                $q->where('product_id', $productId);
-            })
-            ->first();
+        
+        // Kiểm tra user đã mua sản phẩm hoặc combo này chưa
+        $order = null;
+        $itemType = '';
+        
+        if ($review->product_id) {
+            $itemType = 'sản phẩm';
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems.productVariant', function($q) use ($review) {
+                    $q->where('product_id', $review->product_id);
+                })
+                ->first();
+        } elseif ($review->combo_id) {
+            $itemType = 'combo';
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems', function($q) use ($review) {
+                    $q->where('combo_id', $review->combo_id);
+                })
+                ->first();
+        }
+        
         if (!$order) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Bạn chỉ có thể phản hồi khi đã mua sản phẩm này!'], 403);
+                return response()->json(['message' => "Bạn chỉ có thể phản hồi khi đã mua {$itemType} này!"], 403);
             }
-            return back()->with('error', 'Bạn chỉ có thể phản hồi khi đã mua sản phẩm này!');
+            return back()->with('error', "Bạn chỉ có thể phản hồi khi đã mua {$itemType} này!");
         }
 
         $reply = new ReviewReply();

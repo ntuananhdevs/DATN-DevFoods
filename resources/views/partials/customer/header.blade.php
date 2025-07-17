@@ -36,6 +36,9 @@
                     <a href="{{ asset('/hiring-driver') }}" class="text-sm font-medium {{ request()->is('hiring-driver*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                         Tuyển dụng
                     </a>
+                    <a href="{{ asset('/track') }}" class="text-sm font-medium {{ request()->is('track*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Tra cứu
+                    </a>
                 </nav>
             </div>
 
@@ -180,6 +183,9 @@
             <a href="/recruitment" class="text-lg font-medium {{ request()->is('recruitment*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                 Tuyển dụng
             </a>
+            <a href="/track" class="text-lg font-medium {{ request()->is('track*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Tra cứu
+            </a>    
         </nav>
     </div>
 </div>
@@ -222,8 +228,8 @@ header.search-active {
 
 <script>
 window.LaravelRoutes = {
-    productShow: '{{ route('products.show', ['id' => 'REPLACE_ID']) }}',
-    comboShow: '{{ route('combos.show', ['id' => 'REPLACE_ID']) }}'
+    productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
+    comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
 };
 </script>
 
@@ -274,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Ẩn quick-links khi có kết quả live search
     const quickLinks = document.getElementById('quick-links');
-    const dropdown = document.getElementById('search-ajax-dropdown');
+    // KHÔNG khai báo lại biến dropdown ở đây
     if (dropdown && quickLinks) {
         const observerQuickLinks = new MutationObserver(() => {
             if (dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '') {
