@@ -124,7 +124,7 @@ class AppServiceProvider extends ServiceProvider
             if ($admin) {
                 $adminNotifications = $admin->notifications()->latest()->limit(10)->get();
                 $adminUnreadCount = $admin->unreadNotifications()->count();
-
+                
                 $view->with([
                     'adminNotifications' => $adminNotifications,
                     'adminUnreadCount' => $adminUnreadCount
@@ -135,19 +135,6 @@ class AppServiceProvider extends ServiceProvider
                     'adminUnreadCount' => 0
                 ]);
             }
-        });
-
-        // View Composer cho customer notification
-        View::composer('partials.customer.header', function ($view) {
-
-            $user = Auth::user();
-            $customerNotifications = $user
-                ? $user->notifications()->latest()->limit(10)->get()
-                : collect();
-            $customerUnreadCount = $user
-                ? $user->unreadNotifications()->count()
-                : 0;
-            $view->with(compact('customerNotifications', 'customerUnreadCount'));
         });
     }
 }

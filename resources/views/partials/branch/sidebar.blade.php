@@ -24,7 +24,7 @@
     <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
         <div class="space-y-6">
             <div>
-                <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
+            <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
                     <button type="button"
                         class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') || request()->routeIs('branch.drivers-statistics') || request()->routeIs('branch.order-statistics') || request()->routeIs('branch.food-statistics') || request()->routeIs('branch.customer-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
@@ -139,8 +139,7 @@
                     <div
                         class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? '' : 'hidden' }}">
                         <a href="{{ route('branch.products') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món
-                            ăn</a>
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món ăn</a>
                         <a href="{{ route('branch.combos') }}"
                             class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.combos.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Combo</a>
                         <a href="{{ route('branch.toppings') }}"
@@ -267,7 +266,6 @@
         100% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
     }
 
-    //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     .sidebar-menu-item.bg-sidebar-accent,
     .sidebar-dropdown-trigger.bg-sidebar-accent,
     .sidebar-dropdown-content a.bg-sidebar-accent {
