@@ -118,7 +118,7 @@
                 class="absolute right-0 mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden z-50"
                 style="display: none;">
                 <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col"
-                    style="height:600px;">
+                    style="height:400px;">
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
                         <p class="text-xs text-muted-foreground">Bạn có <span
