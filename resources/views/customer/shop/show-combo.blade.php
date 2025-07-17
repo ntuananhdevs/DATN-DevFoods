@@ -3,14 +3,6 @@
 @section('title', $combo->name)
 
 @section('content')
-    <style>
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
-        /* ... giữ lại các style cần thiết từ show.blade.php ... */
-    </style>
     <div class="container mx-auto px-4 py-8">
         <!-- Product Info Section -->
         <div class="grid lg:grid-cols-2 gap-8 mb-12">

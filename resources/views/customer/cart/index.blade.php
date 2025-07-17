@@ -4,12 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-   
-   /* Price update animation */
    @keyframes priceUpdate {
        0% { 
            transform: scale(1); 

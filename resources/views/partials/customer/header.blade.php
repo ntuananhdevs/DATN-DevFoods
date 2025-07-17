@@ -54,12 +54,12 @@
 
             <div class="flex items-center gap-4">
                 <!-- Nút tìm kiếm bằng icon (kính lúp) -->
-                <button class="icon-btn" id="searchBtn" title="Tìm kiếm" aria-label="Tìm kiếm">
+                <button class="icon-btn flex items-center" id="searchBtn" title="Tìm kiếm" aria-label="Tìm kiếm">
                     <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
                 </button>
-
-                <div id="wishlist-container" class="relative">
-                    <a href="{{ route('wishlist.index') }}" class="relative">
+                
+                <div id="wishlist-container" class="relative flex items-center">
+                    <a href="{{ route('wishlist.index') }}" class="relative flex items-center">
                         <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
                         <span
                             class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
@@ -67,6 +67,10 @@
                         </span>
                     </a>
                 </div>
+                
+                <button class="icon-btn flex items-center" id="notificationBtn" title="Thông báo" aria-label="Thông báo">
+                    <ion-icon class="h-6 w-6" name="notifications-outline"></ion-icon>
+                </button>
 
                 @auth
                     <div class="relative" id="user-dropdown-container">
