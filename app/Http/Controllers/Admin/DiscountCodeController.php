@@ -381,7 +381,6 @@ class DiscountCodeController extends Controller
             
             DB::commit();
             
-            // Broadcast event for real-time updates
             broadcast(new DiscountUpdated($discountCode, 'created'))->toOthers();
             
             return redirect()->route('admin.discount_codes.index')->with('toast', [
