@@ -5,13 +5,13 @@
         @forelse($favoriteProducts as $favorite)
             @if ($favorite->product)
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden group">
-                    <a href="{{ route('products.show', $favorite->product->id) }}"
+                    <a href="{{ route('products.show', $favorite->product->slug) }}"
                         class="block relative h-48"><img
                             src="{{ $favorite->product->primaryImage ? Storage::disk('s3')->url($favorite->product->primaryImage->img) : asset('images/default-product.png') }}"
                             alt="{{ $favorite->product->name }}" class="w-full h-full object-cover"></a>
                     <div class="p-4">
                         <h3 class="font-bold mb-1"><a
-                                href="{{ route('products.show', $favorite->product->id) }}"
+                                href="{{ route('products.show', $favorite->product->slug) }}"
                                 class="hover:text-orange-500">{{ $favorite->product->name }}</a></h3>
                         <p class="text-gray-500 text-sm mb-2 h-10">
                             {{ Str::limit($favorite->product->short_description, 60) }}</p>

@@ -28,6 +28,15 @@ class CartTransferMiddleware
         if (Auth::check()) {
             $user = Auth::user();
             $sessionId = session()->getId();
+            
+            // Validate user still exists in database
+            $userExists = \App\Models\User::where('id', $user->id)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication
+                Auth::logout();
+                \Log::warning('User ID ' . $user->id . ' does not exist in CartTransferMiddleware, clearing authentication');
+                return $next($request);
+            }
 
             // Kiểm tra xem đã chuyển giỏ hàng cho session này chưa
             $transferKey = 'cart_transferred_' . $user->id . '_' . $sessionId;

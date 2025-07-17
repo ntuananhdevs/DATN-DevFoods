@@ -131,62 +131,16 @@
     <!-- Content will be moved here when fullscreen -->
 </div>
 
-{{-- <!-- Rating Modal -->
-<div id="ratingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h3 class="text-lg font-semibold mb-4">Đánh giá cuộc trò chuyện</h3>
 
-        <div class="space-y-4">
-            <div>
-                <p class="text-sm text-gray-600 mb-3">Bạn cảm thấy cuộc trò chuyện như thế nào?</p>
-                <div class="flex justify-center gap-2" id="starRating">
-                    <!-- Stars will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <div>
-                <label class="text-sm font-medium text-gray-700 mb-2 block">Góp ý thêm (tùy chọn)</label>
-                <textarea id="feedbackText" placeholder="Chia sẻ trải nghiệm của bạn..."
-                    class="w-full min-h-[80px] border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500"></textarea>
-            </div>
-
-            <div class="flex gap-2 justify-end">
-                <button id="skipRatingBtn"
-                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                    Bỏ qua
-                </button>
-                <button id="submitRatingBtn"
-                    class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled>
-                    Gửi đánh giá
-                </button>
-            </div>
-        </div>
-    </div>
-</div> --}}
-
-{{-- <!-- Success notification -->
-<div id="successNotification"
-    class="fixed bottom-4 left-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 hidden">
-    <div class="flex items-center gap-2">
-        <span>Cảm ơn bạn đã đánh giá! 🙏</span>
-        <button id="closeNotificationBtn"
-            class="text-white hover:bg-green-600 h-6 w-6 rounded flex items-center justify-center transition-colors">
-            <i class="fas fa-times text-xs"></i>
-        </button>
-    </div>
-</div> --}}
 
 <!-- Hidden file inputs -->
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
 <input type="file" id="imageInput" class="hidden" accept="image/*">
-
-<<<<<<< HEAD <script>
+<script>
     window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
     window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
 </script>
 
-=======
 <!-- Thêm biến Pusher và biến user cho JS -->
 <script>
     window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
@@ -194,7 +148,6 @@
     window.customerUserId = @json(auth()->id());
     window.isAuthenticated = @json(auth()->check());
 </script>
->>>>>>> 58dd5bf16fb4de582f39c58aed1fe795a5b460f8
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
 <script>

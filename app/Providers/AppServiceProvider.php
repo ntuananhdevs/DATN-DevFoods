@@ -24,9 +24,13 @@ use App\Models\Order;
 use App\Models\ProductReview;
 use App\Models\ReviewReply;
 use App\Observers\ProductReviewObserver;
+use App\Models\ReviewReport;
+use App\Observers\ReviewReportObserver;
 use App\Observers\ReviewReplyObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ComboBranchStock;
+use App\Observers\ComboBranchStockObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -65,6 +69,9 @@ class AppServiceProvider extends ServiceProvider
         // Register ComboObserver
         Combo::observe(ComboObserver::class);
 
+        // Register ComboBranchStockObserver
+        ComboBranchStock::observe(ComboBranchStockObserver::class);
+
         // Register OrderObserver
         // Order::observe(OrderObserver::class);
 
@@ -73,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ProductReviewObserver
         ProductReview::observe(ProductReviewObserver::class);
+
+        // Register ReviewReportObserver
+        ReviewReport::observe(ReviewReportObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));

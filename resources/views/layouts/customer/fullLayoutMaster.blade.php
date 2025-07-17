@@ -526,6 +526,14 @@
     @endif
 
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
+        if (!{{ auth()->check() ? 'true' : 'false' }}) {
+            window.updateWishlistCount(0);
+            localStorage.removeItem('wishlist_count');
+        }
+    });
+
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 }

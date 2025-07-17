@@ -45,6 +45,10 @@
                         class="text-sm font-medium {{ request()->is('hiring-driver*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                         Tuyển dụng
                     </a>
+                    <a href="{{ asset('/track') }}"
+                        class="text-sm font-medium {{ request()->is('track*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Tra cứu
+                    </a>
                 </nav>
             </div>
 
@@ -54,11 +58,7 @@
                     <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
                 </button>
 
-
-
-
-                <!-- Nút wishlist -->
-                <div id="wishlist-container" class="relative ml-4">
+                <div id="wishlist-container" class="relative">
                     <a href="{{ route('wishlist.index') }}" class="relative">
                         <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
                         <span
@@ -67,8 +67,6 @@
                         </span>
                     </a>
                 </div>
-
-
 
                 @auth
                     <div class="relative" id="user-dropdown-container">
@@ -154,12 +152,8 @@
                     </div>
                 </div>
             </div>
-            <!-- Nút thông báo -->
-
         </div>
-
     </div>
-
 </header>
 
 <!-- Search Section (Apple style, drop from header, white background) -->
@@ -249,6 +243,10 @@
             <a href="/recruitment"
                 class="text-lg font-medium {{ request()->is('recruitment*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                 Tuyển dụng
+            </a>
+            <a href="/track"
+                class="text-lg font-medium {{ request()->is('track*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Tra cứu
             </a>
         </nav>
     </div>
@@ -461,11 +459,10 @@
 
 <script>
     window.LaravelRoutes = {
-        productShow: '{{ route('products.show', ['id' => 'REPLACE_ID']) }}',
-        comboShow: '{{ route('combos.show', ['id' => 'REPLACE_ID']) }}'
+        productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
+        comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
     };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 <script>
     // JavaScript để xử lý vị trí của dropdown
@@ -518,7 +515,7 @@
 
         // Ẩn quick-links khi có kết quả live search
         const quickLinks = document.getElementById('quick-links');
-        const dropdown = document.getElementById('search-ajax-dropdown');
+        // KHÔNG khai báo lại biến dropdown ở đây
         if (dropdown && quickLinks) {
             const observerQuickLinks = new MutationObserver(() => {
                 if (dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '') {
@@ -540,6 +537,7 @@
 <script src="{{ asset('js/customer-search.js') }}"></script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/laravel-echo/1.11.3/echo.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
     window.Pusher = Pusher;
     window.Echo = new Echo({
@@ -651,4 +649,3 @@
         });
     }
 </script>
-

@@ -100,7 +100,7 @@
                 class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-bell animate-bell">
+                    class="lucide lucide-bell">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
@@ -118,7 +118,7 @@
                 class="absolute right-0 mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden z-50"
                 style="display: none;">
                 <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col"
-                    style="height:400px;">
+                    style="height:600px;">
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
                         <p class="text-xs text-muted-foreground">Bạn có <span
@@ -226,7 +226,6 @@
 <script src="public/js/modal.js"></script>
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.0/dist/echo.iife.js"></script>
-
 
 <script>
     window.Echo = new Echo({

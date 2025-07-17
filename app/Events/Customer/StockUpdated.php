@@ -89,4 +89,4 @@ class StockUpdated implements ShouldBroadcastNow
         ]);
         return $data;
     }
-} 
+}

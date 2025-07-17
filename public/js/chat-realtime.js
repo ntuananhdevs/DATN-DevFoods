@@ -1076,85 +1076,6 @@ class ChatCommon {
         }
     }
 
-    // appendMessage(message) {
-    //     console.log("[ChatRealtime] appendMessage", message);
-    //     if (!message) return;
-
-    //     const chatMessages = document.getElementById("chat-messages");
-    //     if (!chatMessages) return;
-
-    //     const messageElement = document.createElement("div");
-    //     messageElement.className = `message ${
-    //         message.sender_id === this.userId ? "sent" : "received"
-    //     }`;
-
-    //     // Tạo avatar
-    //     const avatar = document.createElement("div");
-    //     avatar.className = "message-avatar";
-    //     avatar.textContent = (message.sender?.full_name || "U")
-    //         .charAt(0)
-    //         .toUpperCase();
-
-    //     // Tạo nội dung tin nhắn
-    //     const content = document.createElement("div");
-    //     content.className = "message-content";
-
-    //     // Thêm tên người gửi
-    //     const senderName = document.createElement("div");
-    //     senderName.className = "message-sender";
-    //     senderName.textContent = message.sender?.full_name || "Người dùng";
-
-    //     // Thêm nội dung tin nhắn
-    //     const text = document.createElement("div");
-    //     text.className = "message-text";
-    //     text.innerHTML = this.escapeHtml(message.message || "");
-
-    //     // Thêm thời gian
-    //     const time = document.createElement("div");
-    //     time.className = "message-time";
-    //     time.textContent = this.formatTime(message.created_at);
-
-    //     // Thêm attachment nếu có
-    //     if (message.attachment) {
-    //         const attachment = document.createElement("div");
-    //         attachment.className = "message-attachment";
-
-    //         if (message.attachment_type === "image") {
-    //             const img = document.createElement("img");
-    //             img.src = `/storage/${message.attachment}`;
-    //             img.alt = "Attachment";
-    //             img.className = "attachment-image";
-    //             attachment.appendChild(img);
-    //         } else {
-    //             const link = document.createElement("a");
-    //             link.href = `/storage/${message.attachment}`;
-    //             link.target = "_blank";
-    //             link.className = "attachment-file";
-    //             link.innerHTML = `<i class="fas fa-file"></i> ${message.attachment
-    //                 .split("/")
-    //                 .pop()}`;
-    //             attachment.appendChild(link);
-    //         }
-
-    //         content.appendChild(attachment);
-    //     }
-
-    //     // Ghép các phần tử lại với nhau
-    //     content.appendChild(senderName);
-    //     content.appendChild(text);
-    //     content.appendChild(time);
-
-    //     messageElement.appendChild(avatar);
-    //     messageElement.appendChild(content);
-
-    //     // Thêm tin nhắn vào chat
-    //     chatMessages.appendChild(messageElement);
-
-    //     // Cuộn xuống tin nhắn mới nhất
-    //     this.scrollToBottom();
-    // }
-
-    // Thêm hàm để hiển thị phân công chi nhánh
     showDistributionSection(conversationId) {
         const distributionSection = document.getElementById(
             `distribution-${conversationId}`
@@ -2297,11 +2218,6 @@ class BranchChat {
                 cluster: window.PUSHER_APP_CLUSTER,
                 encrypted: true,
             });
-            console.log(
-                "[BranchChat] Pusher initialized",
-                window.PUSHER_APP_KEY,
-                window.PUSHER_APP_CLUSTER
-            );
         } else {
             alert("Pusher key/cluster missing! Branch chat sẽ không realtime.");
             this.pusher = null;

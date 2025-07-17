@@ -8,8 +8,7 @@
             <div
                 class="flex aspect-square w-8 h-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-settings">
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
                     <path
                         d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
                     </path>
@@ -158,7 +157,7 @@
                             stroke-linejoin="round" class="lucide lucide-message-circle">
                             <path
                                 d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                        </svg>
+                    </svg>
                     </span>
                     <span class="sidebar-text">Chat</span>
                 </a>
@@ -263,17 +262,9 @@
 
     /* Animation for active state */
     @keyframes activePulse {
-        0% {
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        50% {
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5);
-        }
-
-        100% {
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
+        0% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5); }
+        100% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
     }
 
     //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -317,4 +308,4 @@
             });
         });
     });
-</script>
+</script> 
