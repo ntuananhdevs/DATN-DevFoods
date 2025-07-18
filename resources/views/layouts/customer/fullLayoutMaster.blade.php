@@ -455,13 +455,10 @@
             // Save the wishlist count in localStorage for consistency between pages
             localStorage.setItem('wishlist_count', count);
 
-            // Update all wishlist counter elements on the page
-            const counters = document.querySelectorAll('#wishlist-container span');
+            // Chỉ update đúng counter ở icon tim
+            const counters = document.querySelectorAll('#wishlist-counter');
             counters.forEach(counter => {
-                // Update the counter with animation
                 counter.textContent = count;
-
-                // Add animation class
                 counter.classList.add('animate-bounce', 'bg-green-500');
                 setTimeout(() => {
                     counter.classList.remove('animate-bounce', 'bg-green-500');

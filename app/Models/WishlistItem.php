@@ -15,7 +15,6 @@ class WishlistItem extends Model
         'user_id',
         'product_id', 
         'combo_id',
-        'product_variant_id',
         'quantity',
         'note',
         'is_active'
@@ -33,11 +32,6 @@ class WishlistItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function productVariant()
-    {
-        return $this->belongsTo(ProductVariant::class);
     }
 
     public function combo()

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Combo extends Model
 {
@@ -25,6 +26,36 @@ class Combo extends Model
         'updated_by',
         'slug',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($combo) {
+            if (empty($combo->slug) && !empty($combo->name)) {
+                $slug = Str::slug($combo->name);
+                $originalSlug = $slug;
+                $i = 1;
+                // Ensure unique slug
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $originalSlug . '-' . $i++;
+                }
+                $combo->slug = $slug;
+            }
+        });
+        static::updating(function ($combo) {
+            if (empty($combo->slug) && !empty($combo->name)) {
+                $slug = Str::slug($combo->name);
+                $originalSlug = $slug;
+                $i = 1;
+                // Ensure unique slug
+                while (static::where('slug', $slug)->where('id', '!=', $combo->id)->exists()) {
+                    $slug = $originalSlug . '-' . $i++;
+                }
+                $combo->slug = $slug;
+            }
+        });
+    }
 
     public function productVariants(): BelongsToMany
     {

@@ -51,7 +51,7 @@
                 <div id="wishlist-container" class="relative">
                     <a href="{{ route('wishlist.index') }}" class="relative">
                         <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
-                        <span class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
+                        <span id="wishlist-counter" class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
                             {{ auth()->check() ? auth()->user()->wishlist->count() : 0 }}
                         </span>
                     </a>
