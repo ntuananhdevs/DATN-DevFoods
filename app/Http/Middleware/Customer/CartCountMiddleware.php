@@ -26,6 +26,17 @@ class CartCountMiddleware
         $userId = auth()->id();
         $sessionId = session()->getId();
         
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                auth()->logout();
+                $userId = null;
+                \Log::warning('User ID ' . $userId . ' does not exist in CartCountMiddleware, falling back to session-based cart');
+            }
+        }
+        
         $cartQuery = Cart::query()->where('status', 'active');
         
         if ($userId) {

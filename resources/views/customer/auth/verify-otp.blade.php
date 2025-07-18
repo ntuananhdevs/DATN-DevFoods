@@ -4,11 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-
    button:disabled, button[disabled] {
     background-color: #fbbf24 !important; /* màu cam nhạt hơn */
     color: #fff !important;

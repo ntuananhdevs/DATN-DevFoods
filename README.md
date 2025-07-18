@@ -1,4 +1,4 @@
-# 🍴 DevFoods - Hệ Thống Quản Lý Nhà Hàng
+# DevFoods - Hệ Thống Quản Lý Nhà Hàng
 
 <p align="center">
   <img src="public/images/logo.png" alt="DevFoods Logo" width="200"/>

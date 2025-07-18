@@ -64,11 +64,6 @@
 
 @section('content')
     <style>
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-        }
-
         .form-control {
             display: block;
             width: 100%;

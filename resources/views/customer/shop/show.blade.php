@@ -4,11 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-   
    /* Discount code styles */
    .discount-code-animation {
        animation: pulse 2s infinite;
@@ -403,17 +398,170 @@
         color: #f97316;
     }
     .reply-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-left: 44px;
+        margin-top: 10px;
         position: relative;
+        animation: fadeInReply 0.4s;
+    }
+    @keyframes fadeInReply {
+        from { opacity: 0; transform: translateY(-8px);}
+        to { opacity: 1; transform: translateY(0);}
     }
     .reply-arrow {
         width: 24px;
-        flex-shrink: 0;
         display: flex;
         align-items: flex-start;
         margin-top: 8px;
+        flex-shrink: 0;
     }
-    .reply-item .bg-blue-50 {
+    .reply-item .reply-bubble {
+        background: #f4f6fb;
+        border: 1px solid #e3e8f0;
+        border-radius: 12px 12px 12px 4px;
+        padding: 12px 16px;
+        min-width: 0;
+        box-shadow: 0 2px 8px rgba(80, 120, 200, 0.04);
+        transition: box-shadow 0.2s;
         position: relative;
+    }
+    .reply-item .reply-bubble:hover {
+        box-shadow: 0 4px 16px rgba(80, 120, 200, 0.10);
+    }
+    .reply-item .reply-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2px;
+    }
+    .reply-item .reply-author {
+        font-weight: 600;
+        color: #2563eb;
+        font-size: 1rem;
+    }
+    .reply-item .reply-time {
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+    .reply-item .reply-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+    }
+    .reply-item .reply-actions button {
+        background: none;
+        border: none;
+        color: #f87171;
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 0 4px;
+        border-radius: 4px;
+        transition: background 0.15s;
+    }
+    .reply-item .reply-actions button:hover {
+        background: #fee2e2;
+    }
+    .reply-item .reply-content {
+        color: #334155;
+        font-size: 1rem;
+        line-height: 1.5;
+        word-break: break-word;
+    }
+    /* Modal báo cáo review tối ưu lại, ngắn gọn hơn */
+    #report-review-modal .bg-white {
+        max-width: 40rem;
+        width: 100%;
+        padding: 1rem 1.25rem;
+        margin: 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    #report-review-modal .flex.items-center.mb-4 {
+        padding-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    #report-review-modal .bg-gray-50 {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    #report-review-modal .reason-option {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0;
+    }
+    #report-review-modal .reason-option .font-semibold {
+        font-size: 0.95rem;
+    }
+    #report-review-modal .reason-option .text-xs {
+        font-size: 0.78rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #report-review-modal textarea {
+        min-height: 36px;
+        font-size: 0.95rem;
+        padding: 0.4rem 0.6rem;
+        resize: vertical;
+    }
+    #report-review-modal .bg-blue-50 {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+    #report-review-modal .flex.justify-end.gap-2.pt-2 {
+        padding-top: 0.3rem;
+    }
+    #report-review-modal label.block.font-medium.mb-2 {
+        margin-bottom: 0.3rem;
+    }
+    #report-review-modal .grid {
+        gap: 0.5rem;
+    }
+    #report-review-modal .preview-binhluan {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f9fafb;
+        border-left: 3px solid #ef4444;
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+    #report-review-modal .preview-binhluan .avatar {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.1rem;
+    }
+    #report-review-modal .preview-binhluan .info {
+        flex: 1;
+        min-width: 0;
+    }
+    #report-review-modal .preview-binhluan .info .name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #222;
+        margin-right: 0.5rem;
+    }
+    #report-review-modal .preview-binhluan .info .time {
+        font-size: 0.85rem;
+        color: #888;
+    }
+    #report-review-modal .preview-binhluan .info .content {
+        font-size: 0.95rem;
+        color: #444;
+        margin-top: 0.1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    @media (max-width: 700px) {
+        #report-review-modal .bg-white {
+            max-width: 98vw;
+            padding: 0.5rem 0.2rem;
+        }
     }
 </style>
 <div class="container mx-auto px-4 py-8">
@@ -680,7 +828,8 @@
                     <span class="text-sm text-gray-500">Chọn nhiều</span>
                 </div>
                 <div class="relative">
-                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
+                    <!-- Drag-to-scroll topping list -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 drag-scroll-topping" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;" data-drag-scroll="true">
                         @foreach($product->toppings as $topping)
                         <label class="relative flex-shrink-0 w-24 cursor-pointer group {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
                             <input type="checkbox" 
@@ -727,6 +876,11 @@
                         </label>
                         @endforeach
                     </div>
+                    <style>
+                        .drag-scroll-topping::-webkit-scrollbar { display: none; }
+                        .drag-scroll-topping { scrollbar-width: none; -ms-overflow-style: none; }
+                    </style>
+                    <div class="text-xs text-gray-400 mt-1 select-none" style="user-select:none;">Kéo ngang để xem thêm topping</div>
                 </div>
             </div>
             @endif
@@ -866,37 +1020,50 @@
                     <div class="divide-y max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
                         @forelse($product->reviews as $review)
                         <div class="p-6 hover:bg-gray-50/50 transition-colors" data-review-id="{{ $review->id }}">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex items-start gap-4">
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-semibold text-lg">
-                                            {{ strtoupper(substr($review->user->name, 0, 1)) }}
-                                        </span>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="font-medium text-gray-900">{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}</span>
-                                            @if($review->is_verified_purchase)
-                                                <span class="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                                    <i class="fas fa-check-circle"></i>
-                                                    Đã mua hàng
+                            <div class="flex items-start gap-4 review-header">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 review-avatar">
+                                    <span class="text-white font-semibold text-lg">
+                                        {{ strtoupper(substr($review->user->name, 0, 1)) }}
+                                    </span>
+                                </div>
+                                <div class="flex-1 min-w-0 review-main">
+                                    <div class="flex flex-wrap items-center gap-2 review-user-row">
+                                        <span class="font-medium text-gray-900">{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}</span>
+                                        @if($review->is_verified_purchase)
+                                            <span class="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                <i class="fas fa-check-circle"></i>
+                                                Đã mua hàng
+                                            </span>
+                                            @if(!empty($review->purchased_variant_attributes))
+                                                <span class="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-1"
+                                                      @if(count($review->purchased_variant_attributes) > 2) title="@foreach($review->purchased_variant_attributes as $attr){{ $attr['name'] }}: {{ $attr['value'] }}@if(!$loop->last), @endif @endforeach" @endif>
+                                                    <i class="fas fa-box"></i>
+                                                    <span class="hidden sm:inline">Đã mua:</span>
+                                                    @php $maxShow = 2; @endphp
+                                                    @foreach($review->purchased_variant_attributes as $attr)
+                                                        <span>{{ $attr['name'] }}: {{ $attr['value'] }}</span>@if(!$loop->last && $loop->index < $maxShow-1), @endif
+                                                        @if($loop->index == $maxShow-1 && !$loop->last)
+                                                            <span>...</span>@break
+                                                        @endif
+                                                    @endforeach
                                                 </span>
                                             @endif
-                                            @if($review->is_featured)
-                                                <span class="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                    <i class="fas fa-award"></i>
-                                                    Đánh giá nổi bật
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <div class="text-sm text-gray-500 mt-1 space-x-2">
-                                            <span>{{ $review->review_date->format('d/m/Y H:i') }}</span>
-                                            @if($review->branch)
-                                                <span>•</span>
-                                                <span>{{ $review->branch->name }}</span>
-                                            @endif
-                                        </div>
+                                        @endif
+                                        @if($review->is_featured)
+                                            <span class="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                                                <i class="fas fa-award"></i>
+                                                Đánh giá nổi bật
+                                            </span>
+                                        @endif
                                     </div>
+                                    <div class="text-sm text-gray-500 mt-1 space-x-2">
+                                        <span>{{ $review->review_date->format('d/m/Y H:i') }}</span>
+                                        @if($review->branch)
+                                            <span>•</span>
+                                            <span>{{ $review->branch->name }}</span>
+                                        @endif
+                                    </div>
+                                    <span class="review-content block mt-1 text-base text-gray-800">{{ $review->review }}</span>
                                 </div>
                                 <div class="flex flex-col items-end gap-1">
                                     <div class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
@@ -915,8 +1082,6 @@
                             </div>
 
                             <div class="mt-4 space-y-3">
-                                <p class="text-gray-700 leading-relaxed">{{ $review->review }}</p>
-                                
                                 @if($review->review_image)
                                     <div class="mt-3">
                                         <img src="{{ Storage::disk('s3')->url($review->review_image) }}" 
@@ -935,13 +1100,17 @@
                                         <i class="{{ $userHelpful ? 'fas' : 'far' }} fa-thumbs-up {{ $userHelpful ? 'text-sky-600' : '' }}"></i>
                                         <span>Hữu ích (<span class="helpful-count">{{ $review->helpful_count }}</span>)</span>
                                     </button>
-                                    @if($review->report_count > 0)
-                                        <span class="inline-flex items-center gap-1 text-xs text-red-500">
-                                            <i class="fas fa-flag"></i>
-                                            {{ $review->report_count }} báo cáo
-                                        </span>
-                                    @endif
                                     @auth
+                                        <button class="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-600 transition-colors report-review-btn"
+                                            data-review-id="{{ $review->id }}">
+                                            <i class="fas fa-flag"></i>
+                                            <span>Báo cáo</span>
+                                            <span class="ml-1 text-xs report-count" @if($review->report_count == 0) style="display:none" @endif>
+                                                @if($review->report_count > 0)
+                                                    ({{ $review->report_count }})
+                                                @endif
+                                            </span>
+                                        </button>
                                         <button class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn"
                                             data-review-id="{{ $review->id }}"
                                             data-user-name="{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}"
@@ -961,23 +1130,25 @@
                         </div>
                         <!-- Hiển thị các reply -->
                         @foreach($review->replies as $reply)
-                            <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative" data-reply-id="{{ $reply->id }}">
+                            <div class="reply-item" data-reply-id="{{ $reply->id }}">
                                 <div class="reply-arrow">
                                     <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </div>
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-semibold text-blue-700">{{ $reply->user->name ?? 'Ẩn danh' }}</span>
-                                        <span class="text-xs text-gray-400">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
+                                <div class="reply-bubble flex-1">
+                                    <div class="reply-header">
+                                        <span class="reply-author">{{ $reply->user->name ?? 'Ẩn danh' }}</span>
+                                        <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
                                         @auth
                                             @if($reply->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
-                                                <button class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn" data-reply-id="{{ $reply->id }}">
-                                                    <i class="fas fa-trash-alt"></i> Xóa
-                                                </button>
+                                                <span class="reply-actions">
+                                                    <button class="delete-reply-btn" data-reply-id="{{ $reply->id }}">
+                                                        <i class="fas fa-trash-alt"></i> Xóa
+                                                    </button>
+                                                </span>
                                             @endif
                                         @endauth
                                     </div>
-                                    <div class="text-gray-700">{{ $reply->reply }}</div>
+                                    <div class="reply-content">{{ $reply->reply }}</div>
                                 </div>
                             </div>
                         @endforeach
@@ -1100,7 +1271,7 @@
             @endphp
             <div class="product-card bg-white rounded-lg overflow-hidden" data-product-id="{{ $relatedProduct->id }}">
                 <div class="relative">
-                    <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
+                    <a href="{{ route('products.show', $relatedProduct->slug) }}" class="block">
                         @if($relatedProduct->primary_image)
                             <img src="{{ $relatedProduct->primary_image->s3_url }}" alt="{{ $relatedProduct->name }}" class="product-image">
                         @else
@@ -1120,7 +1291,7 @@
                 </div>
                 <div class="px-4 py-2">
                     <div class="flex items-center justify-between">
-                        <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
+                        <a href="{{ route('products.show', $relatedProduct->slug) }}" class="block">
                             <h3 class="product-title">{{ $relatedProduct->name }}</h3>
                         </a>
                     </div>
@@ -1205,6 +1376,96 @@
     </div>
 </div>
 
+<!-- Modal báo cáo review -->
+<div id="report-review-modal" class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span class="text-xl">🚩</span> Báo cáo đánh giá
+            </h3>
+            <button id="close-report-modal" class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="report-review-form" class="space-y-4">
+            <input type="hidden" name="review_id" id="report_review_id" value="">
+            <!-- Preview bình luận bị báo cáo (ngắn gọn) -->
+            <div class="preview-binhluan">
+                <div class="avatar w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold text-lg">
+                    <span id="report-modal-avatar">?</span>
+                </div>
+                <div class="info flex-1 min-w-0">
+                    <span class="name" id="report-modal-username">Ẩn danh</span>
+                    <span class="time" id="report-modal-time"></span>
+                    <div class="content" id="report-modal-content">...</div>
+                </div>
+            </div>
+            <!-- Lý do báo cáo -->
+            <div>
+                <label class="block font-medium mb-2">Lý do báo cáo *</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="report-reason-options">
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="spam" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-orange-500">🗑️</span> Spam/quảng cáo</div>
+                            <div class="text-xs text-gray-500">Quảng cáo, spam</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="harassment" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-red-500">🛡️</span> Quấy rối/bắt nạt</div>
+                            <div class="text-xs text-gray-500">Quấy rối, đe dọa</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="hate_speech" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-red-700">⚠️</span> Ngôn từ thù địch</div>
+                            <div class="text-xs text-gray-500">Phân biệt, xúc phạm</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="inappropriate" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-purple-500">👁️</span> Nội dung không phù hợp</div>
+                            <div class="text-xs text-gray-500">Không phù hợp cộng đồng</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="misinformation" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-yellow-500">⚠️</span> Thông tin sai lệch</div>
+                            <div class="text-xs text-gray-500">Không chính xác, gây hiểu lầm</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                        <input type="radio" name="reason_type" value="other" class="mt-1 reason-radio">
+                        <div>
+                            <div class="font-semibold flex items-center gap-1"><span class="text-gray-500">🚩</span> Lý do khác</div>
+                            <div class="text-xs text-gray-500">Khác</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <!-- Thông tin bổ sung -->
+            <div>
+                <label for="report_reason_detail" class="block font-medium mb-1">Thông tin bổ sung (tùy chọn)</label>
+                <textarea name="reason_detail" id="report_reason_detail" rows="2" class="w-full border rounded p-2" placeholder="Cung cấp thêm chi tiết..."></textarea>
+            </div>
+            <!-- Cam kết xử lý -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 text-blue-800 text-sm rounded">
+                <div class="font-semibold mb-1">Cam kết của chúng tôi:</div>
+                Báo cáo của bạn sẽ được xem xét trong vòng 24 giờ. Chúng tôi cam kết thực hiện hành động phù hợp để duy trì môi trường an toàn cho cộng đồng.
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" id="cancel-report-btn" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Hủy</button>
+                <button type="submit" id="submit-report-btn" class="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 font-semibold" disabled>Gửi báo cáo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -1242,5 +1503,93 @@
             }
         });
     });
+</script>
+<script>
+// Modal báo cáo review nâng cấp
+(function() {
+    // Lấy các nút mở modal báo cáo
+    document.querySelectorAll('.report-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Lấy thông tin review để preview trong modal
+            const reviewId = this.getAttribute('data-review-id');
+            const reviewBlock = document.querySelector(`[data-review-id="${reviewId}"]`);
+            if (reviewBlock) {
+                document.getElementById('report-modal-avatar').textContent = reviewBlock.querySelector('.review-avatar span')?.textContent || '?';
+                document.getElementById('report-modal-username').textContent = reviewBlock.querySelector('.review-user-row .font-medium')?.textContent || 'Ẩn danh';
+                document.getElementById('report-modal-time').textContent = reviewBlock.querySelector('.text-sm.text-gray-500 span')?.textContent || '';
+                document.getElementById('report-modal-content').textContent = reviewBlock.querySelector('.review-content')?.textContent || '';
+            }
+            document.getElementById('report_review_id').value = reviewId;
+            // Reset form
+            document.querySelectorAll('.reason-radio').forEach(r => r.checked = false);
+            document.getElementById('report_reason_detail').value = '';
+            document.getElementById('submit-report-btn').disabled = true;
+            document.getElementById('report-review-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        });
+    });
+    // Đóng modal
+    document.getElementById('close-report-modal').onclick = closeReportModal;
+    document.getElementById('cancel-report-btn').onclick = closeReportModal;
+    function closeReportModal() {
+        document.getElementById('report-review-modal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+    // Đóng modal khi click ngoài
+    document.getElementById('report-review-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeReportModal();
+    });
+    // Đóng modal với Escape
+    document.addEventListener('keydown', function(e) {
+        if (!document.getElementById('report-review-modal').classList.contains('hidden') && e.key === 'Escape') closeReportModal();
+    });
+    // Enable nút gửi khi chọn lý do
+    document.querySelectorAll('.reason-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('submit-report-btn').disabled = false;
+        });
+    });
+    // Gửi báo cáo (AJAX)
+    document.getElementById('report-review-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const reviewId = document.getElementById('report_review_id').value;
+        const reasonType = document.querySelector('.reason-radio:checked')?.value;
+        const reasonDetail = document.getElementById('report_reason_detail').value;
+        if (!reasonType) return;
+        fetch(`/reviews/${reviewId}/report`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': window.csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason_type: reasonType, reason_detail: reasonDetail })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                } else {
+                    alert('Báo cáo thành công!');
+                }
+                closeReportModal();
+            } else {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Báo cáo thất bại' });
+                } else {
+                    alert(data.message || 'Báo cáo thất bại');
+                }
+            }
+        })
+        .catch(() => {
+            if (window.dtmodalShowToast) {
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+            } else {
+                alert('Lỗi mạng hoặc server!');
+            }
+        });
+    });
+})();
 </script>
 @endsection

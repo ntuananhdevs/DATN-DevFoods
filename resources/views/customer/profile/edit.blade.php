@@ -3,12 +3,6 @@
 @section('title', 'FastFood - Chỉnh Sửa Hồ Sơ')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
 <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
     <div class="container mx-auto px-4">
         <div class="flex items-center">

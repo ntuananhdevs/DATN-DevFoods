@@ -62,7 +62,16 @@ class OrderController extends Controller
 
     public function show($orderId)
     {
-        $order = Order::with(['customer', 'branch', 'driver'])->findOrFail($orderId);
+        $order = Order::with([
+            'customer',
+            'branch',
+            'driver',
+            'orderItems.productVariant.product.primaryImage',
+            'orderItems.product',
+            'orderItems.combo',
+            'orderItems.toppings.topping',
+            'payment',
+        ])->findOrFail($orderId);
         return view('admin.order.show', compact('order'));
     }
 
@@ -100,5 +109,15 @@ class OrderController extends Controller
     {
         // Tạm thời redirect về trang index
         return redirect()->route('admin.orders.index');
+    }
+
+    public function cancel($orderId)
+    {
+        $order = Order::findOrFail($orderId);
+        $order->status = 'cancelled';
+        $order->save();
+
+        return redirect()->route('admin.orders.show', $orderId)
+            ->with('success', 'Đơn hàng đã được hủy thành công!');
     }
 } 
