@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\EditProfileRequest;
 use Illuminate\Http\Request;
-use App\Models\UserRank; 
-use Illuminate\Validation\Rule; 
-use Illuminate\Support\Facades\Hash;    
-use Illuminate\Validation\Rules\Password; 
+use App\Models\UserRank;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use App\Models\Address;
 use App\Models\Branch;
 
@@ -42,7 +42,7 @@ class ProfileController extends Controller
         // --- Logic tính toán hạng thành viên ---
         $allRanks = UserRank::orderBy('min_spending', 'asc')->get();
         $currentRank = $user->userRank;
-        
+
         // Xử lý trường hợp người dùng mới chưa có hạng
         if (!$currentRank && $allRanks->isNotEmpty()) {
             $currentRank = $allRanks->first();
@@ -51,21 +51,21 @@ class ProfileController extends Controller
         $nextRank = null;
         $progressPercent = 0;
         $currentPoints = $user->total_spending;
+        $maxPoints = $allRanks->max('min_spending');
+
 
         if ($currentRank) {
             $nextRank = $allRanks->firstWhere('min_spending', '>', $currentRank->min_spending);
             if ($nextRank) {
                 $range = $nextRank->min_spending - $currentRank->min_spending;
                 $achieved = $currentPoints - $currentRank->min_spending;
-                if ($range > 0) {
-                    $progressPercent = min(100, ($achieved / $range) * 100);
-                }
+                $progressPercent = min(100, max(0, ($currentPoints / $maxPoints) * 100));
             } else {
-                // Đã đạt hạng cao nhất
+                // Đã đạt hạng cao nhất, luôn là 100%
                 $progressPercent = 100;
             }
         }
-        
+
         // Trả về view với tất cả dữ liệu
         return view('customer.profile.index', compact(
             'user',
@@ -80,7 +80,7 @@ class ProfileController extends Controller
             'progressPercent'
         ));
     }
-    
+
     /**
      * Show the form for editing the user's profile.
      */
@@ -100,10 +100,10 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        
+
         $user = Auth::user();
 
-        
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -114,15 +114,15 @@ class ProfileController extends Controller
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'], // 5MB
         ]);
 
-        
+
         if ($request->hasFile('avatar')) {
-            
+
             if ($user->avatar && $user->avatar !== 'avatars/default.jpg') {
                 Storage::disk('s3')->delete($user->avatar);
             }
-            
+
             $path = $request->file('avatar')->store('avatars', 's3');
-            
+
             $user->avatar = $path;
         }
 
@@ -131,29 +131,29 @@ class ProfileController extends Controller
         $user->phone = $validated['phone'];
         $user->birthday = $validated['birthday'];
         $user->gender = $validated['gender'];
-        
+
         $user->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật hồ sơ thành công!',
-            'avatar_url' => Storage::disk('s3')->url($user->avatar) 
+            'avatar_url' => Storage::disk('s3')->url($user->avatar)
         ]);
     }
 
     public function updatePassword(Request $request)
-{
-    $validated = $request->validateWithBag('updatePassword', [
-        'current_password' => ['required', 'current_password'],
-        'password' => ['required', Password::defaults(), 'confirmed'],
-    ]);
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
 
-    $request->user()->forceFill([
-        'password' => Hash::make($validated['password']),
-    ])->save();
+        $request->user()->forceFill([
+            'password' => Hash::make($validated['password']),
+        ])->save();
 
-    return response()->json(['status' => 'password-updated', 'message' => 'Mật khẩu đã được cập nhật thành công!']);
-}
+        return response()->json(['status' => 'password-updated', 'message' => 'Mật khẩu đã được cập nhật thành công!']);
+    }
 
     // API: Lấy danh sách địa chỉ của user
     public function getAddresses()
