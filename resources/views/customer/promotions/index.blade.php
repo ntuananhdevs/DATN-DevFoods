@@ -14,9 +14,10 @@
 
 
     @php
-        $promotionsBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('promotions');
+        $promotionsBanner = app('App\\Http\\Controllers\\Customer\\BannerController')->getBannersByPosition('promotions');
     @endphp
     @include('components.banner', ['banners' => $promotionsBanner])
+    <x-customer-container>
 
 <div class="container mx-auto px-4 py-12">
     <!-- Khuyến mãi nổi bật -->
@@ -231,6 +232,7 @@
         </form>
     </div>
 </div>
+</x-customer-container>
 @endsection
 
 @section('scripts')

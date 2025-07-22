@@ -190,28 +190,61 @@ class CheckoutController extends Controller
         // Validate checkout data with different rules for authenticated vs guest users
         if ($userId) {
             // For authenticated users, require address_id selection
-            $validated = $request->validate([
-                'address_id' => 'required|exists:addresses,id',
-                'payment_method' => 'required|string|in:cod,vnpay,balance',
-                'notes' => 'nullable|string',
-                'terms' => 'required',
-                // Hidden fields that get populated by JavaScript
-                'full_name' => 'required|string|max:255',
-                'phone' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:100',
-                'district' => 'required|string|max:100',
-                'ward' => 'required|string|max:100',
-            ]);
-            
-            // Verify the address belongs to the user
-            $address = Address::where('id', $request->address_id)
-                ->where('user_id', $userId)
-                ->first();
-            
-            if (!$address) {
-                throw new \Exception('Địa chỉ được chọn không hợp lệ.');
+            $userAddresses = \App\Models\Address::where('user_id', $userId)->count();
+            if ($userAddresses > 0) {
+                // User đã có địa chỉ, xử lý như cũ
+                $validated = $request->validate([
+                    'address_id' => 'required|exists:addresses,id',
+                    'payment_method' => 'required|string|in:cod,vnpay,balance',
+                    'notes' => 'nullable|string',
+                    'terms' => 'required',
+                    // Hidden fields that get populated by JavaScript
+                    'full_name' => 'required|string|max:255',
+                    'phone' => 'required|string|max:20',
+                    'email' => 'required|email|max:255',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'district' => 'required|string|max:100',
+                    'ward' => 'required|string|max:100',
+                ]);
+                // Verify the address belongs to the user
+                $address = Address::where('id', $request->address_id)
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$address) {
+                    throw new \Exception('Địa chỉ được chọn không hợp lệ.');
+                }
+            } else {
+                // User chưa có địa chỉ, validate các trường thông tin giao hàng và tạo mới địa chỉ
+                $validated = $request->validate([
+                    'full_name' => 'required|string|max:255',
+                    'phone' => 'required|string|max:20',
+                    'email' => 'required|email|max:255',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'district' => 'required|string|max:100',
+                    'ward' => 'required|string|max:100',
+                    'latitude' => 'required|numeric',
+                    'longitude' => 'required|numeric',
+                    'payment_method' => 'required|string|in:cod,vnpay,balance',
+                    'notes' => 'nullable|string',
+                    'terms' => 'required',
+                ]);
+                // Tạo địa chỉ mới cho user
+                $address = Address::create([
+                    'user_id' => $userId,
+                    'full_name' => $validated['full_name'],
+                    'recipient_name' => $validated['full_name'],
+                    'phone_number' => $validated['phone'],
+                    'email' => $validated['email'],
+                    'address_line' => $validated['address'],
+                    'city' => $validated['city'],
+                    'district' => $validated['district'],
+                    'ward' => $validated['ward'],
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'is_default' => true,
+                ]);
             }
         } else {
             // For guest users, require manual input
@@ -250,8 +283,8 @@ class CheckoutController extends Controller
                 throw new \Exception('Không tìm thấy giỏ hàng.');
             }
             
-            // Get cart items - Thêm eager load cho combo
-            $cartItems = CartItem::with(['variant.product', 'combo'])
+            // Get cart items - Thêm eager load cho combo, variant, toppings và topping relation
+            $cartItems = CartItem::with(['variant', 'combo', 'toppings.topping'])
                 ->where('cart_id', $cart->id)
                 ->get();
             
@@ -425,30 +458,35 @@ class CheckoutController extends Controller
                 NewOrderReceived::dispatch($order);
             }
             
-            // Create order items - Sửa để hỗ trợ cả combo và sản phẩm lẻ
+            // Create order items - Sửa để hỗ trợ cả combo, sản phẩm lẻ và topping
             foreach ($cartItems as $cartItem) {
                 $orderItem = new OrderItem();
                 $orderItem->order_id = $order->id;
                 $orderItem->quantity = $cartItem->quantity;
-                
-                // Xử lý cho sản phẩm lẻ
-                if ($cartItem->variant) {
-                    $orderItem->product_variant_id = $cartItem->variant_id;
-                    $orderItem->unit_price = $cartItem->variant->price;
-                    $orderItem->total_price = $cartItem->variant->price * $cartItem->quantity;
-                }
-                // Xử lý cho combo
-                elseif ($cartItem->combo) {
+
+                if ($cartItem->product_variant_id) {
+                    $orderItem->product_variant_id = $cartItem->product_variant_id;
+                    $orderItem->unit_price = $cartItem->variant ? $cartItem->variant->price : 0;
+                    $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                } elseif ($cartItem->combo_id) {
                     $orderItem->combo_id = $cartItem->combo_id;
-                    $orderItem->unit_price = $cartItem->combo->price;
-                    $orderItem->total_price = $cartItem->combo->price * $cartItem->quantity;
-                }
-                // Nếu không phải sản phẩm lẻ cũng không phải combo, bỏ qua
-                else {
+                    $orderItem->unit_price = $cartItem->combo ? $cartItem->combo->price : 0;
+                    $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                } else {
                     continue;
                 }
-                
                 $orderItem->save();
+
+                // Thêm topping cho order item nếu có
+                if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                    foreach ($cartItem->toppings as $cartTopping) {
+                        $orderItem->toppings()->create([
+                            'topping_id' => $cartTopping->topping_id,
+                            'quantity' => $cartTopping->quantity,
+                            'price' => $cartTopping->topping ? $cartTopping->topping->price : 0,
+                        ]);
+                    }
+                }
             }
             
             // Clear cart after order is placed by marking it as completed

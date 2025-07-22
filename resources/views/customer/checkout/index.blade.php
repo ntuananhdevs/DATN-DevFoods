@@ -95,6 +95,7 @@
             margin-left: 0.25rem;
         }
     </style>
+<div class="max-w-[1240px] mx-auto w-full">
 
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-2">Thanh Toán</h1>
@@ -106,188 +107,184 @@
 
                 <!-- ========= CỘT BÊN TRÁI ========= -->
                 <div class="lg:col-span-2">
-            @auth
-                        <!-- Address Component -->
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-200" id="address-component">
-                            <h2 class="text-xl font-bold mb-1">Địa chỉ giao hàng</h2>
-                            <p class="text-sm text-gray-500 mb-4">Chọn hoặc thêm địa chỉ nhận hàng của bạn.</p>
-                            <hr class="mb-4">
-
-                            <!-- View 1: Hiển thị địa chỉ được chọn -->
-                            <div id="address-summary-view">
-                @if($userAddresses && $userAddresses->count() > 0)
-                    @php
-                                        // Xác định địa chỉ được chọn (từ query param hoặc mặc định)
-                                        $selectedAddressId = request('address_id');
-                                        $selectedAddress = $selectedAddressId ? $userAddresses->firstWhere('id', $selectedAddressId) : null;
-                                        if (!$selectedAddress) {
-                                            $selectedAddress = $userAddresses->where('is_default', true)->first() ?? $userAddresses->first();
-                                        }
-                    @endphp
-                                    <div class="border border-orange-300 bg-orange-50 rounded-lg p-4">
-                                        <div class="flex items-start justify-between">
-                                            <div class="flex items-start">
-                                                <span class="text-orange-500 mr-4 mt-1"><i class="fas fa-map-marker-alt"></i></span>
-                                                <div>
-                                                    <div class="font-semibold">
-                                                        <span id="summary-name">{{ $selectedAddress->full_name ?? auth()->user()->full_name }}</span>
-                                                        <span class="font-normal" id="summary-phone">({{ $selectedAddress->phone_number }})</span>
-                                                        <span id="summary-default-badge" class="ml-2 border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white {{ $selectedAddress->is_default ? '' : 'hidden' }}">Mặc Định</span>
+            @if($userAddresses && $userAddresses->count() > 0)
+                @auth
+                    <!-- Address Component -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-200" id="address-component">
+                        <h2 class="text-xl font-bold mb-1">Địa chỉ giao hàng</h2>
+                        <p class="text-sm text-gray-500 mb-4">Chọn hoặc thêm địa chỉ nhận hàng của bạn.</p>
+                        <hr class="mb-4">
+                        <!-- View 1: Hiển thị địa chỉ được chọn -->
+                        <div id="address-summary-view">
+                            @php
+                                $selectedAddressId = request('address_id');
+                                $selectedAddress = $selectedAddressId ? $userAddresses->firstWhere('id', $selectedAddressId) : null;
+                                if (!$selectedAddress) {
+                                    $selectedAddress = $userAddresses->where('is_default', true)->first() ?? $userAddresses->first();
+                                }
+                            @endphp
+                            <div class="border border-orange-300 bg-orange-50 rounded-lg p-4">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start">
+                                        <span class="text-orange-500 mr-4 mt-1"><i class="fas fa-map-marker-alt"></i></span>
+                                        <div>
+                                            <div class="font-semibold">
+                                                <span id="summary-name">{{ $selectedAddress->full_name ?? auth()->user()->full_name }}</span>
+                                                <span class="font-normal" id="summary-phone">({{ $selectedAddress->phone_number }})</span>
+                                                <span id="summary-default-badge" class="ml-2 border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white {{ $selectedAddress->is_default ? '' : 'hidden' }}">Mặc Định</span>
+                                            </div>
+                                            <div class="text-sm text-gray-700" id="summary-address">{{ $selectedAddress->full_address }}</div>
+                                        </div>
                                     </div>
-                                                    <div class="text-sm text-gray-700" id="summary-address">{{ $selectedAddress->full_address }}</div>
-                                    </div>
-                                    </div>
-                                            <button type="button" id="show-address-list-btn" class="ml-4 text-blue-600 hover:underline font-medium text-sm px-3 py-1 rounded flex-shrink-0">
-                                                Thay đổi
-                            </button>
-                        </div>
-                    </div>
-                                     <!-- Hidden fields for submission -->
-                                     <input type="hidden" id="hidden_address_id" name="address_id" value="{{ $selectedAddress->id }}">
-                                     <input type="hidden" id="hidden_full_name" name="full_name" value="{{ $selectedAddress->full_name ?? auth()->user()->full_name }}">
-                                     <input type="hidden" id="hidden_phone" name="phone" value="{{ $selectedAddress->phone_number }}">
-                    <input type="hidden" id="hidden_email" name="email" value="{{ auth()->user()->email }}">
-                                     <input type="hidden" id="hidden_address" name="address" value="{{ $selectedAddress->address_line }}">
-                                     <input type="hidden" id="hidden_city" name="city" value="{{ $selectedAddress->city }}">
-                                     <input type="hidden" id="hidden_district" name="district" value="{{ $selectedAddress->district }}">
-                                     <input type="hidden" id="hidden_ward" name="ward" value="{{ $selectedAddress->ward }}">
-                @else
-                                    <div class="text-center py-4">
-                                        <p class="text-gray-600 mb-3">Bạn chưa có địa chỉ nào được lưu.</p>
-                                        <button type="button" id="show-add-form-btn-initial" class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 text-sm font-semibold">
-                                            <i class="fas fa-plus mr-2"></i>Thêm địa chỉ đầu tiên
-                            </button>
-                        </div>
-                                @endif
-                    </div>
-
-                            <!-- View 2: Danh sách địa chỉ để chọn -->
-                            <div id="address-list-view" class="hidden">
-                                <div class="space-y-3 max-h-72 overflow-y-auto pr-2" id="address-list-container">
-                                    @if($userAddresses && $userAddresses->count() > 0)
-                                        @foreach($userAddresses as $address)
-                                            <label for="address-radio-{{ $address->id }}" class="address-option-label flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-all"
-                                                data-address-id="{{ $address->id }}"
-                                                data-full-name="{{ $address->full_name ?? auth()->user()->full_name }}"
-                                                data-phone-number="{{ $address->phone_number }}"
-                                                data-full-address="{{ $address->full_address }}"
-                                                data-is-default="{{ $address->is_default ? 'true' : 'false' }}"
-                                                data-city="{{ $address->city }}"
-                                                data-district="{{ $address->district }}"
-                                                data-ward="{{ $address->ward }}"
-                                                data-address-line="{{ $address->address_line }}"
-                                                data-latitude="{{ $address->latitude }}"
-                                                data-longitude="{{ $address->longitude }}">
-                                                <span class="text-gray-400 mr-4 mt-1"><i class="fas fa-map-marker-alt"></i></span>
-                                                <div class="flex-grow">
-                                                    <div class="font-semibold">
-                                                        <span>{{ $address->full_name ?? auth()->user()->full_name }}</span>
-                                                        <span class="font-normal">({{ $address->phone_number }})</span>
-                                                        @if($address->is_default)
-                                                            <span class="ml-2 border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white">Mặc Định</span>
-                @endif
-                            </div>
-                                                    <div class="text-sm text-gray-700">{{ $address->full_address }}</div>
-                                                     <!-- NEW: Distance and warning placeholders -->
-                                                    <div class="address-meta mt-2 text-sm">
-                                                        <span class="distance-info text-blue-600 font-medium hidden"></span>
-                                                        <span class="warning-info text-red-600 font-medium hidden"></span>
-                            </div>
-                        </div>
-                                                <input type="radio" name="selected_address_option" id="address-radio-{{ $address->id }}" value="{{ $address->id }}" class="form-radio h-5 w-5 text-orange-600 ml-4 mt-1" {{ ($selectedAddress->id ?? -1) == $address->id ? 'checked' : '' }}>
-                                            </label>
-                                        @endforeach
-                                    @endif
-                    </div>
-                                <div class="mt-4 pt-4 border-t">
-                                     <a href="{{ route('customer.profile') }}#addresses" class="text-orange-600 border border-orange-500 rounded px-3 py-1 text-sm font-medium hover:bg-orange-50">
-                                        <i class="fas fa-plus mr-2"></i>Thêm địa chỉ mới
-                                    </a>
-                                    <div class="flex justify-end gap-3 mt-3">
-                                        <button type="button" id="cancel-change-address-btn" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 text-sm">Hủy</button>
-                                        <button type="button" id="confirm-address-btn" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 text-sm">Xác nhận</button>
-                                    </div>
+                                    <button type="button" id="show-address-list-btn" class="ml-4 text-blue-600 hover:underline font-medium text-sm px-3 py-1 rounded flex-shrink-0">
+                                        Thay đổi
+                                    </button>
                                 </div>
                             </div>
-
-                            <!-- View 3: Form thêm địa chỉ (ĐÃ XÓA) -->
+                            <!-- Hidden fields for submission -->
+                            <input type="hidden" id="hidden_address_id" name="address_id" value="{{ $selectedAddress->id }}">
+                            <input type="hidden" id="hidden_full_name" name="full_name" value="{{ $selectedAddress->full_name ?? auth()->user()->full_name }}">
+                            <input type="hidden" id="hidden_phone" name="phone" value="{{ $selectedAddress->phone_number }}">
+                            <input type="hidden" id="hidden_email" name="email" value="{{ auth()->user()->email }}">
+                            <input type="hidden" id="hidden_address" name="address" value="{{ $selectedAddress->address_line }}">
+                            <input type="hidden" id="hidden_city" name="city" value="{{ $selectedAddress->city }}">
+                            <input type="hidden" id="hidden_district" name="district" value="{{ $selectedAddress->district }}">
+                            <input type="hidden" id="hidden_ward" name="ward" value="{{ $selectedAddress->ward }}">
                         </div>
-                    @else
-                        <!-- Guest form -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
-
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="full_name" class="form-label required">Họ và tên</label>
-                                <input type="text" id="full_name" name="full_name" class="form-control"
-                                    value="{{ old('full_name') }}" required>
-                                @error('full_name')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                        <!-- View 2: Danh sách địa chỉ để chọn -->
+                        <div id="address-list-view" class="hidden">
+                            <div class="space-y-3 max-h-72 overflow-y-auto pr-2" id="address-list-container">
+                                @foreach($userAddresses as $address)
+                                    <label for="address-radio-{{ $address->id }}" class="address-option-label flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-all"
+                                        data-address-id="{{ $address->id }}"
+                                        data-full-name="{{ $address->full_name ?? auth()->user()->full_name }}"
+                                        data-phone-number="{{ $address->phone_number }}"
+                                        data-full-address="{{ $address->full_address }}"
+                                        data-is-default="{{ $address->is_default ? 'true' : 'false' }}"
+                                        data-city="{{ $address->city }}"
+                                        data-district="{{ $address->district }}"
+                                        data-ward="{{ $address->ward }}"
+                                        data-address-line="{{ $address->address_line }}"
+                                        data-latitude="{{ $address->latitude }}"
+                                        data-longitude="{{ $address->longitude }}">
+                                        <span class="text-gray-400 mr-4 mt-1"><i class="fas fa-map-marker-alt"></i></span>
+                                        <div class="flex-grow">
+                                            <div class="font-semibold">
+                                                <span>{{ $address->full_name ?? auth()->user()->full_name }}</span>
+                                                <span class="font-normal">({{ $address->phone_number }})</span>
+                                                @if($address->is_default)
+                                                    <span class="ml-2 border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white">Mặc Định</span>
+                                                @endif
+                                            </div>
+                                            <div class="text-sm text-gray-700">{{ $address->full_address }}</div>
+                                            <!-- NEW: Distance and warning placeholders -->
+                                            <div class="address-meta mt-2 text-sm">
+                                                <span class="distance-info text-blue-600 font-medium hidden"></span>
+                                                <span class="warning-info text-red-600 font-medium hidden"></span>
+                                            </div>
+                                        </div>
+                                        <input type="radio" name="selected_address_option" id="address-radio-{{ $address->id }}" value="{{ $address->id }}" class="form-radio h-5 w-5 text-orange-600 ml-4 mt-1" {{ ($selectedAddress->id ?? -1) == $address->id ? 'checked' : '' }}>
+                                    </label>
+                                @endforeach
                             </div>
-
-                            <div>
-                                <label for="phone" class="form-label required">Số điện thoại</label>
-                                <input type="tel" id="phone" name="phone" class="form-control"
-                                    value="{{ old('phone') }}" required>
-                                @error('phone')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label for="email" class="form-label required">Email</label>
-                                <input type="email" id="email" name="email" class="form-control"
-                                    value="{{ old('email') }}" required>
-                                @error('email')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="city" class="form-label required">Tỉnh/Thành phố</label>
-                                <select id="city" name="city" class="form-control" required>
-                                    <option value="Hà Nội" selected>Hà Nội</option>
-                                </select>
-                                @error('city')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="district" class="form-label required">Quận/Huyện</label>
-                                <select id="district" name="district" class="form-control" required>
-                                    <option value="">-- Chọn Quận/Huyện --</option>
-                                </select>
-                                @error('district')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="ward" class="form-label required">Xã/Phường</label>
-                                <select id="ward" name="ward" class="form-control" required>
-                                    <option value="">-- Chọn Xã/Phường --</option>
-                                </select>
-                                @error('ward')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            <div class="md:col-span-2 relative">
-                                <label for="address" class="form-label required">Số nhà, đường</label>
-                                <input type="text" id="address" name="address" class="form-control"
-                                    value="{{ old('address') }}" autocomplete="off" required>
-                                <div id="address-autocomplete" class="autocomplete-items" style="display: none;"></div>
-                                <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
-                                @error('address')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                            <div class="mt-4 pt-4 border-t">
+                                <button type="button" id="openAddAddressModalBtn" class="text-orange-600 border border-orange-500 rounded px-3 py-1 text-sm font-medium hover:bg-orange-50">
+                                    <i class="fas fa-plus mr-2"></i>Thêm địa chỉ mới
+                                </button>
+                                <div class="flex justify-end gap-3 mt-3">
+                                    <button type="button" id="cancel-change-address-btn" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 text-sm">Hủy</button>
+                                    <button type="button" id="confirm-address-btn" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600 text-sm">Xác nhận</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    @endauth
+                @endauth
+            @endif
+            @if(!$userAddresses || $userAddresses->count() === 0)
+                @php
+                    $user = Auth::user();
+                @endphp
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="full_name" class="form-label required">Họ và tên</label>
+                            <input type="text" id="full_name" name="full_name" class="form-control"
+                                value="{{ old('full_name', $user ? $user->full_name : '') }}">
+                            @error('full_name')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="phone" class="form-label required">Số điện thoại</label>
+                            <input type="tel" id="phone" name="phone" class="form-control"
+                                value="{{ old('phone', $user ? $user->phone : '') }}">
+                            @error('phone')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="email" class="form-label required">Email</label>
+                            <input type="email" id="email" name="email" class="form-control"
+                                value="{{ old('email', $user ? $user->email : '') }}">
+                            @error('email')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="city" class="form-label required">Tỉnh/Thành phố</label>
+                            <select id="city" name="city" class="form-control">
+                                <option value="Hà Nội" selected>Hà Nội</option>
+                            </select>
+                            @error('city')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="district" class="form-label required">Quận/Huyện</label>
+                            <select id="district" name="district" class="form-control">
+                                <option value="">-- Chọn Quận/Huyện --</option>
+                            </select>
+                            @error('district')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="ward" class="form-label required">Xã/Phường</label>
+                            <select id="ward" name="ward" class="form-control">
+                                <option value="">-- Chọn Xã/Phường --</option>
+                            </select>
+                            @error('ward')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="md:col-span-2 relative">
+                            <label for="address" class="form-label required">Số nhà, đường</label>
+                            <input type="text" id="address" name="address" class="form-control"
+                                value="{{ old('address') }}" autocomplete="off">
+                            <div id="address-autocomplete" class="autocomplete-items" style="display: none;"></div>
+                            <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
+                            @error('address')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <!-- MAP PICKER -->
+                        <div class="md:col-span-2 relative mt-4">
+                            <label class="form-label">Chọn vị trí trên bản đồ <span class="text-xs text-gray-500">(bắt buộc để giao hàng)</span></label>
+                            <div id="checkout-map" style="height: 300px; border-radius: 8px; margin-bottom: 8px;"></div>
+                            <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                            <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
+                            <div class="text-xs text-gray-500">Nhấn vào bản đồ để chọn vị trí giao hàng chính xác.</div>
+                            @error('latitude')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                            @error('longitude')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+            @endif
 
                     <!-- Order Notes -->
                     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -457,8 +454,330 @@
 @endsection
 
 @section('scripts')
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
 <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
-    <script>
+<style>
+.custom-marker {
+    cursor: pointer;
+}
+
+.custom-marker:hover {
+    transform: scale(1.1);
+}
+
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    }
+}
+</style>
+<script>
+// --- MAPBOX CONFIGURATION ---
+mapboxgl.accessToken = '{{ config('services.mapbox.access_token') }}';
+
+// --- MAP INITIALIZATION ---
+let checkoutMap = null;
+let mapMarker = null;
+
+function initializeMap() {
+    const mapContainer = document.getElementById('checkout-map');
+    if (!mapContainer) return;
+
+    try {
+        checkoutMap = new mapboxgl.Map({
+            container: 'checkout-map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [105.8194, 21.0227], // Hanoi center
+            zoom: 13
+        });
+
+        checkoutMap.on('load', function() {
+            console.log('Map loaded successfully');
+            
+            // Add default marker at map center
+            const defaultLng = 105.8194;
+            const defaultLat = 21.0227;
+            
+            // Create custom marker element
+            const markerElement = document.createElement('div');
+            markerElement.className = 'custom-marker';
+            markerElement.innerHTML = `
+                <div class="relative">
+                    <div class="w-8 h-8 bg-orange-500 rounded-full border-4  shadow-lg flex items-center justify-center marker-pulse">
+                        <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                    </div>
+                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                </div>
+            `;
+            
+            // Add default marker with drag functionality
+            mapMarker = new mapboxgl.Marker({
+                element: markerElement,
+                draggable: true
+            })
+            .setLngLat([defaultLng, defaultLat])
+            .setPopup(new mapboxgl.Popup().setHTML(`
+                <div class="text-sm">
+                    <p class="font-semibold">Vị trí mặc định</p>
+                    <p>Kéo thả hoặc nhấn vào bản đồ để chọn vị trí khác</p>
+                </div>
+            `))
+            .addTo(checkoutMap);
+            
+            // Handle marker drag event
+            mapMarker.on('dragend', function() {
+                const lngLat = mapMarker.getLngLat();
+                document.getElementById('latitude').value = lngLat.lat;
+                document.getElementById('longitude').value = lngLat.lng;
+                
+                // Update popup with new coordinates
+                mapMarker.getPopup().setHTML(`
+                    <div class="text-sm">
+                        <p class="font-semibold">Vị trí đã chọn</p>
+                        <p>Lat: ${lngLat.lat.toFixed(6)}</p>
+                        <p>Lng: ${lngLat.lng.toFixed(6)}</p>
+                        <p class="text-xs text-gray-500 mt-1">Có thể kéo thả để điều chỉnh</p>
+                    </div>
+                `);
+                
+                console.log('Marker dragged to:', { lat: lngLat.lat, lng: lngLat.lng });
+            });
+            
+            // Update default coordinates
+            document.getElementById('latitude').value = defaultLat;
+            document.getElementById('longitude').value = defaultLng;
+        });
+
+        // Add click event to get coordinates
+        checkoutMap.on('click', function(e) {
+            const lng = e.lngLat.lng;
+            const lat = e.lngLat.lat;
+            
+            // Update hidden inputs
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            
+            // Remove existing marker
+            if (mapMarker) {
+                mapMarker.remove();
+            }
+            
+            // Create custom marker element
+            const markerElement = document.createElement('div');
+            markerElement.className = 'custom-marker';
+            markerElement.innerHTML = `
+                 <div class="relative">
+                     <div class="w-8 h-8 bg-orange-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center marker-pulse">
+                         <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                     </div>
+                     <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                 </div>
+             `;
+            
+            // Add new marker with custom icon and drag functionality
+            mapMarker = new mapboxgl.Marker({
+                element: markerElement,
+                draggable: true
+            })
+            .setLngLat([lng, lat])
+            .setPopup(new mapboxgl.Popup().setHTML(`
+                <div class="text-sm">
+                    <p class="font-semibold">Vị trí đã chọn</p>
+                    <p>Lat: ${lat.toFixed(6)}</p>
+                    <p>Lng: ${lng.toFixed(6)}</p>
+                    <p class="text-xs text-gray-500 mt-1">Có thể kéo thả để điều chỉnh</p>
+                </div>
+            `))
+            .addTo(checkoutMap);
+            
+            // Handle marker drag event
+            mapMarker.on('dragend', function() {
+                const lngLat = mapMarker.getLngLat();
+                document.getElementById('latitude').value = lngLat.lat;
+                document.getElementById('longitude').value = lngLat.lng;
+                
+                // Update popup with new coordinates
+                mapMarker.getPopup().setHTML(`
+                    <div class="text-sm">
+                        <p class="font-semibold">Vị trí đã chọn</p>
+                        <p>Lat: ${lngLat.lat.toFixed(6)}</p>
+                        <p>Lng: ${lngLat.lng.toFixed(6)}</p>
+                        <p class="text-xs text-gray-500 mt-1">Có thể kéo thả để điều chỉnh</p>
+                    </div>
+                `);
+                
+                console.log('Marker dragged to:', { lat: lngLat.lat, lng: lngLat.lng });
+            });
+            
+            console.log('Selected coordinates:', { lat, lng });
+        });
+
+        checkoutMap.on('error', function(e) {
+            console.error('Map error:', e.error);
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize map:', error);
+        document.getElementById('checkout-map').innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-500">Không thể tải bản đồ. Vui lòng thử lại.</div>';
+    }
+}
+
+// --- ĐỊA CHỈ: TỰ ĐỘNG LOAD QUẬN/HUYỆN, XÃ/PHƯỜNG ---
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map first
+    initializeMap();
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+    const wardSelect = document.getElementById('ward');
+
+    // Load tỉnh/thành phố
+    fetch('https://provinces.open-api.vn/api/p/')
+        .then(res => res.json())
+        .then(data => {
+            citySelect.innerHTML = '<option value="">-- Chọn Tỉnh/Thành phố --</option>';
+            data.forEach(city => {
+                citySelect.innerHTML += `<option value="${city.code}" data-name="${city.name}">${city.name}</option>`;
+            });
+            // Nếu có sẵn Hà Nội thì chọn luôn
+            const defaultCity = Array.from(citySelect.options).find(opt => opt.text.includes('Hà Nội'));
+            if (defaultCity) defaultCity.selected = true;
+            citySelect.dispatchEvent(new Event('change'));
+        });
+
+    // Khi chọn tỉnh/thành phố, load quận/huyện
+    citySelect.addEventListener('change', function() {
+        const cityCode = this.value;
+        districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+        wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+        if (!cityCode) return;
+        fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+            .then(res => res.json())
+            .then(data => {
+                data.districts.forEach(d => {
+                    districtSelect.innerHTML += `<option value="${d.code}" data-name="${d.name}">${d.name}</option>`;
+                });
+            });
+    });
+
+    // Khi chọn quận/huyện, load xã/phường
+    districtSelect.addEventListener('change', function() {
+        const districtCode = this.value;
+        wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+        if (!districtCode) return;
+        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+            .then(res => res.json())
+            .then(data => {
+                data.wards.forEach(w => {
+                    wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
+                });
+            });
+    });
+
+    // Function to geocode address and update map
+    function geocodeAndUpdateMap() {
+        const city = citySelect.options[citySelect.selectedIndex]?.dataset.name || citySelect.value;
+        const district = districtSelect.options[districtSelect.selectedIndex]?.dataset.name || districtSelect.value;
+        const ward = wardSelect.value;
+        const address = document.getElementById('address').value;
+        
+        if (!district || !ward) return;
+        
+        let fullAddress = '';
+        if (address) fullAddress += address + ', ';
+        fullAddress += ward + ', ' + district + ', ' + city;
+        
+        // Use Mapbox Geocoding API
+        const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(fullAddress)}.json?access_token=${mapboxgl.accessToken}&country=VN&limit=1`;
+        
+        fetch(geocodeUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.features && data.features.length > 0) {
+                    const [lng, lat] = data.features[0].center;
+                    
+                    // Update map center
+                    if (checkoutMap) {
+                        checkoutMap.flyTo({
+                            center: [lng, lat],
+                            zoom: 15,
+                            duration: 1000
+                        });
+                        
+                        // Remove existing marker
+                        if (mapMarker) {
+                            mapMarker.remove();
+                        }
+                        
+                        // Create custom marker element
+                        const markerElement = document.createElement('div');
+                        markerElement.className = 'custom-marker';
+                        markerElement.innerHTML = `
+                             <div class="relative">
+                                 <div class="w-8 h-8 bg-orange-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center marker-pulse">
+                                     <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                                 </div>
+                                 <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-orange-500"></div>
+                             </div>
+                         `;
+                        
+                        // Add new marker with custom icon and drag functionality
+                        mapMarker = new mapboxgl.Marker({
+                            element: markerElement,
+                            draggable: true
+                        })
+                        .setLngLat([lng, lat])
+                        .setPopup(new mapboxgl.Popup().setHTML(`
+                            <div class="text-sm">
+                                <p class="font-semibold">Địa chỉ tìm thấy</p>
+                                <p>${fullAddress}</p>
+                                <p class="text-xs text-gray-500 mt-1">Kéo thả hoặc nhấn vào bản đồ để điều chỉnh</p>
+                            </div>
+                        `))
+                        .addTo(checkoutMap);
+                        
+                        // Handle marker drag event
+                        mapMarker.on('dragend', function() {
+                            const lngLat = mapMarker.getLngLat();
+                            document.getElementById('latitude').value = lngLat.lat;
+                            document.getElementById('longitude').value = lngLat.lng;
+                            
+                            // Update popup with new coordinates
+                            mapMarker.getPopup().setHTML(`
+                                <div class="text-sm">
+                                    <p class="font-semibold">Vị trí đã điều chỉnh</p>
+                                    <p>Lat: ${lngLat.lat.toFixed(6)}</p>
+                                    <p>Lng: ${lngLat.lng.toFixed(6)}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Có thể kéo thả để điều chỉnh</p>
+                                </div>
+                            `);
+                            
+                            console.log('Marker dragged to:', { lat: lngLat.lat, lng: lngLat.lng });
+                        });
+                        
+                        // Update coordinates
+                        document.getElementById('latitude').value = lat;
+                        document.getElementById('longitude').value = lng;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Geocoding error:', error);
+            });
+    }
+    
+    // Add event listeners for address changes
+    districtSelect.addEventListener('change', geocodeAndUpdateMap);
+    wardSelect.addEventListener('change', geocodeAndUpdateMap);
+    document.getElementById('address').addEventListener('blur', geocodeAndUpdateMap);
+});
         // --- SHIPPING CONFIG ---
         const shippingConfig = {
             freeShippingThreshold: {{ config('shipping.free_shipping_threshold', 200000) }},
@@ -726,12 +1045,296 @@
             
             // Start The Process
             initializeCheckoutPage();
+        });
+    </script>
 
-            // --- COUPON LOGIC (No changes needed) ---
-            // ...
-        
-            // --- PAYMENT METHOD HIGHLIGHT (No changes needed) ---
-            // ...
+    <!-- Add Address Modal -->
+    <div id="addAddressModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] hidden">
+        <div class="relative top-5 mx-auto p-4 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white max-h-[95vh] overflow-y-auto">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Thêm địa chỉ mới</h3>
+                    <button id="closeAddAddressModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form id="addAddressForm" class="space-y-4">
+                    @csrf
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="recipient_name" class="block text-sm font-medium text-gray-700">Tên người nhận</label>
+                            <input type="text" id="recipient_name" name="recipient_name" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                        <div>
+                            <label for="phone_number" class="block text-sm font-medium text-gray-700">Số điện thoại</label>
+                            <input type="tel" id="phone_number" name="phone_number" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="address_line" class="block text-sm font-medium text-gray-700">Địa chỉ cụ thể</label>
+                        <input type="text" id="address_line" name="address_line" required
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-700">Thành phố</label>
+                            <select id="city" name="city" required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Chọn thành phố</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="district" class="block text-sm font-medium text-gray-700">Quận/Huyện</label>
+                            <select id="district" name="district" required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Chọn quận/huyện</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="ward" class="block text-sm font-medium text-gray-700">Phường/Xã</label>
+                            <select id="ward" name="ward" required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500">
+                                <option value="">Chọn phường/xã</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Map Container -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chọn vị trí trên bản đồ</label>
+                        <div id="map" class="w-full h-40 rounded-lg border border-gray-300"></div>
+                        <p class="text-sm text-gray-500 mt-2">Kéo thả marker để chọn vị trí chính xác</p>
+                    </div>
+                    
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelAddAddress" 
+                                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-orange-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-orange-700">
+                            Lưu địa chỉ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add Address Modal JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            const openAddAddressModalBtn = document.getElementById('openAddAddressModalBtn');
+            const addAddressModal = document.getElementById('addAddressModal');
+            const closeAddAddressModal = document.getElementById('closeAddAddressModal');
+            const cancelAddAddress = document.getElementById('cancelAddAddress');
+            const addAddressForm = document.getElementById('addAddressForm');
+            
+            let map, marker;
+            const defaultLat = 21.0285; // Hanoi coordinates
+            const defaultLng = 105.8542;
+            
+            // Modal controls
+            if (openAddAddressModalBtn) {
+                openAddAddressModalBtn.addEventListener('click', function() {
+                    addAddressModal.classList.remove('hidden');
+                    initializeMap();
+                    loadCities();
+                });
+            }
+            
+            function closeModal() {
+                addAddressModal.classList.add('hidden');
+                addAddressForm.reset();
+                document.getElementById('district').innerHTML = '<option value="">Chọn quận/huyện</option>';
+                document.getElementById('ward').innerHTML = '<option value="">Chọn phường/xã</option>';
+            }
+            
+            closeAddAddressModal.addEventListener('click', closeModal);
+            cancelAddAddress.addEventListener('click', closeModal);
+            
+            // Close modal when clicking outside
+            addAddressModal.addEventListener('click', function(e) {
+                if (e.target === addAddressModal) {
+                    closeModal();
+                }
+            });
+            
+            // Initialize Mapbox
+            function initializeMap() {
+                if (map) {
+                    map.remove();
+                }
+                
+                // Check if Mapbox is available
+                if (typeof mapboxgl === 'undefined') {
+                    console.error('Mapbox GL JS is not loaded');
+                    document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-40 bg-gray-100 text-gray-500 rounded-lg">Bản đồ không khả dụng</div>';
+                    return;
+                }
+                
+                const token = '{{ config("services.mapbox.access_token") }}';
+                if (!token) {
+                    console.error('Mapbox token is not configured');
+                    document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-40 bg-gray-100 text-gray-500 rounded-lg">Chưa cấu hình token bản đồ</div>';
+                    return;
+                }
+                
+                mapboxgl.accessToken = token;
+                
+                try {
+                    map = new mapboxgl.Map({
+                        container: 'map',
+                        style: 'mapbox://styles/mapbox/streets-v11',
+                        center: [defaultLng, defaultLat],
+                        zoom: 13
+                    });
+                    
+                    map.on('load', function() {
+                        console.log('Map loaded successfully');
+                        
+                        // Add marker after map is loaded
+                        marker = new mapboxgl.Marker({ draggable: true })
+                            .setLngLat([defaultLng, defaultLat])
+                            .addTo(map);
+                        
+                        // Update coordinates when marker is dragged
+                        marker.on('dragend', function() {
+                            const lngLat = marker.getLngLat();
+                            document.getElementById('latitude').value = lngLat.lat;
+                            document.getElementById('longitude').value = lngLat.lng;
+                            
+                            // Reverse geocoding to get address
+                            reverseGeocode(lngLat.lng, lngLat.lat);
+                        });
+                    });
+                    
+                    map.on('error', function(e) {
+                        console.error('Map error:', e);
+                        document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-40 bg-gray-100 text-gray-500 rounded-lg">Lỗi tải bản đồ</div>';
+                    });
+                    
+                } catch (error) {
+                    console.error('Error initializing map:', error);
+                    document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-40 bg-gray-100 text-gray-500 rounded-lg">Lỗi khởi tạo bản đồ</div>';
+                    return;
+                }
+                
+                // Set initial coordinates
+                document.getElementById('latitude').value = defaultLat;
+                document.getElementById('longitude').value = defaultLng;
+            }
+            
+            // Load cities data
+            function loadCities() {
+                fetch('/api/cities')
+                    .then(response => response.json())
+                    .then(data => {
+                        const citySelect = document.getElementById('city');
+                        citySelect.innerHTML = '<option value="">Chọn thành phố</option>';
+                        data.forEach(city => {
+                            citySelect.innerHTML += `<option value="${city.name}">${city.name}</option>`;
+                        });
+                    })
+                    .catch(error => console.error('Error loading cities:', error));
+            }
+            
+            // Handle city change
+            document.getElementById('city').addEventListener('change', function() {
+                const cityName = this.value;
+                const districtSelect = document.getElementById('district');
+                const wardSelect = document.getElementById('ward');
+                
+                districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                
+                if (cityName) {
+                    fetch(`/api/districts?city=${encodeURIComponent(cityName)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(district => {
+                                districtSelect.innerHTML += `<option value="${district.name}">${district.name}</option>`;
+                            });
+                        })
+                        .catch(error => console.error('Error loading districts:', error));
+                }
+            });
+            
+            // Handle district change
+            document.getElementById('district').addEventListener('change', function() {
+                const districtName = this.value;
+                const wardSelect = document.getElementById('ward');
+                
+                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                
+                if (districtName) {
+                    const cityName = document.getElementById('city').value;
+                    fetch(`/api/wards?city=${encodeURIComponent(cityName)}&district=${encodeURIComponent(districtName)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach(ward => {
+                                wardSelect.innerHTML += `<option value="${ward.name}">${ward.name}</option>`;
+                            });
+                        })
+                        .catch(error => console.error('Error loading wards:', error));
+                }
+            });
+            
+            // Reverse geocoding function
+            function reverseGeocode(lng, lat) {
+                fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&language=vi`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.features && data.features.length > 0) {
+                            const place = data.features[0];
+                            const addressLine = place.place_name_vi || place.place_name;
+                            document.getElementById('address_line').value = addressLine;
+                        }
+                    })
+                    .catch(error => console.error('Reverse geocoding error:', error));
+            }
+            
+            // Handle form submission
+            addAddressForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('/profile/addresses', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Đã thêm địa chỉ mới thành công!', 'success');
+                        closeModal();
+                        // Reload the page to show the new address
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showToast(data.message || 'Có lỗi xảy ra khi thêm địa chỉ', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Có lỗi xảy ra khi thêm địa chỉ', 'error');
+                });
+            });
         });
     </script>
 @endsection

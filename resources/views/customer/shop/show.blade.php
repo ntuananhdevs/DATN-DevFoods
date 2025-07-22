@@ -3,6 +3,7 @@
 @section('title', $product->name)
 
 @section('content')
+<x-customer-container>
 <style>
    /* Discount code styles */
    .discount-code-animation {
@@ -1470,7 +1471,7 @@
         </form>
     </div>
 </div>
-
+</x-customer-container>
 @endsection
 
 @section('scripts')

@@ -75,8 +75,7 @@
         </div>
     </div>
 
-
-
+    <div class="max-w-[1240px] mx-auto w-full"> 
 
     <div class="container mx-auto px-4 py-8">
         <!-- Categories Section -->
@@ -350,11 +349,10 @@
         </div>
     </div>
     </div>
-    </section>
+    <div class="max-w-[1240px] mx-auto w-full">
 
     <!-- Order Now Section -->
-    <section class="py-10 container">
-        <div class="rounded-xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-500">
+        <div class="rounded-xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-500 mb-8">
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="p-8 md:p-12 flex flex-col justify-center">
                     <h2 class="text-2xl md:text-3xl font-bold mb-4 text-white">Đặt Hàng Ngay!</h2>
@@ -399,8 +397,8 @@
                 </div>
             </div>
         </div>
-    </section>
     </div>
+    
 @endsection
 
 @section('scripts')
