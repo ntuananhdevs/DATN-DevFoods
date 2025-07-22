@@ -9,6 +9,7 @@
 @section('title', 'FastFood - Tìm kiếm')
 
 @section('content')
+<x-customer-container>
 <style>
     .container {
         max-width: 1280px;
@@ -668,6 +669,7 @@
         </div>
     </div>
 </main>
+</x-customer-container>
 @endsection
 
 @section('scripts')

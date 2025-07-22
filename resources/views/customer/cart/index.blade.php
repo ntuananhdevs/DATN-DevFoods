@@ -3,6 +3,7 @@
 @section('title', 'FastFood - Giỏ Hàng')
 
 @section('content')
+<x-customer-container>
 <style>
    @keyframes priceUpdate {
        0% { 
@@ -336,6 +337,7 @@
         </div>
     </div>
     </form>
+</x-customer-container>
 </div>
 
 <!-- Mini Cart Aside -->

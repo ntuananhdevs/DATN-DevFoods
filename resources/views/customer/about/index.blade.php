@@ -21,6 +21,7 @@
     @endphp
     @include('components.banner', ['banners' => $aboutsBanner])
 
+    <div class="max-w-[1240px] mx-auto w-full">
 
 <div class="container mx-auto px-4 py-12">
     <!-- Câu chuyện của chúng tôi -->

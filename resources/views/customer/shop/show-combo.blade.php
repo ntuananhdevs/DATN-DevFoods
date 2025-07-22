@@ -3,6 +3,7 @@
 @section('title', $combo->name)
 
 @section('content')
+<x-customer-container>
 <style>
     #report-review-modal .bg-white {
         max-width: 40rem;
@@ -769,6 +770,7 @@
             </div>
         @endif
     </div>
+</x-customer-container>
 @endsection
 @section('scripts')
     <meta name="csrf-token" content="{{ csrf_token() }}">
