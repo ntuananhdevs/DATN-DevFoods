@@ -6,6 +6,8 @@
             $redirectUrl = route('branch.orders.index', ['order' => $orderId]);
         } elseif ($conversationId) {
             $redirectUrl = route('branch.chat.index', ['chat' => $conversationId]);
+        } elseif (($notification->data['type'] ?? null) === 'branch_new_review' || ($notification->data['type'] ?? null) === 'branch_review_reported') {
+            $redirectUrl = $notification->data['url'] ?? '#';
         } else {
             $redirectUrl = '#';
         }
@@ -40,6 +42,12 @@
             @elseif ($conversationId)
                 <p class="text-sm font-medium">{{ $notification->data['message'] ?? 'Tin nhắn mới' }}</p>
                 <p class="text-xs text-muted-foreground">Nội dung: {{ $notification->data['content'] ?? '' }}</p>
+            @elseif (($notification->data['type'] ?? null) === 'branch_new_review')
+                <p class="text-sm font-medium">{{ $notification->data['message'] ?? 'Có bình luận mới tại chi nhánh' }}</p>
+                <p class="text-xs text-muted-foreground">ID bình luận: {{ $notification->data['review_id'] ?? '' }}</p>
+            @elseif (($notification->data['type'] ?? null) === 'branch_review_reported')
+                <p class="text-sm font-medium">{{ $notification->data['message'] ?? 'Bình luận bị báo cáo tại chi nhánh' }}</p>
+                <p class="text-xs text-muted-foreground">ID bình luận: {{ $notification->data['review_id'] ?? '' }}</p>
             @endif
             <p class="text-xs text-muted-foreground">
                 {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</p>

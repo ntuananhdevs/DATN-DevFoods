@@ -29,11 +29,6 @@
                         </div>
                     </div>
                     <div class="flex gap-2 items-center">
-                        <select name="status" class="border rounded px-2 py-2 min-w-[150px]">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="approved" @if(request('status')=='approved') selected @endif>Đã duyệt</option>
-                            <option value="pending" @if(request('status')=='pending') selected @endif>Chờ duyệt</option>
-                        </select>
                         <a href="{{ route('admin.reviews.reports') }}" class="flex items-center gap-1 border rounded px-3 py-2 min-w-[120px] bg-pink-50 hover:bg-pink-100 text-pink-600 font-semibold transition" title="Xem báo cáo vi phạm">
                             <i class="fas fa-flag"></i>
                             <span>Báo cáo</span>
@@ -57,7 +52,6 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nội dung</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số sao</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                         </tr>
                     </thead>
@@ -69,8 +63,18 @@
                                     <div class="flex items-center gap-2">
                                         @if($review->product && $review->product->image)
                                             <img src="{{ Storage::disk('s3')->url($review->product->image) }}" alt="{{ $review->product->name }}" class="w-10 h-10 object-cover rounded">
+                                        @elseif($review->combo && $review->combo->image_url)
+                                            <img src="{{ $review->combo->image_url }}" alt="{{ $review->combo->name }}" class="w-10 h-10 object-cover rounded">
                                         @endif
-                                        <span>{{ $review->product->name ?? 'N/A' }}</span>
+                                        <span>
+                                            @if($review->product)
+                                                {{ $review->product->name }}
+                                            @elseif($review->combo)
+                                                [Combo] {{ $review->combo->name }}
+                                            @else
+                                                N/A
+                                            @endif
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
@@ -84,15 +88,6 @@
                                 <td class="px-4 py-3 max-w-xs truncate" title="{{ $review->review }}">{{ Str::limit($review->review, 80) }}</td>
                                 <td class="px-4 py-3 text-center">{{ $review->rating }}</td>
                                 <td class="px-4 py-3">
-                                    @if($review->is_hidden)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Đã ẩn</span>
-                                    @elseif($review->approved)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Đã duyệt</span>
-                                    @else
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Chờ duyệt</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">
                                     <div class="flex gap-2">
                                         <a href="{{ route('admin.reviews.show', $review->id) }}" class="btn btn-xs btn-secondary" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
@@ -101,12 +96,40 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-xs btn-danger" title="Xóa"
-                                                onclick="dtmodalConfirmDelete({
+                                                onclick="dtmodalCreateModal({
+                                                    type: 'warning',
                                                     title: 'Xác nhận xóa bình luận',
                                                     subtitle: 'Bạn có chắc chắn muốn xóa bình luận này?',
-                                                    message: 'Hành động này không thể hoàn tác.',
-                                                    itemName: '{{ Str::limit($review->review, 40) }}',
-                                                    onConfirm: () => this.closest('form').submit()
+                                                    message: `Hành động này không thể hoàn tác. Bạn đang xóa bình luận có nội dung: <strong>\'{{ Str::limit($review->review, 40) }}\'</strong>`,
+                                                    confirmText: 'Xác nhận xóa',
+                                                    cancelText: 'Hủy bỏ',
+                                                    onConfirm: () => {
+                                                        const form = this.closest('form');
+                                                        const url = form.action;
+                                                        const token = form.querySelector('input[name=_token]').value;
+                                                        const row = form.closest('tr');
+
+                                                        fetch(url, {
+                                                            method: 'DELETE',
+                                                            headers: {
+                                                                'X-CSRF-TOKEN': token,
+                                                                'Accept': 'application/json',
+                                                                'Content-Type': 'application/json'
+                                                            }
+                                                        })
+                                                        .then(res => res.json())
+                                                        .then(data => {
+                                                            if(data.success) {
+                                                                dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                                                                row.remove();
+                                                            } else {
+                                                                dtmodalShowToast('error', { title: 'Lỗi', message: data.message });
+                                                            }
+                                                        })
+                                                        .catch(() => {
+                                                            dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi xảy ra, vui lòng thử lại.' });
+                                                        });
+                                                    }
                                                 })">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -116,7 +139,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">Không có bình luận nào.</td>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">Không có bình luận nào.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -183,6 +206,21 @@
 @endsection
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if(session('success'))
+        dtmodalShowToast('success', {
+            title: 'Thành công',
+            message: '{{ session('success') }}'
+        });
+    @endif
+    @if(session('error'))
+        dtmodalShowToast('error', {
+            title: 'Lỗi',
+            message: '{{ session('error') }}'
+        });
+    @endif
+});
+
 function showReviewDetailModal(review) {
     let modalHtml = `
         <div class='dtmodal-overlay dtmodal-active dtmodal-dynamic' id='reviewDetailModal'>
@@ -201,36 +239,14 @@ function showReviewDetailModal(review) {
                     <p><b>Số sao:</b> ${review.rating}</p>
                     <p><b>Nội dung:</b> ${review.review}</p>
                     <p><b>Ngày:</b> ${review.review_date ?? ''}</p>
-                    <p><b>Trạng thái duyệt:</b> <span id='review-approved-status'>${review.approved ? 'Đã duyệt' : 'Chưa duyệt'}</span></p>
                 </div>
                 <div class='dtmodal-footer'>
-                    <button class='dtmodal-btn dtmodal-btn-outline' onclick='updateReviewApproved(${review.id}, 0)'>Bỏ duyệt (0)</button>
-                    <button class='dtmodal-btn dtmodal-btn-primary' onclick='updateReviewApproved(${review.id}, 1)'>Duyệt (1)</button>
+                    <button class='dtmodal-btn dtmodal-btn-primary' onclick='dtmodalCloseModal("reviewDetailModal")'>Đóng</button>
                 </div>
             </div>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-}
-function updateReviewApproved(id, value) {
-    fetch(`/admin/reviews/${id}/approve`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ approved: value })
-    })
-    .then(res => res.json())
-    .then(data => {
-        dtmodalShowToast({ type: data.success ? 'success' : 'error', title: 'Thông báo', message: data.message });
-        dtmodalCloseModal('reviewDetailModal');
-        setTimeout(() => window.location.reload(), 1000);
-    })
-    .catch(() => {
-        dtmodalShowToast({ type: 'error', title: 'Thông báo lỗi', message: 'Có lỗi xảy ra!' });
-    });
 }
 </script>
 @endpush 

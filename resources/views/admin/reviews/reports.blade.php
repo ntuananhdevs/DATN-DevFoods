@@ -33,7 +33,15 @@
                         @forelse ($reports as $report)
                             <tr>
                                 <td class="px-4 py-3">{{ $report->id }}</td>
-                                <td class="px-4 py-3">{{ $report->review->product->name ?? 'N/A' }}</td>
+                                <td class="px-4 py-3">
+                                    @if($report->review->product)
+                                        {{ $report->review->product->name }}
+                                    @elseif($report->review->combo)
+                                        {{ $report->review->combo->name }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3">{{ $report->review->user->name ?? 'Ẩn danh' }}</td>
                                 <td class="px-4 py-3">{{ $report->reason_type }}</td>
                                 <td class="px-4 py-3 max-w-xs truncate" title="{{ $report->reason_detail }}">{{ Str::limit($report->reason_detail, 80) }}</td>

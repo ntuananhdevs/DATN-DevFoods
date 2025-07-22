@@ -58,6 +58,7 @@ class CartController extends Controller
 
         if ($cart) {
             $cartItems = CartItem::with([
+                'combo', // thêm dòng này để load combo cho cart item
                 'variant.product' => function($query) {
                     $query->with('images', 'variants.variantValues');
                 },

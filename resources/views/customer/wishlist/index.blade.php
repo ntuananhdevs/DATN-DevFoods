@@ -96,15 +96,15 @@
     <div class="wishlist-stats rounded-xl p-6 mb-8 text-white">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center">
-                <div class="text-3xl font-bold mb-1" id="total-items">12</div>
+                <div class="text-3xl font-bold mb-1" id="total-items">{{ $stats['total_items'] ?? 0 }}</div>
                 <div class="text-orange-100">Món yêu thích</div>
             </div>
             <div class="text-center">
-                <div class="text-3xl font-bold mb-1" id="total-value">1.250.000đ</div>
+                <div class="text-3xl font-bold mb-1" id="total-value">{{ $stats['total_value'] ?? '0đ' }}</div>
                 <div class="text-orange-100">Tổng giá trị</div>
             </div>
             <div class="text-center">
-                <div class="text-3xl font-bold mb-1" id="categories-count">5</div>
+                <div class="text-3xl font-bold mb-1" id="categories-count">{{ $stats['categories_count'] ?? 0 }}</div>
                 <div class="text-orange-100">Danh mục</div>
             </div>
         </div>
@@ -155,18 +155,17 @@
             @forelse($wishlistItems as $item)
                 <div class="wishlist-item bg-white rounded-lg overflow-hidden shadow-md" 
                     data-category="{{ $item->product->category->name ?? 'other' }}" 
-                    data-price="{{ $item->productVariant ? $item->product->base_price + $item->productVariant->variantValues->sum('price_adjustment') : $item->product->base_price }}"
+                    data-price="{{ $item->product->base_price }}"
                     data-name="{{ $item->product->name }}"
                     data-date="{{ $item->added_at ? $item->added_at->toDateString() : '' }}"
-                    data-product-id="{{ $item->product->id }}">
+                    data-product-id="{{ $item->product->id }}"
+                    data-variant-values="{{ json_encode($item->variant_values ?? []) }}">
                     <div class="relative">
                         <a href="{{ route('products.show', $item->product->slug) }}" class="block relative h-48 overflow-hidden">
                             @php
-                                $image = $item->productVariant && $item->productVariant->image 
-                                    ? asset('storage/' . $item->productVariant->image)
-                                    : ($item->product->images->where('is_primary', true)->first() 
-                                        ? asset('storage/' . $item->product->images->where('is_primary', true)->first()->img)
-                                        : '/placeholder.svg?height=400&width=400');
+                                $image = $item->product->images->where('is_primary', true)->first() 
+                                    ? asset('storage/' . $item->product->images->where('is_primary', true)->first()->img)
+                                    : '/placeholder.svg?height=400&width=400';
                             @endphp
                             <img src="{{ $image }}" alt="{{ $item->product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                         </a>
@@ -213,10 +212,10 @@
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center gap-2">
                                 <span class="font-bold text-lg text-orange-500">
-                                    {{ number_format($item->productVariant ? $item->product->base_price + $item->productVariant->variantValues->sum('price_adjustment') : $item->product->base_price, 0, ',', '.') }}₫
+                                    {{ number_format($item->product->discount_price ?? $item->product->base_price, 0, ',', '.') }}₫
                                 </span>
                             </div>
-                            <span class="text-xs text-gray-400">Đã lưu: {{ $item->added_at ? $item->added_at->diffForHumans() : 'N/A' }}</span>
+                            <span class="text-xs text-gray-400">Đã lưu: {{ $item->created_at ? $item->created_at->diffForHumans() : 'N/A' }}</span>
                         </div>
 
                         <div class="product-actions flex gap-2">
@@ -348,12 +347,13 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             const productId = this.dataset.productId;
             if (!productId) return;
-            fetch(`/wishlist/${productId}`, {
+            fetch('/wishlist', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                 },
+                body: JSON.stringify({ product_id: productId })
             })
             .then(response => response.json())
             .then(data => {
@@ -407,10 +407,47 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('button:has(.fa-shopping-cart)').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            const productName = this.closest('.wishlist-item').querySelector('h3').textContent;
-            if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: `Đã thêm "${productName}" vào giỏ hàng` });
-            
+            const wishlistItem = this.closest('.wishlist-item');
+            const productId = wishlistItem.dataset.productId;
+            // Lấy variant_values từ data-variant-values nếu có, ngược lại để []
+            let variantValues = [];
+            if (wishlistItem.dataset.variantValues) {
+                try {
+                    variantValues = JSON.parse(wishlistItem.dataset.variantValues);
+                    if (!Array.isArray(variantValues)) variantValues = [];
+                } catch (err) {
+                    variantValues = [];
+                }
+            }
+            // Lấy branch_id từ window.currentBranchId hoặc mặc định 1
+            const branchId = window.currentBranchId || 1;
+            const quantity = 1;
+
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    variant_values: variantValues,
+                    branch_id: branchId,
+                    quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (window.dtmodalShowToast) dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                } else {
+                    if (window.dtmodalShowToast) dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Không thể thêm vào giỏ hàng' });
+                }
+            })
+            .catch(error => {
+                if (window.dtmodalShowToast) dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi xảy ra, vui lòng thử lại!' });
+            });
+
             // Add cart animation
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {

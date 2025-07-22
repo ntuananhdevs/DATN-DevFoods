@@ -1028,7 +1028,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0 review-main">
                                     <div class="flex flex-wrap items-center gap-2 review-user-row">
-                                        <span class="font-medium text-gray-900">{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}</span>
+                                        <span class="font-medium text-gray-900">{{ $review->user->name }}</span>
                                         @if($review->is_verified_purchase)
                                             <span class="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                                 <i class="fas fa-check-circle"></i>
@@ -1113,7 +1113,7 @@
                                         </button>
                                         <button class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn"
                                             data-review-id="{{ $review->id }}"
-                                            data-user-name="{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}"
+                                            data-user-name="{{ $review->user->name }}"
                                             data-route-reply="{{ route('reviews.reply', ['review' => $review->id]) }}">
                                             <i class="fas fa-reply"></i>
                                             <span>Phản hồi</span>
@@ -1136,7 +1136,7 @@
                                 </div>
                                 <div class="reply-bubble flex-1">
                                     <div class="reply-header">
-                                        <span class="reply-author">{{ $reply->user->name ?? 'Ẩn danh' }}</span>
+                                        <span class="reply-author">{{ $reply->user->name }}</span>
                                         <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
                                         @auth
                                             @if($reply->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
@@ -1164,49 +1164,54 @@
                     </div>
 
                     {{-- Form gửi đánh giá hoặc phản hồi --}}
-                    <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                        <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
-                            @csrf
-                            <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
-                            <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
-                            <div id="replying-to" class="mb-2 hidden">
-                                <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
-                                <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
-                            </div>
-                            <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
-                                <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
-                                <div class="flex items-center" id="rating-stars">
-                                    @for($i = 1; $i <= 5; $i++)
-                                        <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
-                                        <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
-                                            <i class="fas fa-star"></i>
-                                        </label>
-                                    @endfor
+                    @auth
+                        <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                            <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
+                                @csrf
+                                <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
+                                <input type="hidden" name="type" value="product">
+                                <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
+                                <div id="replying-to" class="mb-2 hidden">
+                                    <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
+                                    <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
                                 </div>
-                            </div>
-                            <div id="review-message" class="mb-4 text-center"></div>
-                            <div>
-                                <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
-                            </div>
-                            <div>
-                                <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
-                                <div class="flex items-center justify-between gap-4 flex-wrap">
-                                    <div>
-                                        <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
-                                        <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
-                                            <i class="fas fa-camera text-3xl text-orange-500"></i>
-                                            <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center ml-auto">
-                                        <input type="checkbox" name="is_anonymous" id="is_anonymous" value="1" class="custom-checkbox" {{ old('is_anonymous') ? 'checked' : '' }}>
-                                        <label for="is_anonymous" class="anonymous-label">Ẩn danh</label>
+                                <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
+                                    <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
+                                    <div class="flex items-center" id="rating-stars">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
+                                            <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
+                                                <i class="fas fa-star"></i>
+                                            </label>
+                                        @endfor
                                     </div>
                                 </div>
-                            </div>
-                            <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
-                        </form>
-                    </div>
+                                <div id="review-message" class="mb-4 text-center"></div>
+                                <div>
+                                    <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
+                                    <div class="flex items-center justify-between gap-4 flex-wrap">
+                                        <div>
+                                            <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
+                                            <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
+                                                <i class="fas fa-camera text-3xl text-orange-500"></i>
+                                                <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                                                <button type="button" id="remove_preview_image" class="absolute top-0 right-0 m-1 bg-white bg-opacity-80 rounded-full p-1 shadow text-gray-700 hover:bg-red-500 hover:text-white hidden" style="z-index:2;" title="Xoá ảnh">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
+                            </form>
+                        </div>
+                    @else
+                        <div class="mt-8 p-6 bg-gray-50 rounded-lg border text-center">
+                            <p class="text-gray-600 mb-4">Vui lòng <a href="{{ route('customer.login') }}" class="text-orange-500 font-semibold hover:underline">đăng nhập</a> để gửi đánh giá cho sản phẩm này.</p>
+                    @endauth
 
                     @if($product->reviews->count() > 0)
                     <div class="mt-6 flex items-center justify-between">

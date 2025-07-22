@@ -102,6 +102,10 @@
                             <div class="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
                                 @if($item->combo_id && $item->combo && $item->combo->image_url)
                                     <img src="{{ $item->combo->image_url }}" alt="{{ $item->combo->name }}" class="object-cover w-full h-full">
+                                @elseif($item->combo_id && $item->combo)
+                                    <div class="h-full w-full bg-gray-200 flex items-center justify-center">
+                                        <i class="fas fa-image text-gray-400"></i>
+                                    </div>
                                 @elseif($item->variant && $item->variant->product && $item->variant->product->primary_image)
                                     <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" alt="{{ $item->variant->product->name }}" class="object-cover w-full h-full">
                                 @else

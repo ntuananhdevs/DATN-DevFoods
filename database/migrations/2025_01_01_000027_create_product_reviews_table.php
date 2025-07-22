@@ -21,10 +21,8 @@ return new class extends Migration
             $table->integer('rating'); // 1-5 sao
             $table->text('review')->nullable();
             $table->dateTime('review_date');
-            $table->boolean('approved')->default(false);
             $table->string('review_image')->nullable();
             $table->boolean('is_verified_purchase')->default(true);
-            $table->boolean('is_anonymous')->default(false);
             $table->integer('helpful_count')->default(0);
             $table->integer('report_count')->default(0);
             $table->boolean('is_featured')->default(false);

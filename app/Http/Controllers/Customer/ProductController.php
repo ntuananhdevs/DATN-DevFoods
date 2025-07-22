@@ -19,6 +19,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\BranchService;
 use App\Models\ReviewReport;
+use App\Rules\ForbiddenWords;
+use App\Notifications\Customer\ReviewLikedNotification;
+use App\Notifications\Customer\ReviewReportedNotification;
 
 class ProductController extends Controller
 {
@@ -45,7 +48,7 @@ class ProductController extends Controller
                         'category',
                         'combos', // Thêm dòng này để eager load combos
                         'images' => function($q) { $q->orderBy('is_primary', 'desc'); },
-                        'reviews' => function($q) { $q->where('approved', true); },
+                        'reviews' => function($q) { $q->with('user')->orderBy('created_at', 'desc'); },
                         'variants.branchStocks' => function($q) use ($selectedBranchId) {
                             if ($selectedBranchId) $q->where('branch_id', $selectedBranchId);
                         },
@@ -239,11 +242,7 @@ class ProductController extends Controller
             'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
             },
-            'reviews' => function($query) {
-                $query->where('approved', true)
-                      ->with('user')
-                      ->orderBy('created_at', 'desc');
-            },
+            'reviews' => function($query) { $query->with('user')->orderBy('created_at', 'desc'); },
             'variants.variantValues.attribute',
             'variants.branchStocks' => function($query) use ($selectedBranchId) {
                 if ($selectedBranchId) {
@@ -420,9 +419,7 @@ class ProductController extends Controller
             'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
             },
-            'reviews' => function($query) {
-                $query->where('approved', true);
-            },
+            'reviews' => function($query) { $query; },
             'variants.variantValues'
         ])
         ->where('category_id', $product->category_id)
@@ -619,7 +616,6 @@ class ProductController extends Controller
     // Lấy reviews cho combo
     $reviews = \App\Models\ProductReview::with(['user', 'replies.user'])
         ->where('combo_id', $combo->id)
-        ->where('approved', true)
         ->orderBy('review_date', 'desc')
         ->get();
 
@@ -871,11 +867,24 @@ class ProductController extends Controller
     public function submitReview(Request $request, $id)
     {
         $request->validate([
-            'rating' => 'required|integer|min:0|max:5',
-            'review' => 'nullable|string|max:2000',
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => ['nullable','string','max:2000', new ForbiddenWords],
             'review_image' => 'nullable|image|max:2048',
-            'is_anonymous' => 'nullable|boolean',
-            'type' => 'required|in:product,combo', // Thêm validation cho type
+            'type' => 'required|in:product,combo',
+            'branch_id' => 'required|exists:branches,id',
+        ], [
+            'rating.required' => 'Vui lòng chọn số sao đánh giá.',
+            'rating.integer' => 'Số sao phải là số nguyên.',
+            'rating.min' => 'Số sao tối thiểu là 1.',
+            'rating.max' => 'Số sao tối đa là 5.',
+            'review.string' => 'Nội dung đánh giá phải là chuỗi ký tự.',
+            'review.max' => 'Nội dung đánh giá không được vượt quá 2000 ký tự.',
+            'review_image.image' => 'File phải là hình ảnh.',
+            'review_image.max' => 'Kích thước hình ảnh không được vượt quá 2MB.',
+            'type.required' => 'Loại đánh giá là bắt buộc.',
+            'type.in' => 'Loại đánh giá không hợp lệ.',
+            'branch_id.required' => 'Chi nhánh là bắt buộc.',
+            'branch_id.exists' => 'Chi nhánh không tồn tại.',
         ]);
 
         $user = $request->user();
@@ -943,9 +952,7 @@ class ProductController extends Controller
         $review->rating = $request->input('rating');
         $review->review = $request->input('review');
         $review->review_date = now();
-        $review->approved = false;
         $review->is_verified_purchase = true;
-        $review->is_anonymous = $request->boolean('is_anonymous', false);
         $review->helpful_count = 0;
         $review->report_count = 0;
         $review->is_featured = false;
@@ -968,15 +975,18 @@ class ProductController extends Controller
 
         $review->save();
 
+        // Broadcast event for real-time review update
+        event(new \App\Events\Customer\ReviewCreated($review));
+
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Đánh giá của bạn đã được gửi và đang chờ duyệt!']);
+            return response()->json(['message' => 'Đánh giá của bạn đã được gửi!']);
         }
         
         // Redirect về trang tương ứng
         if ($type === 'product') {
-            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
         } else {
-            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
         }
     }
 
@@ -1025,6 +1035,11 @@ class ProductController extends Controller
         $review->helpful_count = $review->helpful_count + 1;
         $review->save();
 
+        // Gửi thông báo đến người viết review
+        if ($review->user_id !== $user->id) { // Chỉ gửi thông báo nếu người thích không phải là người viết review
+            $review->user->notify(new ReviewLikedNotification($review, $user));
+        }
+
         return response()->json([
             'success' => true,
             'helpful_count' => $review->helpful_count,
@@ -1068,13 +1083,23 @@ class ProductController extends Controller
         $user = $request->user();
         $review = \App\Models\ProductReview::findOrFail($id);
 
-        // Kiểm tra user đã mua sản phẩm này chưa (đã có đơn hàng delivered chứa product này)
-        $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
-            ->whereHas('orderItems.productVariant', function($q) use ($review) {
-                $q->where('product_id', $review->product_id);
-            })
-            ->exists();
+        // Kiểm tra user đã mua sản phẩm hoặc combo này chưa
+        $hasPurchased = false;
+        if ($review->product_id) {
+            $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems.productVariant', function($q) use ($review) {
+                    $q->where('product_id', $review->product_id);
+                })
+                ->exists();
+        } elseif ($review->combo_id) {
+            $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems', function($q) use ($review) {
+                    $q->where('combo_id', $review->combo_id);
+                })
+                ->exists();
+        }
         if (!$hasPurchased) {
             return response()->json([
                 'success' => false,
@@ -1109,6 +1134,11 @@ class ProductController extends Controller
         if (isset($review->report_count)) {
             $review->report_count = $review->report_count + 1;
             $review->save();
+        }
+
+        // Gửi thông báo đến người viết review
+        if ($review->user_id !== $user->id) { // Chỉ gửi thông báo nếu người báo cáo không phải là người viết review
+            $review->user->notify(new ReviewReportedNotification($review, $user, $request->input('reason_type')));
         }
 
         return response()->json([
