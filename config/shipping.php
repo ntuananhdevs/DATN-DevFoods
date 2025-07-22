@@ -52,9 +52,21 @@ return [
      */
     'buffer_time_minutes' => 10,
 
-     /**
+    /**
      * Thời gian chuẩn bị mặc định (phút)
       * Sử dụng khi một sản phẩm trong giỏ hàng không có thời gian chuẩn bị cụ thể.
       */
     'default_preparation_time' => 15,
-]; 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Driver Commission Settings
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Tỷ lệ hoa hồng cho tài xế (%).
+     * Tài xế sẽ nhận được phần trăm này từ phí giao hàng.
+     */
+    'driver_commission_rate' => 0.6, // 60% phí giao hàng
+];
