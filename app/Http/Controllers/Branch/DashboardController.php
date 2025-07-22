@@ -29,7 +29,20 @@ class DashboardController extends Controller
         $now = now();
 
         $orderStatuses = [
-            'new', 'awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_picked_up', 'in_transit', 'delivered', 'item_received', 'cancelled', 'failed_delivery', 'delivery_incomplete', 'pending_refund', 'investigating', 'waiting_for_confirmation'
+            'new',
+            'awaiting_confirmation',
+            'confirmed',
+            'awaiting_driver',
+            'driver_picked_up',
+            'in_transit',
+            'delivered',
+            'item_received',
+            'cancelled',
+            'failed_delivery',
+            'delivery_incomplete',
+            'pending_refund',
+            'investigating',
+            'waiting_for_confirmation'
         ];
         $pendingStatuses = ['new', 'awaiting_confirmation', 'confirmed', 'awaiting_driver', 'waiting_for_confirmation'];
         $paidStatuses = ['delivered', 'item_received'];
@@ -74,7 +87,7 @@ class DashboardController extends Controller
             ->groupBy('hour')
             ->orderBy('hour')
             ->get();
-        $ordersByHour = collect(range(0,23))->map(function($h) use ($ordersByHourRaw) {
+        $ordersByHour = collect(range(0, 23))->map(function ($h) use ($ordersByHourRaw) {
             $row = $ordersByHourRaw->firstWhere('hour', $h);
             return [
                 'hour' => $h,
@@ -84,16 +97,16 @@ class DashboardController extends Controller
 
         // Top 5 món ăn bán chạy nhất (theo số lượng, tháng)
         $topProducts = OrderItem::selectRaw('product_variant_id, SUM(quantity) as total')
-            ->whereHas('order', function($q) use ($branch, $monthStart, $now) {
+            ->whereHas('order', function ($q) use ($branch, $monthStart, $now) {
                 $q->where('branch_id', $branch->id)
-                  ->whereBetween('order_date', [$monthStart, $now]);
+                    ->whereBetween('order_date', [$monthStart, $now]);
             })
             ->groupBy('product_variant_id')
             ->orderByDesc('total')
             ->with(['productVariant.product'])
             ->limit(5)
             ->get()
-            ->map(function($item) {
+            ->map(function ($item) {
                 return [
                     'name' => $item->productVariant?->product?->name ?? 'Không xác định',
                     'total' => $item->total
@@ -157,7 +170,7 @@ class DashboardController extends Controller
         $orders = $ordersQuery->with(['driver', 'branch', 'cancellation'])->get();
 
         // Gom theo tài xế
-        $stats = $orders->groupBy('driver_id')->map(function($orders, $driverId) use ($paidStatuses) {
+        $stats = $orders->groupBy('driver_id')->map(function ($orders, $driverId) use ($paidStatuses) {
             $driver = $orders->first()->driver;
             $branch = $orders->first()->branch;
             $delivered = $orders->whereIn('status', $paidStatuses);
@@ -165,7 +178,7 @@ class DashboardController extends Controller
             $deliveredToday = $delivered->where('order_date', '>=', now()->startOfDay())->count();
             $deliveredMonth = $delivered->where('order_date', '>=', now()->startOfMonth())->count();
             $deliveredYear = $delivered->where('order_date', '>=', now()->startOfYear())->count();
-            $onTime = $delivered->where(function($o) {
+            $onTime = $delivered->where(function ($o) {
                 return $o->actual_delivery_time <= $o->estimated_delivery_time;
             })->count();
             $onTimeRate = $deliveredCount > 0 ? round($onTime / $deliveredCount * 100, 2) : 0;
@@ -220,7 +233,7 @@ class DashboardController extends Controller
             ->with(['productVariant.product'])
             ->get();
 
-        $foods = $items->map(function($item) {
+        $foods = $items->map(function ($item) {
             return [
                 'name' => $item->productVariant?->product?->name ?? 'Không xác định',
                 'variant' => $item->productVariant?->name,
@@ -246,7 +259,7 @@ class DashboardController extends Controller
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
             $dateRange->push($date->toDateString());
         }
-        $foodsByDay = $dateRange->map(function($d) use ($itemsByDay) {
+        $foodsByDay = $dateRange->map(function ($d) use ($itemsByDay) {
             $row = $itemsByDay->firstWhere('day', $d);
             return [
                 'day' => $d,
@@ -260,7 +273,7 @@ class DashboardController extends Controller
             ->groupBy('hour')
             ->orderBy('hour')
             ->get();
-        $foodsByHour = collect(range(0,23))->map(function($h) use ($itemsByHour) {
+        $foodsByHour = collect(range(0, 23))->map(function ($h) use ($itemsByHour) {
             $row = $itemsByHour->firstWhere('hour', $h);
             return [
                 'hour' => $h,
@@ -340,7 +353,7 @@ class DashboardController extends Controller
         for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
             $dateRange->push($date->toDateString());
         }
-        $ordersByDay = $dateRange->map(function($d) use ($ordersByDayRaw) {
+        $ordersByDay = $dateRange->map(function ($d) use ($ordersByDayRaw) {
             $row = $ordersByDayRaw->firstWhere('day', $d);
             return [
                 'day' => $d,
@@ -357,9 +370,9 @@ class DashboardController extends Controller
 
         // Đơn hàng nổi bật
         $largestOrder = $orders->sortByDesc('total_amount')->first();
-        $longestOrder = $orders->filter(function($o) {
+        $longestOrder = $orders->filter(function ($o) {
             return $o->actual_delivery_time && $o->estimated_delivery_time;
-        })->sortByDesc(function($o) {
+        })->sortByDesc(function ($o) {
             return $o->actual_delivery_time->diffInMinutes($o->estimated_delivery_time, false);
         })->first();
 
@@ -395,13 +408,17 @@ class DashboardController extends Controller
 
         // Tổng số user mới trong tuần/tháng (chỉ tính những user có đơn ở chi nhánh này)
         $weekStart = now()->startOfWeek()->toDateString();
-        $newUsersWeek = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
-            ->whereHas('orders', function($q) use ($branch) {
+        $newUsersWeek = User::whereHas('roles', function ($q) {
+            $q->where('name', 'customer');
+        })
+            ->whereHas('orders', function ($q) use ($branch) {
                 $q->where('branch_id', $branch->id);
             })
             ->whereBetween('created_at', [$weekStart, $to]);
-        $newUsersMonth = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
-            ->whereHas('orders', function($q) use ($branch) {
+        $newUsersMonth = User::whereHas('roles', function ($q) {
+            $q->where('name', 'customer');
+        })
+            ->whereHas('orders', function ($q) use ($branch) {
                 $q->where('branch_id', $branch->id);
             })
             ->whereBetween('created_at', [$from, $to]);
@@ -411,13 +428,13 @@ class DashboardController extends Controller
             $newUsersMonth->where('area', $area);
         }
         if ($minOrders) {
-            $newUsersWeek->whereHas('orders', function($q) use ($minOrders, $branch) {
+            $newUsersWeek->whereHas('orders', function ($q) use ($minOrders, $branch) {
                 $q->where('branch_id', $branch->id)
-                  ->havingRaw('COUNT(*) >= ?', [$minOrders]);
+                    ->havingRaw('COUNT(*) >= ?', [$minOrders]);
             });
-            $newUsersMonth->whereHas('orders', function($q) use ($minOrders, $branch) {
+            $newUsersMonth->whereHas('orders', function ($q) use ($minOrders, $branch) {
                 $q->where('branch_id', $branch->id)
-                  ->havingRaw('COUNT(*) >= ?', [$minOrders]);
+                    ->havingRaw('COUNT(*) >= ?', [$minOrders]);
             });
         }
         $newUsersWeekCount = $newUsersWeek->count();
@@ -427,8 +444,10 @@ class DashboardController extends Controller
         $topCustomers = Order::selectRaw('customer_id, COUNT(*) as total_orders, SUM(total_amount) as total_spent')
             ->where('branch_id', $branch->id)
             ->whereBetween('order_date', [$from, $to])
-            ->when($area, function($q) use ($area) {
-                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
+            ->when($area, function ($q) use ($area) {
+                $q->whereHas('customer', function ($q2) use ($area) {
+                    $q2->where('area', $area);
+                });
             })
             ->groupBy('customer_id')
             ->orderByDesc('total_orders')
@@ -437,16 +456,22 @@ class DashboardController extends Controller
             ->get();
 
         // Số đơn trung bình mỗi người (chỉ tính đơn ở chi nhánh này)
-        $totalCustomers = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
-            ->whereHas('orders', function($q) use ($branch) {
+        $totalCustomers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'customer');
+        })
+            ->whereHas('orders', function ($q) use ($branch) {
                 $q->where('branch_id', $branch->id);
             })
-            ->when($area, function($q) use ($area) { $q->where('area', $area); })
+            ->when($area, function ($q) use ($area) {
+                $q->where('area', $area);
+            })
             ->count();
         $totalOrders = Order::where('branch_id', $branch->id)
             ->whereBetween('order_date', [$from, $to])
-            ->when($area, function($q) use ($area) {
-                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
+            ->when($area, function ($q) use ($area) {
+                $q->whereHas('customer', function ($q2) use ($area) {
+                    $q2->where('area', $area);
+                });
             })
             ->count();
         $avgOrdersPerUser = $totalCustomers > 0 ? round($totalOrders / $totalCustomers, 2) : 0;
@@ -457,8 +482,10 @@ class DashboardController extends Controller
             ->whereBetween('order_date', [$from, $to])
             ->groupBy('customer_id')
             ->havingRaw('COUNT(*) > 1')
-            ->when($area, function($q) use ($area) {
-                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
+            ->when($area, function ($q) use ($area) {
+                $q->whereHas('customer', function ($q2) use ($area) {
+                    $q2->where('area', $area);
+                });
             })
             ->count();
         $repeatRate = $totalCustomers > 0 ? round($repeatCustomers / $totalCustomers * 100, 2) : 0;
@@ -466,15 +493,17 @@ class DashboardController extends Controller
         // Mức chi tiêu trung bình mỗi khách (chỉ tính đơn ở chi nhánh này)
         $totalRevenue = Order::where('branch_id', $branch->id)
             ->whereBetween('order_date', [$from, $to])
-            ->when($area, function($q) use ($area) {
-                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
+            ->when($area, function ($q) use ($area) {
+                $q->whereHas('customer', function ($q2) use ($area) {
+                    $q2->where('area', $area);
+                });
             })
             ->sum('total_amount');
         $avgSpending = $totalCustomers > 0 ? round($totalRevenue / $totalCustomers, 0) : 0;
 
         // Đánh giá người dùng cho hệ thống (chỉ tính đánh giá từ đơn ở chi nhánh này)
         $avgRating = \App\Models\ProductReview::whereNull('product_id')
-            ->whereHas('order', function($q) use ($branch) {
+            ->whereHas('order', function ($q) use ($branch) {
                 $q->where('branch_id', $branch->id);
             })
             ->whereBetween('review_date', [$from, $to])

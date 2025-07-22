@@ -14,14 +14,15 @@
           <p class="text-sm text-gray-600">ID bình luận</p>
           <p class="text-lg font-medium">{{ $review->id }}</p>
         </div>
-        <div>
-          <p class="text-sm text-gray-600">Sản phẩm</p>
-          <div class="flex items-center gap-2">
-            @if($review->product && $review->product->image)
-              <img src="{{ Storage::disk('s3')->url($review->product->image) }}" alt="{{ $review->product->name }}" class="w-12 h-12 object-cover rounded">
+        <div class="mb-4">
+            <p class="text-sm text-gray-600">Sản phẩm/Combo</p>
+            @if($review->product)
+                <p class="font-semibold">{{ $review->product->name }}</p>
+            @elseif($review->combo)
+                <p class="font-semibold">{{ $review->combo->name }}</p>
+            @else
+                <p class="font-semibold">N/A</p>
             @endif
-            <span class="text-lg font-medium">{{ $review->product->name ?? 'N/A' }}</span>
-          </div>
         </div>
         <div>
           <p class="text-sm text-gray-600">Người dùng</p>
@@ -36,9 +37,9 @@
           <p class="text-sm text-gray-600">Số sao</p>
           <p class="text-lg font-medium">{{ $review->rating }}</p>
         </div>
-        <div>
-          <p class="text-sm text-gray-600">Nội dung</p>
-          <p class="text-gray-800">{{ $review->review }}</p>
+        <div class="mb-4">
+            <p class="text-sm text-gray-600">Nội dung review</p>
+            <p class="font-semibold">{{ $review->review }}</p>
         </div>
         @if($review->review_image)
         <div>
@@ -49,12 +50,6 @@
         <div>
           <p class="text-sm text-gray-600">Ngày</p>
           <p class="text-gray-700">{{ $review->review_date ? $review->review_date->format('d/m/Y H:i') : '' }}</p>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600">Trạng thái duyệt</p>
-          <span class="inline-block px-3 py-1 rounded-full text-sm font-medium {{ $review->approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-            {{ $review->approved ? 'Đã duyệt' : 'Chưa duyệt' }}
-          </span>
         </div>
         @if(isset($review->report_count) && $review->report_count >= 10)
         <div class="p-3 mb-2 rounded bg-red-100 border border-red-400 text-red-700 flex items-center gap-2">

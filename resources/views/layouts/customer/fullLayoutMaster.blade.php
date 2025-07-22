@@ -8,6 +8,7 @@
     <title>@yield('title', 'FastFood')</title>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -510,6 +511,30 @@
 
                 wishlistChannel.bind('pusher:subscription_error', (error) => {
                     console.error('Layout failed to subscribe to wishlist channel:', channelName, error);
+                });
+
+                // Subscribe to user's private notification channel
+                const notificationChannel = pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
+
+                notificationChannel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(data) {
+                    // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
+                    // Cách này đảm bảo giao diện luôn đồng bộ và không bị mất khi reload
+                    if (typeof fetchNotifications === 'function') {
+                        fetchNotifications();
+                    }
+
+                    // Gọi hiệu ứng rung chuông (nếu có)
+                    if (typeof triggerBellShake === 'function') {
+                        triggerBellShake();
+                    }
+                });
+
+                notificationChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('Subscribed to notifications channel for user {{ auth()->id() }}');
+                });
+
+                notificationChannel.bind('pusher:subscription_error', (error) => {
+                    console.error('Failed to subscribe to notifications channel:', error);
                 });
             }
         });

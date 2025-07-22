@@ -12,6 +12,9 @@ use App\Events\Order\OrderConfirmed;
 use App\Listeners\Order\FindDriverForOrder;
 use App\Events\Order\DriverAssigned;
 use App\Listeners\Order\NotifyDriverAssigned;
+use App\Events\Customer\ReviewCreated;
+use App\Events\Customer\ReviewReportUpdated;
+use App\Listeners\NotifyBranchManagerReview;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         DriverAssigned::class => [
             NotifyDriverAssigned::class,
+        ],
+        ReviewCreated::class => [
+            [NotifyBranchManagerReview::class, 'handleReviewCreated'],
+        ],
+        ReviewReportUpdated::class => [
+            [NotifyBranchManagerReview::class, 'handleReviewReportUpdated'],
         ],
     ];
 

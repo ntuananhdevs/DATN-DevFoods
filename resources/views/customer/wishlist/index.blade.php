@@ -4,11 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-        max-width: 1280px;
-        margin: 0 auto;
-    }
-    
     .wishlist-item {
         transition: all 0.3s ease;
     }

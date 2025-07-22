@@ -20,10 +20,8 @@ class ProductReview extends Model
         'rating',
         'review',
         'review_date',
-        'approved',
         'review_image',
         'is_verified_purchase',
-        'is_anonymous',
         'helpful_count',
         'report_count',
         'is_featured'
@@ -31,9 +29,7 @@ class ProductReview extends Model
 
     protected $casts = [
         'review_date' => 'datetime',
-        'approved' => 'boolean',
         'is_verified_purchase' => 'boolean',
-        'is_anonymous' => 'boolean',
         'is_featured' => 'boolean',
         'rating' => 'integer',
         'helpful_count' => 'integer',

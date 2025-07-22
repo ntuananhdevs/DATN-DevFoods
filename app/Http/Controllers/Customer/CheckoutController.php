@@ -34,6 +34,56 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
+        $buyNow = session('buy_now_checkout');
+        if ($buyNow) {
+            $cartItems = collect();
+            $subtotal = 0;
+            if ($buyNow['type'] === 'product') {
+                $variant = \App\Models\ProductVariant::where('product_id', $buyNow['product_id'])
+                    ->whereHas('variantValues', function($query) use ($buyNow) {
+                        $query->whereIn('variant_value_id', $buyNow['variant_values']);
+                    }, '=', count($buyNow['variant_values']))
+                    ->whereHas('variantValues', function($query) use ($buyNow) {
+                        $query->whereNotIn('variant_value_id', $buyNow['variant_values']);
+                    }, '=', 0)
+                    ->first();
+                if ($variant) {
+                    $item = new \stdClass();
+                    $item->variant = $variant;
+                    $item->quantity = $buyNow['quantity'];
+                    $item->toppings = collect();
+                    if (!empty($buyNow['toppings'])) {
+                        $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                    }
+                    $item->combo = null;
+                    $cartItems->push($item);
+                    $subtotal = ($variant->price + $item->toppings->sum('price')) * $item->quantity;
+                }
+            } elseif ($buyNow['type'] === 'combo') {
+                $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                if ($combo) {
+                    $item = new \stdClass();
+                    $item->variant = null;
+                    $item->combo = $combo;
+                    $item->quantity = $buyNow['quantity'];
+                    $item->toppings = collect();
+                    $cartItems->push($item);
+                    $subtotal = $combo->price * $item->quantity;
+                }
+            }
+            $cart = null;
+            $userAddresses = null;
+            $userId = \Auth::id();
+            if ($userId) {
+                $userAddresses = \App\Models\Address::where('user_id', $userId)
+                    ->orderBy('is_default', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+            }
+            $currentBranch = $this->branchService->getCurrentBranch();
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+        }
+
         $cartItems = [];
         $subtotal = 0;
 

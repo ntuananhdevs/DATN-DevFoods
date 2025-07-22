@@ -16,9 +16,7 @@ class ReviewController extends Controller
     {
         $query = ProductReview::with(['user', 'product', 'replies.user'])
             ->when($request->input('status'), function ($q) use ($request) {
-                if ($request->status === 'approved') $q->where('approved', true);
-                elseif ($request->status === 'pending') $q->where('approved', false);
-                elseif ($request->status === 'hidden') $q->where('is_hidden', true);
+                if ($request->status === 'hidden') $q->where('is_hidden', true);
             })
             ->when($request->input('keyword'), function ($q) use ($request) {
                 $keyword = $request->keyword;
@@ -31,49 +29,37 @@ class ReviewController extends Controller
                 });
             })
             ->when($request->input('rating'), fn($q) => $q->where('rating', $request->rating))
-            ->orderByRaw('approved = 0 DESC') // Chờ duyệt lên đầu
             ->orderByDesc('review_date');
 
         $reviews = $query->paginate(20)->appends($request->all());
         return view('admin.reviews.index', compact('reviews'));
     }
 
-    // Duyệt bình luận
-    public function approve($id)
-    {
-        $review = ProductReview::findOrFail($id);
-        $review->approved = true;
-        $review->save();
-        if (request()->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Duyệt bình luận thành công!'
-            ]);
-        }
-        return back()->with('success', 'Duyệt bình luận thành công!');
-    }
-
     // Xóa bình luận
     public function destroy($id)
     {
-        $review = ProductReview::with('replies', 'reports')->findOrFail($id);
-        $review->replies()->delete();
-        $review->reports()->delete();
-        $review->delete();
-        if (request()->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Xóa bình luận thành công!'
-            ]);
-        }
-        return redirect()->route('admin.reviews.reports')->with('success', 'Xóa bình luận thành công!');
-    }
+        try {
+            $review = ProductReview::with('replies', 'reports')->findOrFail($id);
+            $review->replies()->delete();
+            $review->reports()->delete();
+            $review->delete();
 
-    // Ẩn/hiện bình luận
-    public function hide($id)
-    {
-        // Không còn chức năng ẩn/hiện, trả về lỗi hoặc thông báo không hỗ trợ
-        return back()->with('error', 'Chức năng ẩn/hiện bình luận đã bị tắt.');
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Xóa bình luận thành công!'
+                ]);
+            }
+            return redirect()->route('admin.reviews.index')->with('success', 'Xóa bình luận thành công!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Xóa bình luận thất bại!'
+                ], 500);
+            }
+            return redirect()->route('admin.reviews.index')->with('error', 'Xóa bình luận thất bại!');
+        }
     }
 
     // Trả lời bình luận
@@ -108,7 +94,7 @@ class ReviewController extends Controller
             ProductReview::whereIn('id', $reviewIds)->delete();
             ReviewReport::whereIn('review_id', $reviewIds)->delete();
         }
-        $reports = ReviewReport::with(['review.user', 'review.product'])
+        $reports = ReviewReport::with(['review.user', 'review.product', 'review.combo'])
             ->when($request->input('reason_type'), fn($q) => $q->where('reason_type', $request->reason_type))
             ->orderByDesc('created_at')
             ->paginate(20)->appends($request->all());
@@ -125,7 +111,7 @@ class ReviewController extends Controller
     // Xem chi tiết báo cáo bình luận
     public function showReport($id)
     {
-        $review = ProductReview::with(['user', 'product', 'reports.user'])->findOrFail($id);
+        $review = ProductReview::with(['user', 'product', 'combo', 'reports.user'])->findOrFail($id);
         $reports = $review->reports;
         return view('admin.reviews.show-report', compact('review', 'reports'));
     }

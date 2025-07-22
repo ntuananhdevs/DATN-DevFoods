@@ -304,7 +304,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
-
     });
 
     // General Settings Management
@@ -340,6 +339,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
+        Route::post('/typing', [ChatController::class, 'typingIndicator'])->name('typing');
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -353,13 +353,13 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/export', [OrderController::class, 'export'])->name('export');
         // Route để lấy HTML partial cho order row (cho realtime)
         Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
+        Route::post('/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('cancel');
     });
 
     // Reviews Management
     Route::prefix('reviews')->name('reviews.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('index');
         Route::match(['get', 'post'], '/filter', [\App\Http\Controllers\Admin\ReviewController::class, 'filter'])->name('filter');
-        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('approve');
         Route::delete('/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('destroy');
         Route::get('/reports', [\App\Http\Controllers\Admin\ReviewController::class, 'reports'])->name('reports');
         Route::get('/{id}/show', [\App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('show');
@@ -374,4 +374,3 @@ Route::post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
 })->middleware('web');
 // Thêm vào group combos:
-

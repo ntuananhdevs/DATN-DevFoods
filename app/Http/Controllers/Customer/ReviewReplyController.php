@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\ProductReview;
 use App\Models\ReviewReply;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\Customer\ReviewRepliedNotification;
 
 class ReviewReplyController extends Controller
 {
@@ -58,6 +59,11 @@ class ReviewReplyController extends Controller
         $reply->reply_date = now();
         $reply->is_official = $user->is_admin ?? false;
         $reply->save();
+
+        // Gửi thông báo đến người viết review gốc
+        if ($review->user_id !== $user->id) { // Chỉ gửi thông báo nếu người phản hồi không phải là người viết review
+            $review->user->notify(new ReviewRepliedNotification($reply));
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Phản hồi thành công!']);

@@ -3,14 +3,101 @@
 @section('title', $combo->name)
 
 @section('content')
-    <style>
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
+<style>
+    #report-review-modal .bg-white {
+        max-width: 40rem;
+        width: 100%;
+        padding: 1rem 1.25rem;
+        margin: 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    #report-review-modal .flex.items-center.mb-4 {
+        padding-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    #report-review-modal .bg-gray-50 {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    #report-review-modal .reason-option {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0;
+    }
+    #report-review-modal .reason-option .font-semibold {
+        font-size: 0.95rem;
+    }
+    #report-review-modal .reason-option .text-xs {
+        font-size: 0.78rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #report-review-modal textarea {
+        min-height: 36px;
+        font-size: 0.95rem;
+        padding: 0.4rem 0.6rem;
+        resize: vertical;
+    }
+    #report-review-modal .bg-blue-50 {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+    #report-review-modal .flex.justify-end.gap-2.pt-2 {
+        padding-top: 0.3rem;
+    }
+    #report-review-modal label.block.font-medium.mb-2 {
+        margin-bottom: 0.3rem;
+    }
+    #report-review-modal .grid {
+        gap: 0.5rem;
+    }
+    #report-review-modal .preview-binhluan {
+        padding: 0.5rem 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f9fafb;
+        border-left: 3px solid #ef4444;
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+    #report-review-modal .preview-binhluan .avatar {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1.1rem;
+    }
+    #report-review-modal .preview-binhluan .info {
+        flex: 1;
+        min-width: 0;
+    }
+    #report-review-modal .preview-binhluan .info .name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #222;
+        margin-right: 0.5rem;
+    }
+    #report-review-modal .preview-binhluan .info .time {
+        font-size: 0.85rem;
+        color: #888;
+    }
+    #report-review-modal .preview-binhluan .info .content {
+        font-size: 0.95rem;
+        color: #444;
+        margin-top: 0.1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    @media (max-width: 700px) {
+        #report-review-modal .bg-white {
+            max-width: 98vw;
+            padding: 0.5rem 0.2rem;
         }
-
-        /* ... giữ lại các style cần thiết từ show.blade.php ... */
-    </style>
+    }
+</style>
     <div class="container mx-auto px-4 py-8">
         <!-- Product Info Section -->
         <div class="grid lg:grid-cols-2 gap-8 mb-12">
@@ -224,7 +311,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex items-center gap-2 flex-wrap">
                                                     <span
-                                                        class="font-medium text-gray-900">{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}</span>
+                                                        class="font-medium text-gray-900">{{ $review->user->name }}</span>
                                                     @if ($review->is_verified_purchase)
                                                         <span
                                                             class="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
@@ -289,13 +376,18 @@
                                                 <span>Hữu ích (<span
                                                         class="helpful-count">{{ $review->helpful_count }}</span>)</span>
                                             </button>
-                                            @if ($review->report_count > 0)
-                                                <span class="inline-flex items-center gap-1 text-xs text-red-500">
-                                                    <i class="fas fa-flag"></i>
-                                                    {{ $review->report_count }} báo cáo
-                                                </span>
-                                            @endif
                                             @auth
+                                                <button
+                                                    class="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-600 transition-colors report-review-btn"
+                                                    data-review-id="{{ $review->id }}">
+                                                    <i class="fas fa-flag"></i>
+                                                    <span>Báo cáo</span>
+                                                    <span class="ml-1 text-xs report-count" @if($review->report_count == 0) style="display:none" @endif>
+                                                        @if($review->report_count > 0)
+                                                            ({{ $review->report_count }})
+                                                        @endif
+                                                    </span>
+                                                </button>
                                                 <button
                                                     class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn"
                                                     data-review-id="{{ $review->id }}"
@@ -330,7 +422,7 @@
                                             <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
                                                 <div class="flex items-center gap-2 mb-1">
                                                     <span
-                                                        class="font-semibold text-blue-700">{{ $reply->user->name ?? 'Ẩn danh' }}</span>
+                                                        class="font-semibold text-blue-700">{{ $reply->user->name }}</span>
                                                     <span
                                                         class="text-xs text-gray-400">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
                                                     @auth
@@ -360,64 +452,70 @@
                             @endforelse
                         </div>
                         <!-- Form gửi đánh giá hoặc phản hồi -->
-                        <div id="review-reply-form-container"
-                            class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                            <form id="review-reply-form" action="{{ route('products.review', $combo->id) }}"
-                                method="POST" enctype="multipart/form-data" class="space-y-4"
-                                data-default-action="{{ route('products.review', $combo->id) }}">
-                                @csrf
-                                <input type="hidden" name="type" value="combo">
-                                <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
-                                <div id="replying-to" class="mb-2 hidden">
-                                    <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
-                                    <button type="button" id="cancel-reply"
-                                        class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
-                                </div>
-                                <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
-                                    <h4 class="font-semibold text-lg" id="form-title"
-                                        data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
-                                    <div class="flex items-center" id="rating-stars">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            <input type="radio" id="star{{ $i }}" name="rating"
-                                                value="{{ $i }}" class="sr-only">
-                                            <label for="star{{ $i }}"
-                                                class="cursor-pointer text-2xl text-yellow-400"
-                                                style="position: relative;">
-                                                <i class="fas fa-star"></i>
-                                            </label>
-                                        @endfor
+                        @auth
+                            <div id="review-reply-form-container"
+                                class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                                <form id="review-reply-form" action="{{ route('products.review', $combo->id) }}"
+                                    method="POST" enctype="multipart/form-data" class="space-y-4"
+                                    data-default-action="{{ route('products.review', $combo->id) }}">
+                                    @csrf
+                                    <input type="hidden" name="type" value="combo">
+                                    <input type="hidden" name="branch_id" value="{{ $currentBranch->id }}">
+                                    <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
+                                    <div id="replying-to" class="mb-2 hidden">
+                                        <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
+                                        <button type="button" id="cancel-reply"
+                                            class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
                                     </div>
-                                </div>
-                                <div id="review-message" class="mb-4 text-center"></div>
-                                <div>
-                                    <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2"
-                                        placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
-                                    <div class="flex items-center justify-between gap-4 flex-wrap">
-                                        <div>
-                                            <input type="file" name="review_image" id="review_image" accept="image/*"
-                                                class="hidden">
-                                            <label for="review_image"
-                                                class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
-                                                <i class="fas fa-camera text-3xl text-orange-500"></i>
-                                                <img id="preview_image" src="#" alt="Preview"
-                                                    class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center ml-auto">
-                                            <input type="checkbox" name="is_anonymous" id="is_anonymous" value="1"
-                                                class="custom-checkbox" {{ old('is_anonymous') ? 'checked' : '' }}>
-                                            <label for="is_anonymous" class="anonymous-label">Ẩn danh</label>
+                                    <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
+                                        <h4 class="font-semibold text-lg" id="form-title"
+                                            data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
+                                        <div class="flex items-center" id="rating-stars">
+                                            @for ($i = 1; $i <= 5; $i++)
+                                                <input type="radio" id="star{{ $i }}" name="rating"
+                                                    value="{{ $i }}" class="sr-only">
+                                                <label for="star{{ $i }}"
+                                                    class="cursor-pointer text-2xl text-yellow-400"
+                                                    style="position: relative;">
+                                                    <i class="fas fa-star"></i>
+                                                </label>
+                                            @endfor
                                         </div>
                                     </div>
-                                </div>
-                                <button type="submit" id="review-submit-btn"
-                                    class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium"
-                                    data-default-text="Gửi đánh giá">Gửi đánh giá</button>
-                            </form>
-                        </div>
+                                    <div id="review-message" class="mb-4 text-center"></div>
+                                    <div>
+                                        <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2"
+                                            placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
+                                        <div class="flex items-center justify-between gap-4 flex-wrap">
+                                            <div>
+                                                <input type="file" name="review_image" id="review_image" accept="image/*"
+                                                    class="hidden">
+                                                <label for="review_image"
+                                                    class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
+                                                    <i class="fas fa-camera text-3xl text-orange-500"></i>
+                                                    <img id="preview_image" src="#" alt="Preview"
+                                                        class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                                                    <button type="button" id="remove_preview_image" class="absolute top-0 right-0 m-1 bg-white bg-opacity-80 rounded-full p-1 shadow text-gray-700 hover:bg-red-500 hover:text-white hidden" style="z-index:2;" title="Xoá ảnh">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" id="review-submit-btn"
+                                        class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium"
+                                        data-default-text="Gửi đánh giá">Gửi đánh giá</button>
+                                </form>
+                            </div>
+                        @else
+                            <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                <p class="text-gray-600 mb-4">Vui lòng <a href="{{ route('customer.login') }}" class="text-orange-500 font-semibold hover:underline">đăng nhập</a> để gửi đánh giá cho combo này.</p>
+                                
+                            </div>
+                        @endauth
                         @if (optional($combo->reviews)->count() > 0)
                             <div class="mt-6 flex items-center justify-between">
                                 <div class="text-sm text-gray-500">
@@ -432,6 +530,95 @@
                         @endif
                     </div>
                 </div>
+            </div>
+        </div>
+        <!-- Modal báo cáo review -->
+        <div id="report-review-modal" class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <span class="text-xl">🚩</span> Báo cáo đánh giá
+                    </h3>
+                    <button id="close-report-modal" class="text-gray-400 hover:text-gray-500">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="report-review-form" class="space-y-4">
+                    <input type="hidden" name="review_id" id="report_review_id" value="">
+                    <!-- Preview bình luận bị báo cáo (ngắn gọn) -->
+                    <div class="preview-binhluan">
+                        <div class="avatar w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-semibold text-lg">
+                            <span id="report-modal-avatar">?</span>
+                        </div>
+                        <div class="info flex-1 min-w-0">
+                            <span class="name" id="report-modal-username">Ẩn danh</span>
+                            <span class="time" id="report-modal-time"></span>
+                            <div class="content" id="report-modal-content">...</div>
+                        </div>
+                    </div>
+                    <!-- Lý do báo cáo -->
+                    <div>
+                        <label class="block font-medium mb-2">Lý do báo cáo *</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="report-reason-options">
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="spam" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-orange-500">🗑️</span> Spam/quảng cáo</div>
+                                    <div class="text-xs text-gray-500">Quảng cáo, spam</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="harassment" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-red-500">🛡️</span> Quấy rối/bắt nạt</div>
+                                    <div class="text-xs text-gray-500">Quấy rối, đe dọa</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="hate_speech" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-red-700">⚠️</span> Ngôn từ thù địch</div>
+                                    <div class="text-xs text-gray-500">Phân biệt, xúc phạm</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="inappropriate" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-purple-500">👁️</span> Nội dung không phù hợp</div>
+                                    <div class="text-xs text-gray-500">Không phù hợp cộng đồng</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="misinformation" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-yellow-500">⚠️</span> Thông tin sai lệch</div>
+                                    <div class="text-xs text-gray-500">Không chính xác, gây hiểu lầm</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-2 p-3 border-2 border-gray-200 rounded cursor-pointer hover:border-orange-400 reason-option">
+                                <input type="radio" name="reason_type" value="other" class="mt-1 reason-radio">
+                                <div>
+                                    <div class="font-semibold flex items-center gap-1"><span class="text-gray-500">🚩</span> Lý do khác</div>
+                                    <div class="text-xs text-gray-500">Khác</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Thông tin bổ sung -->
+                    <div>
+                        <label for="report_reason_detail" class="block font-medium mb-1">Thông tin bổ sung (tùy chọn)</label>
+                        <textarea name="reason_detail" id="report_reason_detail" rows="2" class="w-full border rounded p-2" placeholder="Cung cấp thêm chi tiết..."></textarea>
+                    </div>
+                    <!-- Cam kết xử lý -->
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-3 text-blue-800 text-sm rounded">
+                        <div class="font-semibold mb-1">Cam kết của chúng tôi:</div>
+                        Báo cáo của bạn sẽ được xem xét trong vòng 24 giờ. Chúng tôi cam kết thực hiện hành động phù hợp để duy trì môi trường an toàn cho cộng đồng.
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" id="cancel-report-btn" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Hủy</button>
+                        <button type="submit" id="submit-report-btn" class="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 font-semibold" disabled>Gửi báo cáo</button>
+                    </div>
+                </form>
             </div>
         </div>
         <script>

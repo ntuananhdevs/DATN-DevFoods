@@ -47,6 +47,7 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Order Management for Drivers
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}/show', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders/{order}/navigate', [OrderController::class, 'navigate'])->name('orders.navigate');
 
         // New/Updated Status Actions
         Route::post('/orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');

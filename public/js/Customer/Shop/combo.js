@@ -173,9 +173,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (typeof selectedRating !== 'undefined') selectedRating = 0;
                         if (typeof updateStarDisplay === 'function') updateStarDisplay(0);
                         const preview = document.getElementById('preview_image');
-                        if (preview) { preview.src = '#'; preview.classList.add('hidden'); }
-                        const isAnonymous = document.getElementById('is_anonymous');
-                        if (isAnonymous) isAnonymous.checked = false;
+                        if (preview) {
+                            preview.src = '#';
+                            preview.classList.add('hidden');
+                        }
+                        // Reset rating radio
                         const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
                         ratingInputs.forEach(input => { input.checked = false; });
                     }, 200);
@@ -245,19 +247,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Preview image functionality
     const input = document.getElementById('review_image');
     const preview = document.getElementById('preview_image');
-    if (input && preview) {
+    const removeBtn = document.getElementById('remove_preview_image');
+    if (input && preview && removeBtn) {
         input.addEventListener('change', function(e) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(ev) {
                     preview.src = ev.target.result;
                     preview.classList.remove('hidden');
+                    removeBtn.classList.remove('hidden');
                 }
                 reader.readAsDataURL(input.files[0]);
             } else {
                 preview.src = '#';
                 preview.classList.add('hidden');
+                removeBtn.classList.add('hidden');
             }
+        });
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            input.value = '';
+            preview.src = '#';
+            preview.classList.add('hidden');
+            removeBtn.classList.add('hidden');
         });
     }
 
@@ -582,6 +594,93 @@ document.addEventListener('DOMContentLoaded', function() {
         const pad = n => n < 10 ? '0' + n : n;
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
+});
+
+// === BÁO CÁO REVIEW (REPORT) ===
+document.addEventListener('DOMContentLoaded', function() {
+    // Mở modal khi bấm nút báo cáo
+    document.querySelectorAll('.report-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Lấy thông tin review để preview trong modal
+            const reviewId = this.getAttribute('data-review-id');
+            const reviewBlock = document.querySelector(`[data-review-id="${reviewId}"]`);
+            if (reviewBlock) {
+                document.getElementById('report-modal-avatar').textContent = reviewBlock.querySelector('.review-avatar span')?.textContent || '?';
+                document.getElementById('report-modal-username').textContent = reviewBlock.querySelector('.font-medium')?.textContent || 'Ẩn danh';
+                document.getElementById('report-modal-time').textContent = reviewBlock.querySelector('.text-sm.text-gray-500 span')?.textContent || '';
+                document.getElementById('report-modal-content').textContent = reviewBlock.querySelector('p.text-gray-700, .review-content')?.textContent || '';
+            }
+            document.getElementById('report_review_id').value = reviewId;
+            // Reset form
+            document.querySelectorAll('.reason-radio').forEach(r => r.checked = false);
+            document.getElementById('report_reason_detail').value = '';
+            document.getElementById('submit-report-btn').disabled = true;
+            document.getElementById('report-review-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        });
+    });
+    // Đóng modal
+    document.getElementById('close-report-modal').onclick = closeReportModal;
+    document.getElementById('cancel-report-btn').onclick = closeReportModal;
+    function closeReportModal() {
+        document.getElementById('report-review-modal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+    // Đóng modal khi click ngoài
+    document.getElementById('report-review-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeReportModal();
+    });
+    // Đóng modal với Escape
+    document.addEventListener('keydown', function(e) {
+        if (!document.getElementById('report-review-modal').classList.contains('hidden') && e.key === 'Escape') closeReportModal();
+    });
+    // Enable nút gửi khi chọn lý do
+    document.querySelectorAll('.reason-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.getElementById('submit-report-btn').disabled = false;
+        });
+    });
+    // Gửi báo cáo (AJAX)
+    document.getElementById('report-review-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const reviewId = document.getElementById('report_review_id').value;
+        const reasonType = document.querySelector('.reason-radio:checked')?.value;
+        const reasonDetail = document.getElementById('report_reason_detail').value;
+        if (!reasonType) return;
+        fetch(`/reviews/${reviewId}/report`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': window.csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason_type: reasonType, reason_detail: reasonDetail })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                } else {
+                    alert('Báo cáo thành công!');
+                }
+                closeReportModal();
+            } else {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Báo cáo thất bại' });
+                } else {
+                    alert(data.message || 'Báo cáo thất bại');
+                }
+            }
+        })
+        .catch(() => {
+            if (window.dtmodalShowToast) {
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+            } else {
+                alert('Lỗi mạng hoặc server!');
+            }
+        });
+    });
 });
 
 // === REALTIME COMBO STOCK ===
