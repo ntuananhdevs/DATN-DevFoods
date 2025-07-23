@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Models\Address;
 use App\Models\Branch;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
@@ -209,9 +210,17 @@ class ProfileController extends Controller
     // API: Xóa địa chỉ
     public function deleteAddress($id)
     {
-        $address = Auth::user()->addresses()->findOrFail($id);
-        $address->delete();
-        return response()->json(['success' => true]);
+        try {
+            $address = Auth::user()->addresses()->find($id);
+            if (!$address) {
+                return response()->json(['message' => 'Địa chỉ không tồn tại hoặc không thuộc về bạn'], 404);
+            }
+            $address->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Delete address error: ' . $e->getMessage());
+            return response()->json(['message' => 'Lỗi server: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

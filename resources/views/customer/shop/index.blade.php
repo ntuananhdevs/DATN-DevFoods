@@ -9,7 +9,7 @@
 @endif
 
 @if(Auth::check())
-    <script>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('user-authenticated');
         });
@@ -18,10 +18,10 @@
 @if(Auth::check() || true)
     <script>
         window.csrfToken = '{{ csrf_token() }}';
-    </script>
+        </script>
 @endif
 <style>
-
+    
     /* CSS cho badge */
     .custom-badge {
         position: absolute;
@@ -33,7 +33,7 @@
         font-weight: 600;
         z-index: 10;
     }
-
+    
     .badge-sale {
         background-color: #FF3B30;
         color: white;
@@ -46,7 +46,7 @@
         font-size: 10px;
         z-index: 10;
     }
-
+    
     /* Discount code styles */
     .discount-tag {
         margin-top: 8px;
@@ -54,7 +54,7 @@
         flex-wrap: wrap;
         gap: 4px;
     }
-
+    
     .discount-badge, .quality {
         display: inline-flex;
         align-items: center;
@@ -65,7 +65,7 @@
         color: white;
         margin-bottom: 2px;
     }
-
+    
     .quality {
         display: inline-flex;
         align-items: center;
@@ -101,7 +101,7 @@
         transform: scale(0.8);
         transition: opacity 0.5s ease, transform 0.5s ease;
     }
-
+    
     .discount-badge.fade-in {
         opacity: 1;
         transform: scale(1);
@@ -118,13 +118,13 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         transform: translateY(-2px);
     }
-
+    
     .product-image {
         height: 170px;
         object-fit: cover;
         width: 100%;
     }
-
+    
     .product-title {
         color: #1F2937;
         font-weight: 600;
@@ -133,7 +133,7 @@
         margin-bottom: 0.1rem;
         transition: color 0.2s ease;
     }
-
+    
     .product-title:hover {
         color: #F97316;
     }
@@ -169,7 +169,7 @@
     .add-to-cart-btn:hover {
         background-color: #EA580C;
     }
-
+    
     /* Rating stars */
     .rating-stars {
         color: #F97316;
@@ -202,7 +202,7 @@
         align-items: center;
         justify-content: center;
     }
-
+    
     .no-image-placeholder i {
         position: relative;
         z-index: 1;
@@ -214,7 +214,7 @@
         font-size: 0.875rem;
         font-weight: 500;
     }
-
+    
     /* Pagination custom styles */
     .pagination-container {
         display: flex;
@@ -239,12 +239,12 @@
     .pagination-item:not(.active):hover {
         background-color: #F3F4F6;
     }
-
+    
     .pagination-item.active {
         background-color: #F97316;
         color: white;
     }
-
+    
     .pagination-item.disabled {
         color: #9CA3AF;
         cursor: not-allowed;
@@ -266,7 +266,7 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         transition: all 0.2s;
     }
-
+    
     .favorite-btn:hover {
         transform: scale(1.1);
     }
@@ -274,7 +274,7 @@
     .favorite-btn:hover i {
         color: #FF3B30;
     }
-
+    
     /* Thêm style cho nút disabled */
     .add-to-cart-btn.disabled {
         background-color: #9CA3AF !important; /* Màu xám */
@@ -349,11 +349,11 @@
         opacity: 0.7;
         pointer-events: none;
     }
-
+    
     .product-card[data-combo-id].out-of-stock .product-image {
         filter: blur(2px);
     }
-
+    
     .product-card[data-combo-id].out-of-stock .product-title,
     .product-card[data-combo-id].out-of-stock .product-price,
     .product-card[data-combo-id].out-of-stock .product-original-price,
@@ -389,13 +389,13 @@
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
     }
-</style>
+    </style>
 
-    @php
-        $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('menu');
-    @endphp
-    @include('components.banner', ['banners' => $menuBanner])
-
+@php
+$menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('menu');
+@endphp
+@include('components.banner', ['banners' => $menuBanner])
+<x-customer-container>
 
 <div class="container mx-auto px-4 py-12">
 
@@ -431,7 +431,7 @@
 
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('products.index', array_merge(request()->except('category'), ['category' => ''])) }}"
-               class="category-btn px-4 py-2 {{ !request('category') ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700' }} rounded-full hover:bg-orange-600 hover:text-white transition-colors">
+            class="category-btn px-4 py-2 {{ !request('category') ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700' }} rounded-full hover:bg-orange-600 hover:text-white transition-colors">
                 Tất cả
             </a>
             @foreach($categories as $category)
@@ -439,7 +439,7 @@
                    class="category-btn px-4 py-2 {{ request('category') == $category->id ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700' }} rounded-full hover:bg-orange-600 hover:text-white transition-colors">
                     {{ $category->name }}
                 </a>
-            @endforeach
+                @endforeach
         </div>
     </div>
 
@@ -520,7 +520,7 @@
             </div>
         </div>
     @endif
-</div>
+</x-customer-container>
 
 <!-- Login Popup Modal -->
 <div id="login-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">

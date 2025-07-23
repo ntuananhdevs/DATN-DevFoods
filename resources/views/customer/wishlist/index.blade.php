@@ -3,6 +3,7 @@
 @section('title', 'FastFood - Danh Sách Yêu Thích')
 
 @section('content')
+<x-customer-container>
 <style>
     .wishlist-item {
         transition: all 0.3s ease;
@@ -324,7 +325,7 @@
             <!-- More recommendation items... -->
         </div>
     </section>
-</div>
+</x-customer-container>
 @endsection
 
 @section('scripts')
