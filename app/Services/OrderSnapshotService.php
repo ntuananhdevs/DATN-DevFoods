@@ -27,7 +27,7 @@ class OrderSnapshotService
      */
     private static function snapshotProductVariant(OrderItem $orderItem)
     {
-        $variant = ProductVariant::with(['product', 'variantValues.variantAttribute'])
+        $variant = ProductVariant::with(['product', 'variantValues.attribute'])
             ->find($orderItem->product_variant_id);
         
         if (!$variant || !$variant->product) {
@@ -102,8 +102,8 @@ class OrderSnapshotService
         
         if ($variant->variantValues) {
             foreach ($variant->variantValues as $variantValue) {
-                if ($variantValue->variantAttribute) {
-                    $attributes[$variantValue->variantAttribute->name] = $variantValue->value;
+                if ($variantValue->attribute) {
+                    $attributes[$variantValue->attribute->name] = $variantValue->value;
                 }
             }
         }
