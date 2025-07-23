@@ -22,7 +22,14 @@ class NotifyBranchManagerReview
         if ($review->branch_id) {
             $branch = Branch::find($review->branch_id);
             if ($branch) {
-                $branch->notify(new BranchNewReviewNotification($review));
+                // Chống duplicate notification
+                $exists = $branch->notifications()
+                    ->where('type', BranchNewReviewNotification::class)
+                    ->where('data->review_id', $review->id)
+                    ->exists();
+                if (!$exists) {
+                    $branch->notify(new BranchNewReviewNotification($review));
+                }
             }
         }
     }
@@ -40,7 +47,14 @@ class NotifyBranchManagerReview
         if ($review && $review->branch_id) {
             $branch = Branch::find($review->branch_id);
             if ($branch) {
-                $branch->notify(new BranchReviewReportedNotification($review));
+                // Chống duplicate notification
+                $exists = $branch->notifications()
+                    ->where('type', BranchReviewReportedNotification::class)
+                    ->where('data->review_id', $review->id)
+                    ->exists();
+                if (!$exists) {
+                    $branch->notify(new BranchReviewReportedNotification($review));
+                }
             }
         }
     }

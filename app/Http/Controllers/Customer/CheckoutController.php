@@ -35,19 +35,19 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
+        // Nếu không có from_buy_now=1 thì xóa session buy_now_checkout
+        if (!$request->has('from_buy_now') || $request->input('from_buy_now') != 1) {
+            session()->forget('buy_now_checkout');
+        }
         $buyNow = session('buy_now_checkout');
         if ($buyNow) {
             $cartItems = collect();
             $subtotal = 0;
             if ($buyNow['type'] === 'product') {
-                $variant = \App\Models\ProductVariant::where('product_id', $buyNow['product_id'])
-                    ->whereHas('variantValues', function($query) use ($buyNow) {
-                        $query->whereIn('variant_value_id', $buyNow['variant_values']);
-                    }, '=', count($buyNow['variant_values']))
-                    ->whereHas('variantValues', function($query) use ($buyNow) {
-                        $query->whereNotIn('variant_value_id', $buyNow['variant_values']);
-                    }, '=', 0)
-                    ->first();
+                $variant = null;
+                if (!empty($buyNow['variant_id'])) {
+                    $variant = \App\Models\ProductVariant::find($buyNow['variant_id']);
+                }
                 if ($variant) {
                     $item = new \stdClass();
                     $item->variant = $variant;
@@ -71,6 +71,10 @@ class CheckoutController extends Controller
                     $cartItems->push($item);
                     $subtotal = $combo->price * $item->quantity;
                 }
+            }
+            // Nếu không có sản phẩm hợp lệ trong buy now
+            if ($cartItems->isEmpty()) {
+                return redirect()->route('products.index')->with('error', 'Sản phẩm bạn chọn không hợp lệ hoặc đã hết hàng.');
             }
             $cart = null;
             $userAddresses = null;
@@ -836,6 +840,52 @@ class CheckoutController extends Controller
         $order->payment_method_text = $paymentMethods[$order->payment->payment_method] ?? 'Không xác định';
         
         return view('customer.checkout.success', compact('order', 'timeRange'));
+    }
+
+    /**
+     * Xử lý Mua ngay cho combo
+     */
+    public function comboBuyNow(Request $request)
+    {
+        $request->validate([
+            'combo_id' => 'required|integer|exists:combos,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        session()->forget('buy_now_checkout');
+        session(['buy_now_checkout' => [
+            'type' => 'combo',
+            'combo_id' => $request->combo_id,
+            'quantity' => $request->quantity
+        ]]);
+        return response()->json([
+            'success' => true,
+            'redirect_url' => route('checkout.index', ['from_buy_now' => 1])
+        ]);
+    }
+
+    /**
+     * Xử lý Mua ngay cho sản phẩm
+     */
+    public function productBuyNow(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'variant_id' => 'nullable|integer|exists:product_variants,id',
+            'toppings' => 'nullable|array'
+        ]);
+        session()->forget('buy_now_checkout');
+        session(['buy_now_checkout' => [
+            'type' => 'product',
+            'product_id' => $request->product_id,
+            'variant_id' => $request->variant_id,
+            'toppings' => $request->toppings ?? [],
+            'quantity' => $request->quantity
+        ]]);
+        return response()->json([
+            'success' => true,
+            'redirect_url' => route('checkout.index', ['from_buy_now' => 1])
+        ]);
     }
 
     /**
