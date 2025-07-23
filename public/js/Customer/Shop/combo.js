@@ -801,3 +801,46 @@ document.addEventListener('DOMContentLoaded', function() {
         if (outOfStockMsg) outOfStockMsg.style.display = 'none';
     }
 });
+
+// === FETCH RIÊNG CHO NÚT MUA NGAY COMBO ===
+document.addEventListener('DOMContentLoaded', function() {
+    const buyNowComboBtn = document.getElementById('buy-now-combo-btn');
+    if (buyNowComboBtn) {
+        buyNowComboBtn.addEventListener('click', function() {
+            const comboId = this.getAttribute('data-combo-id');
+            const quantity = parseInt(document.getElementById('quantity').textContent) || 1;
+            buyNowComboBtn.disabled = true;
+            fetch('/checkout/combo-buy-now', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: JSON.stringify({ combo_id: comboId, quantity: quantity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                buyNowComboBtn.disabled = false;
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if (data.success) {
+                    window.location.href = '/checkout';
+                } else {
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Có lỗi xảy ra' });
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra');
+                    }
+                }
+            })
+            .catch(() => {
+                buyNowComboBtn.disabled = false;
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi khi mua combo' });
+                } else {
+                    alert('Có lỗi khi mua combo');
+                }
+            });
+        });
+    }
+});

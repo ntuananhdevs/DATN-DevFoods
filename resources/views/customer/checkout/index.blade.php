@@ -353,12 +353,22 @@
                         <!-- Order Items -->
                         <div class="space-y-4">
                             @foreach ($cartItems as $item)
+                                @php
+                                    $isCombo = isset($item->combo) && $item->combo;
+                                    $combo = $isCombo ? $item->combo : null;
+                                    $variant = !$isCombo ? ($item->variant ?? null) : null;
+                                    $product = $variant ? ($variant->product ?? null) : null;
+                                @endphp
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($item->variant->product->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}"
-                                                alt="{{ $item->variant->product->name }}"
-                                                class="object-cover w-full h-full">
+                                        @if ($isCombo && $combo && $combo->primary_image)
+                                            <img src="{{ Storage::disk('s3')->url($combo->primary_image->img) }}"
+                                                 alt="{{ $combo->name }}"
+                                                 class="object-cover w-full h-full">
+                                        @elseif ($product && $product->primary_image)
+                                            <img src="{{ Storage::disk('s3')->url($product->primary_image->img) }}"
+                                                 alt="{{ $product->name }}"
+                                                 class="object-cover w-full h-full">
                                         @else
                                             <div class="h-full w-full bg-gray-200 flex items-center justify-center">
                                                 <i class="fas fa-image text-gray-400"></i>
@@ -366,12 +376,18 @@
                                         @endif
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="font-medium text-sm truncate">{{ $item->variant->product->name }}</h3>
+                                        <h3 class="font-medium text-sm truncate">
+                                            {{ $isCombo ? $combo->name : ($product ? $product->name : 'Sản phẩm không xác định') }}
+                                        </h3>
                                         <p class="text-xs text-gray-500">
-                                            @if ($item->variant->variant_description)
-                                                {{ $item->variant->variant_description }}
+                                            @if ($isCombo)
+                                                Combo
+                                            @elseif ($variant && $variant->variant_description)
+                                                {{ $variant->variant_description }}
+                                            @elseif ($variant && $variant->variantValues)
+                                                {{ implode(', ', $variant->variantValues->pluck('value')->toArray()) }}
                                             @else
-                                                {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
+                                                &mdash;
                                             @endif
                                         </p>
                                         @if ($item->toppings && $item->toppings->count() > 0)
@@ -383,7 +399,11 @@
                                     <div class="text-right">
                                         <div class="text-sm font-medium">
                                             @php
-                                                $itemPrice = $item->final_price ?? ($item->variant->price + $item->toppings->sum('price'));
+                                                if ($isCombo) {
+                                                    $itemPrice = $item->final_price ?? ($combo->price ?? 0);
+                                                } else {
+                                                    $itemPrice = $item->final_price ?? ($variant ? ($variant->price ?? 0) : 0) + ($item->toppings ? $item->toppings->sum('price') : 0);
+                                                }
                                                 $itemTotal = $itemPrice * $item->quantity;
                                             @endphp
                                             {{ number_format($itemTotal) }}đ
