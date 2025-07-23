@@ -2,71 +2,117 @@
 
 namespace App\Services;
 
+use App\Models\GeneralSetting;
+
 class ShippingService
 {
     /**
-     * Calculate distance between two points using Haversine formula
+     * Tính toán phí vận chuyển dựa trên tổng phụ của đơn hàng và khoảng cách.
+     *
+     * @param float $subtotal Tổng phụ của đơn hàng.
+     * @param float $distanceInKm Khoảng cách giao hàng tính bằng km.
+     * @return float Phí vận chuyển. Trả về -1 nếu khoảng cách không hợp lệ.
      */
-    public static function getDistance($lat1, $lon1, $lat2, $lon2)
+    public static function calculateFee(float $subtotal, float $distanceInKm): float
     {
-        $earthRadius = 6371; // Earth radius in kilometers
+        $threshold = GeneralSetting::getFreeShippingThreshold();
+        $baseFee = GeneralSetting::getShippingBaseFee();
+        $feePerKm = GeneralSetting::getShippingFeePerKm();
+        $maxDistance = GeneralSetting::getMaxDeliveryDistance();
+
+        // Miễn phí vận chuyển cho các đơn hàng trên ngưỡng giá trị.
+        if ($subtotal >= $threshold) {
+            return 0;
+        }
+
+        // Kiểm tra xem khoảng cách có vượt quá giới hạn cho phép không.
+        if ($distanceInKm > $maxDistance) {
+            // Trả về một giá trị đặc biệt để báo hiệu khoảng cách không hợp lệ.
+            // Việc xác thực cuối cùng sẽ được xử lý ở tầng controller.
+            return -1;
+        }
+
+        // Không tính phí cho khoảng cách bằng 0.
+        if ($distanceInKm <= 0) {
+            return 0;
+        }
+
+        // Áp dụng phí cơ bản cho km đầu tiên.
+        if ($distanceInKm <= 1) {
+            return $baseFee;
+        }
+
+        // Tính phí cho các km tiếp theo. Sử dụng ceil() để làm tròn lên,
+        // đảm bảo rằng bất kỳ phần nào của một km cũng được tính là một km đầy đủ.
+        $additionalKms = ceil($distanceInKm) - 1;
+        $shippingFee = $baseFee + ($additionalKms * $feePerKm);
+
+        return $shippingFee;
+    }
+
+    /**
+     * Tính khoảng cách giữa hai điểm tọa độ trên Trái Đất bằng công thức Haversine.
+     *
+     * @param float $lat1 Vĩ độ của điểm 1.
+     * @param float $lon1 Kinh độ của điểm 1.
+     * @param float $lat2 Vĩ độ của điểm 2.
+     * @param float $lon2 Kinh độ của điểm 2.
+     * @return float Khoảng cách giữa hai điểm tính bằng kilômét.
+     */
+    public static function getDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        if (($lat1 == $lat2) && ($lon1 == $lon2)) {
+            return 0;
+        }
+
+        $earthRadius = 6371; // Bán kính Trái Đất tính bằng km.
 
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
-        $a = sin($dLat/2) * sin($dLat/2) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon/2) * sin($dLon/2);
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        $lat1Rad = deg2rad($lat1);
+        $lat2Rad = deg2rad($lat2);
 
-        return $earthRadius * $c; // Distance in kilometers
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             sin($dLon / 2) * sin($dLon / 2) * cos($lat1Rad) * cos($lat2Rad);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 
     /**
-     * Calculate shipping fee based on subtotal and distance
+     * Tính toán thời gian giao hàng dự kiến (phút).
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $cartItems Các mặt hàng trong giỏ hàng.
+     * @param float $distanceInKm Khoảng cách giao hàng tính bằng km.
+     * @return int Tổng thời gian dự kiến tính bằng phút.
      */
-    public static function calculateFee($subtotal, $distance)
+    public static function calculateEstimatedDeliveryTime($cartItems, float $distanceInKm): int
     {
-        // Free shipping for orders over 200,000 VND
-        if ($subtotal >= 200000) {
-            return 0;
+        // 1. Tìm thời gian chuẩn bị lâu nhất từ các món trong giỏ hàng.
+        $maxPreparationTime = $cartItems->reduce(function ($max, $item) {
+            $time = $item->variant->product->preparation_time_minutes ?? 0;
+            return $time > $max ? $time : $max;
+        }, 0);
+        
+        // Nếu không có sản phẩm nào có thời gian, sử dụng giá trị mặc định.
+        if ($maxPreparationTime == 0) {
+            $maxPreparationTime = GeneralSetting::getDefaultPreparationTime();
         }
 
-        // Base shipping fee
-        $baseFee = 15000;
-
-        // Additional fee per km after 5km
-        if ($distance > 5) {
-            $additionalFee = ($distance - 5) * 2000;
-            $baseFee += $additionalFee;
+        // 2. Tính thời gian di chuyển.
+        $averageSpeed = GeneralSetting::getAverageSpeedKmh();
+        $travelTime = 0;
+        if ($averageSpeed > 0 && $distanceInKm > 0) {
+            $travelTime = ($distanceInKm / $averageSpeed) * 60; // Đổi sang phút
         }
 
-        // Maximum delivery distance is 20km
-        if ($distance > 20) {
-            return -1; // Outside delivery area
-        }
+        // 3. Lấy thời gian dự phòng từ database.
+        $bufferTime = GeneralSetting::getBufferTimeMinutes();
 
-        return $baseFee;
-    }
+        // 4. Cộng tổng và làm tròn lên.
+        $totalMinutes = $maxPreparationTime + $travelTime + $bufferTime;
 
-    /**
-     * Calculate estimated delivery time in minutes
-     */
-    public static function calculateEstimatedDeliveryTime($cartItems, $distance)
-    {
-        // Base preparation time: 15 minutes
-        $preparationTime = 15;
-
-        // Additional time based on number of items
-        $itemCount = 0;
-        foreach ($cartItems as $item) {
-            $itemCount += $item->quantity;
-        }
-
-        // Add 2 minutes per item
-        $preparationTime += $itemCount * 2;
-
-        // Delivery time based on distance (assuming 30km/h average speed)
-        $deliveryTime = ($distance / 30) * 60; // Convert to minutes
-
-        return $preparationTime + $deliveryTime;
+        return (int) ceil($totalMinutes);
     }
 }
