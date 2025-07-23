@@ -31,31 +31,31 @@
     </div>
 
     @if ($currentRank)
+        @php
+            $maxPoints = $allRanks->max('min_spending');
+        @endphp
         <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
             {{-- DYNAMIC RANK PROGRESS --}}
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
                     <h3 class="text-lg font-bold mb-1">Thành viên {{ $currentRank->name }}</h3>
                     @if ($nextRank)
-                        <p class="text-gray-500 text-sm">Còn
-                            {{ number_format(max(0, $nextRank->min_spending - $currentPoints), 0, ',', '.') }}
-                            điểm nữa để lên hạng {{ $nextRank->name }}</p>
-                    @else<p class="text-gray-500 text-sm">Bạn đã đạt hạng cao nhất!</p>
+                        <p class="text-gray-500 text-sm">
+                            Còn {{ number_format(max(0, $nextRank->min_spending - $currentPoints), 0, ',', '.') }} điểm
+                            để lên hạng {{ $nextRank->name }}
+                        </p>
+                    @else
+                        <p class="text-gray-500 text-sm">Bạn đã đạt hạng cao nhất!</p>
                     @endif
                 </div>
                 <div class="mt-2 md:mt-0">
-                    @if ($nextRank)
-                        <span
-                            class="text-sm font-medium">{{ number_format($currentPoints, 0, ',', '.') }}/{{ number_format($nextRank->min_spending, 0, ',', '.') }}
-                            điểm</span>
-                    @else<span class="text-sm font-medium">{{ number_format($currentPoints, 0, ',', '.') }}
-                            điểm</span>
-                    @endif
+                    <span class="text-sm font-medium">
+                        {{ number_format($currentPoints, 0, ',', '.') }} /
+                        {{ number_format($maxPoints, 0, ',', '.') }} điểm
+                    </span>
                 </div>
             </div>
-            @php
-                $maxPoints = $allRanks->max('min_spending');
-            @endphp
+
             <div class="relative" style="height: 80px;">
                 {{-- Thanh tiến trình nằm trên --}}
                 <div class="absolute left-0 top-0 w-full h-4 bg-gray-100 rounded-full overflow-hidden z-10">

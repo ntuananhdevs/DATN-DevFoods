@@ -40,32 +40,26 @@ class ProfileController extends Controller
         // Lấy danh sách sản phẩm yêu thích (giả sử 6 sản phẩm)
         $favoriteProducts = $user->favorites()->with('product.primaryImage')->latest()->take(6)->get();
 
-        // --- Logic tính toán hạng thành viên ---
         $allRanks = UserRank::orderBy('min_spending', 'asc')->get();
         $currentRank = $user->userRank;
 
-        // Xử lý trường hợp người dùng mới chưa có hạng
         if (!$currentRank && $allRanks->isNotEmpty()) {
             $currentRank = $allRanks->first();
         }
 
-        $nextRank = null;
-        $progressPercent = 0;
         $currentPoints = $user->total_spending;
+
+        // Mốc cao nhất dùng để hiển thị max tiến trình
         $maxPoints = $allRanks->max('min_spending');
 
+        // Tính phần trăm từ 0 đến max
+        $progressPercent = $maxPoints > 0
+            ? min(100, ($currentPoints / $maxPoints) * 100)
+            : 0;
 
-        if ($currentRank) {
-            $nextRank = $allRanks->firstWhere('min_spending', '>', $currentRank->min_spending);
-            if ($nextRank) {
-                $range = $nextRank->min_spending - $currentRank->min_spending;
-                $achieved = $currentPoints - $currentRank->min_spending;
-                $progressPercent = min(100, max(0, ($currentPoints / $maxPoints) * 100));
-            } else {
-                // Đã đạt hạng cao nhất, luôn là 100%
-                $progressPercent = 100;
-            }
-        }
+        // Tìm mốc tiếp theo (gần nhất lớn hơn điểm hiện tại)
+        $nextRank = $allRanks->firstWhere('min_spending', '>', $currentPoints);
+
 
         // Trả về view với tất cả dữ liệu
         return view('customer.profile.index', compact(
