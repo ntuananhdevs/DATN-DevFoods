@@ -13,7 +13,13 @@ class OrderItemTopping extends Model
         'order_item_id',
         'topping_id',
         'quantity',
-        'price'
+        'price',
+        // Snapshot fields
+        'topping_name',
+        'topping_sku',
+        'topping_description',
+        'topping_image',
+        'topping_unit_price',
     ];
 
     protected $casts = [
@@ -44,4 +50,28 @@ class OrderItemTopping extends Model
     {
         return $this->price * $this->quantity;
     }
-} 
+
+    /**
+     * Get topping name (snapshot first, then from relation)
+     */
+    public function getDisplayToppingNameAttribute()
+    {
+        return $this->topping_name ?? $this->topping?->name ?? 'Không xác định';
+    }
+
+    /**
+     * Get topping image (snapshot first, then from relation)
+     */
+    public function getDisplayToppingImageAttribute()
+    {
+        return $this->topping_image ?? $this->topping?->image ?? null;
+    }
+
+    /**
+     * Check if this topping has snapshot data
+     */
+    public function hasSnapshotData()
+    {
+        return !empty($this->topping_name);
+    }
+}

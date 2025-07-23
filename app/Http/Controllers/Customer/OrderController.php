@@ -40,7 +40,7 @@ class OrderController extends Controller
         $order->load([
             'branch',
             'driver',
-            'payment.paymentMethod', // Tải cả phương thức thanh toán
+            'payment', // Tải thông tin thanh toán
             'orderItems.productVariant.product.primaryImage',
             'orderItems.productVariant.variantValues.attribute',
             'orderItems.toppings' // Đảm bảo bạn có quan hệ này trong model OrderItem

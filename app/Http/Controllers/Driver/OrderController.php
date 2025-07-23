@@ -319,6 +319,13 @@ class OrderController extends Controller
 
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
+        
+        // Tính toán thu nhập cho tài xế 
+        if (is_null($order->driver_earning) && $order->delivery_fee > 0) {
+            $commissionRate = config('shipping.driver_commission_rate', 0.6);
+            $order->driver_earning = $order->delivery_fee * $commissionRate;
+        }
+        
         $order->save();
 
         if ($request->expectsJson() || $request->ajax()) {

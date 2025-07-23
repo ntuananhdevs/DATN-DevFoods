@@ -15,13 +15,28 @@ class OrderItem extends Model
         'combo_id',
         'quantity',
         'unit_price',
-        'total_price'
+        'total_price',
+        // Snapshot fields
+        'product_name',
+        'product_sku',
+        'product_description',
+        'product_image',
+        'variant_name',
+        'variant_attributes',
+        'variant_price',
+        'combo_name',
+        'combo_description',
+        'combo_image',
+        'combo_items',
+        'combo_price',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'variant_attributes' => 'array',
+        'combo_items' => 'array',
     ];
 
     /**
@@ -62,5 +77,45 @@ class OrderItem extends Model
     public function product()
     {
         return $this->hasOneThrough(Product::class, ProductVariant::class, 'id', 'id', 'product_variant_id', 'product_id');
+    }
+
+    /**
+     * Get product name (snapshot first, then from relation)
+     */
+    public function getDisplayProductNameAttribute()
+    {
+        return $this->product_name ?? $this->productVariant?->product?->name ?? $this->combo?->name ?? 'Không xác định';
+    }
+
+    /**
+     * Get product image (snapshot first, then from relation)
+     */
+    public function getDisplayProductImageAttribute()
+    {
+        return $this->product_image ?? $this->productVariant?->product?->image ?? $this->combo?->image ?? null;
+    }
+
+    /**
+     * Get variant name (snapshot first, then from relation)
+     */
+    public function getDisplayVariantNameAttribute()
+    {
+        return $this->variant_name ?? $this->productVariant?->name ?? null;
+    }
+
+    /**
+     * Get combo name (snapshot first, then from relation)
+     */
+    public function getDisplayComboNameAttribute()
+    {
+        return $this->combo_name ?? $this->combo?->name ?? null;
+    }
+
+    /**
+     * Check if this order item has snapshot data
+     */
+    public function hasSnapshotData()
+    {
+        return !empty($this->product_name) || !empty($this->combo_name);
     }
 }

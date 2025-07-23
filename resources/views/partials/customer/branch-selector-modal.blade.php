@@ -1,5 +1,5 @@
 <!-- Branch Change Confirmation Modal -->
-<div id="branch-change-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center" style="display: none;">
+<div id="branch-change-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center" style="display: none;">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-transform">
         <div class="flex flex-col items-center mb-4 text-center">
             <div class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4">
@@ -20,7 +20,7 @@
 </div>
 
 <!-- Branch Selection Modal -->
-<div id="branch-selector-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" 
+<div id="branch-selector-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center" 
      style="display: none;">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4 transform transition-transform">
         <div class="flex justify-between items-center mb-4">
