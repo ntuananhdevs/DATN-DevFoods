@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Models\Address;
 use App\Models\Branch;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
@@ -165,23 +166,73 @@ class ProfileController extends Controller
     // API: Thêm địa chỉ mới
     public function storeAddress(Request $request)
     {
-        $data = $request->validate([
-            'recipient_name' => 'required|string|max:255',
-            'address_line' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'district' => 'required|string|max:100',
-            'ward' => 'required|string|max:100',
-            'phone_number' => 'required|string|max:20',
-            'is_default' => 'boolean',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
-        $data['user_id'] = Auth::id();
-        if (!empty($data['is_default'])) {
-            Address::where('user_id', Auth::id())->update(['is_default' => false]);
+        try {
+            $data = $request->validate([
+                'recipient_name' => 'required|string|max:255',
+                'address_line' => 'required|string|max:255',
+                'city' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'ward' => 'required|string|max:100',
+                'phone_number' => 'required|string|max:20',
+                'is_default' => 'nullable|boolean',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+            ]);
+            
+            $data['user_id'] = Auth::id();
+            
+            // Check if user has any existing addresses
+            $existingAddressCount = Address::where('user_id', Auth::id())->count();
+            
+            // If this is the first address, make it default automatically
+            if ($existingAddressCount == 0) {
+                $data['is_default'] = true;
+            } else {
+                // Handle checkbox value properly
+                $data['is_default'] = $request->has('is_default') && $request->input('is_default') == '1';
+            }
+            
+            // If setting as default, remove default from other addresses
+            if ($data['is_default']) {
+                Address::where('user_id', Auth::id())->update(['is_default' => false]);
+            }
+            
+            $address = Address::create($data);
+            
+            // Prepare response data with all necessary fields
+            $responseData = [
+                'id' => $address->id,
+                'recipient_name' => $address->recipient_name,
+                'phone_number' => $address->phone_number,
+                'address_line' => $address->address_line,
+                'city' => $address->city,
+                'district' => $address->district,
+                'ward' => $address->ward,
+                'latitude' => $address->latitude,
+                'longitude' => $address->longitude,
+                'is_default' => $address->is_default,
+                'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Địa chỉ đã được thêm thành công!',
+                'data' => $responseData
+            ], 201);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Store address error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi thêm địa chỉ: ' . $e->getMessage()
+            ], 500);
         }
-        $address = Address::create($data);
-        return response()->json($address, 201);
     }
 
     // API: Cập nhật địa chỉ
@@ -209,9 +260,17 @@ class ProfileController extends Controller
     // API: Xóa địa chỉ
     public function deleteAddress($id)
     {
-        $address = Auth::user()->addresses()->findOrFail($id);
-        $address->delete();
-        return response()->json(['success' => true]);
+        try {
+            $address = Auth::user()->addresses()->find($id);
+            if (!$address) {
+                return response()->json(['message' => 'Địa chỉ không tồn tại hoặc không thuộc về bạn'], 404);
+            }
+            $address->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Delete address error: ' . $e->getMessage());
+            return response()->json(['message' => 'Lỗi server: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

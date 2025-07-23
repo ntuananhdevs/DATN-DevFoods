@@ -3,6 +3,7 @@
 @section('title', $product->name)
 
 @section('content')
+<x-customer-container>
 <style>
    /* Discount code styles */
    .discount-code-animation {
@@ -912,7 +913,7 @@
                     <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
                     <span>{{ isset($product->has_stock) && !$product->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                 </button>
-                <button id="buy-now" 
+                <button id="buy-now-product-btn" 
                         class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     Mua ngay
@@ -1470,7 +1471,7 @@
         </form>
     </div>
 </div>
-
+</x-customer-container>
 @endsection
 
 @section('scripts')

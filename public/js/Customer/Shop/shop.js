@@ -2133,3 +2133,77 @@ if (window.productId) {
         reviewList.insertAdjacentHTML('afterbegin', html);
     });
 }
+
+// === FETCH RIÊNG CHO NÚT MUA NGAY SẢN PHẨM ===
+document.addEventListener('DOMContentLoaded', function() {
+    const buyNowProductBtn = document.getElementById('buy-now-product-btn');
+    if (buyNowProductBtn) {
+        buyNowProductBtn.addEventListener('click', function() {
+            const productId = window.productId || this.getAttribute('data-product-id');
+            const quantity = parseInt(document.getElementById('quantity').textContent) || 1;
+            
+            // Tính variant_id từ selected variant values (giống Add to Cart)
+            const selectedVariantValueIds = [];
+            const variantGroups = document.querySelectorAll('#variants-container > div');
+            
+            variantGroups.forEach(group => {
+                const checkedInput = group.querySelector('input:checked');
+                if (checkedInput) {
+                    selectedVariantValueIds.push(parseInt(checkedInput.value));
+                }
+            });
+            
+            // Tìm variant_id từ combination
+            let variantId = null;
+            if (selectedVariantValueIds.length > 0) {
+                const combinationKey = selectedVariantValueIds.sort().join('_');
+                variantId = window.variantCombinations[combinationKey] || null;
+                
+                console.log('Buy Now variant calculation:', {
+                    selectedVariantValueIds,
+                    combinationKey,
+                    variantId,
+                    variantCombinations: window.variantCombinations
+                });
+            }
+            
+            let toppings = [];
+            document.querySelectorAll('.topping-input:checked').forEach(input => {
+                toppings.push(input.value);
+            });
+            
+            buyNowProductBtn.disabled = true;
+            fetch('/checkout/product-buy-now', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: JSON.stringify({ product_id: productId, variant_id: variantId, toppings: toppings, quantity: quantity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                buyNowProductBtn.disabled = false;
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if (data.success) {
+                    window.location.href = '/checkout';
+                } else {
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Có lỗi xảy ra' });
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra');
+                    }
+                }
+            })
+            .catch(() => {
+                buyNowProductBtn.disabled = false;
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi khi mua sản phẩm' });
+                } else {
+                    alert('Có lỗi khi mua sản phẩm');
+                }
+            });
+        });
+    }
+});

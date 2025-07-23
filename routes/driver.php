@@ -40,6 +40,9 @@ Route::prefix('driver')->name('driver.')->group(function () {
     // Authenticated driver routes
     Route::middleware('auth:driver')->group(function () {
         Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
+        // Thêm route đổi mật khẩu lần đầu cho tài xế
+        Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
+
 
         // Driver Dashboard
         Route::get('/', [DriverController::class, 'home'])->name('dashboard');

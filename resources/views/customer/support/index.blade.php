@@ -3,11 +3,11 @@
 
 @section('content')
     @php
-        $supportBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('supports');
+        $supportBanner = app('App\\Http\\Controllers\\Customer\\BannerController')->getBannersByPosition('supports');
     @endphp
     @include('components.banner', ['banners' => $supportBanner])
+    <x-customer-container>
 
-<div class="container mx-auto px-4 py-12">
     <!-- Search Box -->
     <div class=" mx-auto mb-12">
         <div class="relative">
@@ -212,7 +212,7 @@
             </form>
         </div>
     </div>
-</div>
+    </x-customer-container>
 
 <!-- Include Chat Widget -->
 @include('partials.customer.chat-widget')
