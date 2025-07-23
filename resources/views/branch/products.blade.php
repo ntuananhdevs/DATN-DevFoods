@@ -95,7 +95,7 @@
                                             <path d="m15 5 4 4"></path>
                                         </svg>
                                     </a>
-
+  
                                 </div>
                             </td>
                         </tr>

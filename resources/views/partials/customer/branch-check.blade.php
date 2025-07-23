@@ -1,7 +1,5 @@
 {{-- Branch checking logic partial --}}
-@php
-    $branches = $branches ?? \App\Models\Branch::where('active', 1)->orderBy('id')->get();
-@endphp
+{{-- Use branches data from BranchMiddleware --}}
 @if(session('selected_branch') || request()->cookie('selected_branch'))
     {{-- Branch is already selected, no action needed --}}
     @include('partials.customer.branch-selector-modal', ['branches' => $branches])
