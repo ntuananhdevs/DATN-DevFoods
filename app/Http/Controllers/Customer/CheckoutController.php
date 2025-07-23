@@ -254,10 +254,8 @@ class CheckoutController extends Controller
                 // Tạo địa chỉ mới cho user
                 $address = Address::create([
                     'user_id' => $userId,
-                    'full_name' => $validated['full_name'],
                     'recipient_name' => $validated['full_name'],
                     'phone_number' => $validated['phone'],
-                    'email' => $validated['email'],
                     'address_line' => $validated['address'],
                     'city' => $validated['city'],
                     'district' => $validated['district'],
