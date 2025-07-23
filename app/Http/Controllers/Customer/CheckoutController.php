@@ -41,11 +41,10 @@ class CheckoutController extends Controller
         $buyNow = session('buy_now_checkout');
         if ($buyNow) {
             $cartItems = collect();
-            $subtotal = 0;
             if ($buyNow['type'] === 'product') {
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
-                    $variant = \App\Models\ProductVariant::find($buyNow['variant_id']);
+                    $variant = \App\Models\ProductVariant::with('product')->find($buyNow['variant_id']);
                 }
                 if ($variant) {
                     $item = new \stdClass();
@@ -57,7 +56,6 @@ class CheckoutController extends Controller
                     }
                     $item->combo = null;
                     $cartItems->push($item);
-                    $subtotal = ($variant->price + $item->toppings->sum('price')) * $item->quantity;
                 }
             } elseif ($buyNow['type'] === 'combo') {
                 $combo = \App\Models\Combo::find($buyNow['combo_id']);
@@ -68,9 +66,11 @@ class CheckoutController extends Controller
                     $item->quantity = $buyNow['quantity'];
                     $item->toppings = collect();
                     $cartItems->push($item);
-                    $subtotal = $combo->price * $item->quantity;
                 }
             }
+            
+            // Calculate subtotal for Buy Now items
+            $subtotal = $this->calculateBuyNowSubtotal($cartItems);
             // Nếu không có sản phẩm hợp lệ trong buy now
             if ($cartItems->isEmpty()) {
                 return redirect()->route('products.index')->with('error', 'Sản phẩm bạn chọn không hợp lệ hoặc đã hết hàng.');
@@ -279,7 +279,7 @@ class CheckoutController extends Controller
                 if ($buyNow['type'] === 'product') {
                     $variant = null;
                     if (!empty($buyNow['variant_id'])) {
-                        $variant = \App\Models\ProductVariant::find($buyNow['variant_id']);
+                        $variant = \App\Models\ProductVariant::with('product')->find($buyNow['variant_id']);
                     }
                     if ($variant) {
                         $item = new \stdClass();
@@ -334,20 +334,15 @@ class CheckoutController extends Controller
                 }
             }
             
-            // Calculate totals - Tính subtotal cho cả buy now và giỏ hàng thông thường
+            // Calculate totals - Different logic for Buy Now vs regular cart
             if ($buyNow) {
-                // Tính subtotal cho "buy now" - không áp dụng discount phức tạp
-                $subtotal = 0;
-                foreach ($cartItems as $item) {
-                    if ($item->variant) {
-                        $subtotal += ($item->variant->price + $item->toppings->sum('price')) * $item->quantity;
-                    } elseif ($item->combo) {
-                        $subtotal += $item->combo->price * $item->quantity;
-                    }
-                }
+                // Buy Now: Apply discount only to products, not combos
+                $subtotal = $this->calculateBuyNowSubtotal($cartItems);
             } else {
-                // Tính subtotal cho giỏ hàng thông thường với discount
-                $subtotal = $this->applyDiscountsToCartItems($cartItems);
+                // Regular cart: Apply discounts to all items
+                $currentBranch = $this->branchService->getCurrentBranch();
+                $branchId = $currentBranch ? $currentBranch->id : null;
+                $subtotal = $this->applyDiscountsToCartItems($cartItems, $branchId);
             }
             
             // Calculate shipping using ShippingService - FIX: Use consistent service-based calculation
@@ -522,24 +517,44 @@ class CheckoutController extends Controller
                     // Xử lý cho "buy now"
                     if ($cartItem->variant) {
                         $orderItem->product_variant_id = $cartItem->variant->id;
-                        $orderItem->unit_price = $cartItem->variant->price;
+                        // Use final_price (after discount) if available, otherwise original price
+                        $unitPrice = isset($cartItem->final_price) ? $cartItem->final_price : $cartItem->variant->price;
+                        // Subtract toppings price from final_price to get base unit price
+                        $toppingsPrice = 0;
+                        if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                            $toppingsPrice = $cartItem->toppings->sum('price');
+                        }
+                        $orderItem->unit_price = $unitPrice - $toppingsPrice;
                         $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
                     } elseif ($cartItem->combo) {
                         $orderItem->combo_id = $cartItem->combo->id;
+                        // For combo Buy Now: always use original price (no discount)
                         $orderItem->unit_price = $cartItem->combo->price;
                         $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
                     } else {
                         continue;
                     }
                 } else {
-                    // Xử lý cho giỏ hàng thông thường
+                    // Xử lý cho giỏ hàng thông thường - use final_price if available
                     if ($cartItem->product_variant_id) {
                         $orderItem->product_variant_id = $cartItem->product_variant_id;
-                        $orderItem->unit_price = $cartItem->variant ? $cartItem->variant->price : 0;
+                        $originalPrice = $cartItem->variant ? $cartItem->variant->price : 0;
+                        $unitPrice = isset($cartItem->final_price) ? $cartItem->final_price : $originalPrice;
+                        // Subtract toppings price from final_price to get base unit price
+                        $toppingsPrice = 0;
+                        if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                            foreach ($cartItem->toppings as $topping) {
+                                if (isset($topping->topping) && $topping->topping) {
+                                    $toppingsPrice += $topping->topping->price * ($topping->quantity ?? 1);
+                                }
+                            }
+                        }
+                        $orderItem->unit_price = $unitPrice - $toppingsPrice;
                         $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
                     } elseif ($cartItem->combo_id) {
                         $orderItem->combo_id = $cartItem->combo_id;
-                        $orderItem->unit_price = $cartItem->combo ? $cartItem->combo->price : 0;
+                        $originalPrice = $cartItem->combo ? $cartItem->combo->price : 0;
+                        $orderItem->unit_price = isset($cartItem->final_price) ? $cartItem->final_price : $originalPrice;
                         $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
                     } else {
                         continue;
@@ -1131,7 +1146,23 @@ class CheckoutController extends Controller
                 }
 
                 $finalPrice = max(0, $originPrice - $maxValue);
-                $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
+                
+                // Handle toppings - different structure for Buy Now vs regular cart
+                $toppingsPrice = 0;
+                if ($item->toppings && $item->toppings->count() > 0) {
+                    foreach ($item->toppings as $topping) {
+                        // Buy Now: direct Topping model
+                        if (isset($topping->price)) {
+                            $toppingsPrice += $topping->price;
+                        }
+                        // Regular cart: CartTopping with topping relation
+                        elseif (isset($topping->topping) && $topping->topping) {
+                            $toppingsPrice += $topping->topping->price * ($topping->quantity ?? 1);
+                        }
+                    }
+                }
+                
+                $finalPrice += $toppingsPrice;
                 $item->final_price = $finalPrice;
                 $subtotal += $finalPrice * $item->quantity;
             }
@@ -1170,6 +1201,38 @@ class CheckoutController extends Controller
             }
         }
 
+        return $subtotal;
+    }
+
+    /**
+     * Calculate subtotal for Buy Now items
+     * Apply discount only to products, not combos
+     */
+    private function calculateBuyNowSubtotal($cartItems)
+    {
+        $subtotal = 0;
+        
+        foreach ($cartItems as $item) {
+            if ($item->variant) {
+                // For products: apply discount
+                $currentBranch = $this->branchService->getCurrentBranch();
+                $branchId = $currentBranch ? $currentBranch->id : null;
+                
+                // Create a temporary collection with just this product item
+                $tempItems = collect([$item]);
+                $discountedSubtotal = $this->applyDiscountsToCartItems($tempItems, $branchId);
+                $subtotal += $discountedSubtotal;
+                
+            } elseif ($item->combo) {
+                // For combos: no discount, use original price
+                $comboPrice = $item->combo->price * $item->quantity;
+                $subtotal += $comboPrice;
+                
+                // Set final_price for consistency (used in order creation)
+                $item->final_price = $item->combo->price;
+            }
+        }
+        
         return $subtotal;
     }
 }
