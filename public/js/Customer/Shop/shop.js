@@ -2133,3 +2133,54 @@ if (window.productId) {
         reviewList.insertAdjacentHTML('afterbegin', html);
     });
 }
+
+// === FETCH RIÊNG CHO NÚT MUA NGAY SẢN PHẨM ===
+document.addEventListener('DOMContentLoaded', function() {
+    const buyNowProductBtn = document.getElementById('buy-now-product-btn');
+    if (buyNowProductBtn) {
+        buyNowProductBtn.addEventListener('click', function() {
+            const productId = window.productId || this.getAttribute('data-product-id');
+            const quantity = parseInt(document.getElementById('quantity').textContent) || 1;
+            // Lấy variant và toppings nếu có
+            let variantId = null;
+            const variantInput = document.querySelector('.variant-input:checked');
+            if (variantInput) variantId = variantInput.getAttribute('data-variant-id');
+            let toppings = [];
+            document.querySelectorAll('.topping-input:checked').forEach(input => {
+                toppings.push(input.value);
+            });
+            buyNowProductBtn.disabled = true;
+            fetch('/checkout/product-buy-now', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: JSON.stringify({ product_id: productId, variant_id: variantId, toppings: toppings, quantity: quantity })
+            })
+            .then(res => res.json())
+            .then(data => {
+                buyNowProductBtn.disabled = false;
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if (data.success) {
+                    window.location.href = '/checkout';
+                } else {
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Có lỗi xảy ra' });
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra');
+                    }
+                }
+            })
+            .catch(() => {
+                buyNowProductBtn.disabled = false;
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi khi mua sản phẩm' });
+                } else {
+                    alert('Có lỗi khi mua sản phẩm');
+                }
+            });
+        });
+    }
+});
