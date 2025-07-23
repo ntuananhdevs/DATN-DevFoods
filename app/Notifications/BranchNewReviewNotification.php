@@ -20,6 +20,11 @@ class BranchNewReviewNotification extends Notification
         return ['database', 'broadcast'];
     }
 
+    public function broadcastOn()
+    {
+        return ['private-branch.' . ($this->review->branch_id ?? 0)];
+    }
+
     public function toDatabase($notifiable)
     {
         $productOrComboName = $this->review->product ? $this->review->product->name : ($this->review->combo ? $this->review->combo->name : 'một sản phẩm');
