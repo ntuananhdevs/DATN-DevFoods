@@ -44,20 +44,41 @@ class CheckoutController extends Controller
             $subtotal = 0;
             if ($buyNow['type'] === 'product') {
                 $variant = null;
-                if (!empty($buyNow['variant_id'])) {
-                    $variant = \App\Models\ProductVariant::find($buyNow['variant_id']);
+                
+                // Sử dụng logic tìm variant giống CartController
+                if (!empty($buyNow['variant_values']) && !empty($buyNow['product_id'])) {
+                    $variantValueIds = $buyNow['variant_values'];
+                    $variantValueIds = array_map('intval', $variantValueIds);
+                    
+                    $variant = \App\Models\ProductVariant::where('product_id', $buyNow['product_id'])
+                        ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                            $query->whereIn('variant_value_id', $variantValueIds);
+                        }, '=', count($variantValueIds))
+                        ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                            $query->whereNotIn('variant_value_id', $variantValueIds);
+                        }, '=', 0)
+                        ->with(['product.images', 'variantValues.attribute'])
+                        ->first();
+                } elseif (!empty($buyNow['variant_id'])) {
+                    // Fallback cho trường hợp chỉ có variant_id
+                    $variant = \App\Models\ProductVariant::with(['product.images', 'variantValues.attribute'])->find($buyNow['variant_id']);
                 }
+                
                 if ($variant) {
                     $item = new \stdClass();
                     $item->variant = $variant;
                     $item->quantity = $buyNow['quantity'];
                     $item->toppings = collect();
                     if (!empty($buyNow['toppings'])) {
-                        $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                        $toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                        foreach ($toppings as $topping) {
+                            $toppingItem = new \stdClass();
+                            $toppingItem->topping = $topping;
+                            $item->toppings->push($toppingItem);
+                        }
                     }
                     $item->combo = null;
                     $cartItems->push($item);
-                    $subtotal = ($variant->price + $item->toppings->sum('price')) * $item->quantity;
                 }
             } elseif ($buyNow['type'] === 'combo') {
                 $combo = \App\Models\Combo::find($buyNow['combo_id']);
@@ -68,8 +89,14 @@ class CheckoutController extends Controller
                     $item->quantity = $buyNow['quantity'];
                     $item->toppings = collect();
                     $cartItems->push($item);
-                    $subtotal = $combo->price * $item->quantity;
                 }
+            }
+            
+            // Apply discount logic to buy now items
+            if ($cartItems->isNotEmpty()) {
+                $currentBranch = $this->branchService->getCurrentBranch();
+                $branchId = $currentBranch ? $currentBranch->id : null;
+                $subtotal = $this->applyDiscountsToCartItems($cartItems, $branchId);
             }
             // Nếu không có sản phẩm hợp lệ trong buy now
             if ($cartItems->isEmpty()) {
@@ -976,25 +1003,31 @@ class CheckoutController extends Controller
         // === CALCULATE MIN PRICE FOR EACH PRODUCT (needed for product_price requirement) ===
         foreach ($cartItems as $item) {
             // Xử lý cho sản phẩm lẻ
-            if ($item->variant && $item->variant->product) {
+            if (($item->variant || (isset($item->variant) && $item->variant)) && $item->variant->product) {
                 $product = $item->variant->product;
-                $product->min_price = $product->base_price;
-                if ($product->variants && $product->variants->count()) {
-                    $variantPrices = [];
-                    foreach ($product->variants as $variant) {
-                        $variantPrice = $product->base_price;
-                        if ($variant->variantValues && $variant->variantValues->count()) {
-                            $variantPrice += $variant->variantValues->sum('price_adjustment');
+                
+                // Set min_price if not already set
+                if (!isset($product->min_price)) {
+                    $product->min_price = $product->base_price ?? $item->variant->price;
+                    
+                    // Load variants if available for min price calculation
+                    if (method_exists($product, 'variants') && $product->variants && $product->variants->count()) {
+                        $variantPrices = [];
+                        foreach ($product->variants as $variant) {
+                            $variantPrice = $product->base_price ?? $variant->price;
+                            if ($variant->variantValues && $variant->variantValues->count()) {
+                                $variantPrice += $variant->variantValues->sum('price_adjustment');
+                            }
+                            $variantPrices[] = $variantPrice;
                         }
-                        $variantPrices[] = $variantPrice;
-                    }
-                    if ($variantPrices) {
-                        $product->min_price = min($variantPrices);
+                        if ($variantPrices) {
+                            $product->min_price = min($variantPrices);
+                        }
                     }
                 }
             }
             // Xử lý cho combo - combo không cần tính min_price
-            elseif ($item->combo) {
+            elseif ($item->combo || (isset($item->combo) && $item->combo)) {
                 // Combo không cần xử lý min_price
             }
         }
@@ -1003,7 +1036,7 @@ class CheckoutController extends Controller
         $subtotal = 0;
         foreach ($cartItems as $item) {
             // Xử lý cho sản phẩm lẻ
-            if ($item->variant) {
+            if ($item->variant || (isset($item->variant) && $item->variant)) {
                 $originPrice = $item->variant->price;
 
                 $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
@@ -1045,12 +1078,25 @@ class CheckoutController extends Controller
                 }
 
                 $finalPrice = max(0, $originPrice - $maxValue);
-                $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
+                
+                // Handle toppings for both CartItem models and stdClass objects
+                if ($item->toppings && $item->toppings->count() > 0) {
+                    $toppingsPrice = $item->toppings->sum(function($t) {
+                        // For CartItem models
+                        if (isset($t->topping)) {
+                            return $t->topping->price ?? 0;
+                        }
+                        // For stdClass objects (buy now)
+                        return $t->price ?? 0;
+                    });
+                    $finalPrice += $toppingsPrice;
+                }
+                
                 $item->final_price = $finalPrice;
                 $subtotal += $finalPrice * $item->quantity;
             }
             // Xử lý cho combo
-            elseif ($item->combo) {
+            elseif ($item->combo || (isset($item->combo) && $item->combo)) {
                 $originPrice = $item->combo->price;
 
                 $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
@@ -1060,7 +1106,7 @@ class CheckoutController extends Controller
                     }
                     // Scope specific products/categories - combo có thể áp dụng discount cho category
                     $applies = $discountCode->products->contains(function($dp) use ($item){
-                        if ($dp->category_id === $item->combo->category_id) return true;
+                        if (isset($item->combo->category_id) && $dp->category_id === $item->combo->category_id) return true;
                         return false;
                     });
                     return $applies;
