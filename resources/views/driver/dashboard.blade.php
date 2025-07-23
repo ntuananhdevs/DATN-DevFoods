@@ -70,24 +70,15 @@
         {{-- Card Thu nhập --}}
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="font-medium">Thu nhập</h3><a href="{{ route('driver.earnings') }}"
+                <h3 class="font-medium">Thu nhập hôm nay</h3><a href="{{ route('driver.earnings') }}"
                     class="text-blue-600 text-sm font-medium">Chi tiết</a>
             </div>
-            {{-- CẬP NHẬT RESPONSIVE: Dùng grid trên mobile, chuyển sang flex trên desktop (sm) --}}
-            {{-- Mobile: Hiển thị 3 cột. Desktop: Hiển thị hàng ngang --}}
-            <div id="period-buttons" class="grid grid-cols-3 gap-2 sm:flex sm:justify-between sm:space-x-4 mb-4">
-                <button data-period="today"
-                    class="px-3 py-2 bg-orange-100 text-orange-600 rounded-lg text-sm font-medium transition-all">Hôm
-                    nay</button>
-                <button data-period="week"
-                    class="px-3 py-2 text-gray-500 rounded-lg text-sm font-medium transition-all">Tuần này</button>
-                <button data-period="month"
-                    class="px-3 py-2 text-gray-500 rounded-lg text-sm font-medium transition-all">Tháng này</button>
-            </div>
             <div class="text-center">
-                <div id="earnings-value" class="text-3xl font-bold text-green-600">
+                <div class="text-3xl font-bold text-green-600">
                     {{ number_format($totalEarnedToday, 0, ',', '.') }} đ</div>
-                <div id="earnings-count" class="text-sm text-gray-500">{{ $ordersDeliveredToday->count() }} đơn đã giao
+                <div class="text-sm text-gray-500">{{ $deliveredOrdersCountToday }} đơn đã giao</div>
+                <div class="text-xs text-gray-400 mt-1">
+                    Trung bình: {{ $deliveredOrdersCountToday > 0 ? number_format($totalEarnedToday / $deliveredOrdersCountToday, 0, ',', '.') : '0' }} đ/đơn
                 </div>
             </div>
         </div>
@@ -145,7 +136,7 @@
                             <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
                         </div>
                         <a href="{{ route('driver.orders.show', $order->id) }}"
-                            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Nhận
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem
                             đơn</a>
                     </div>
                 @empty
@@ -225,39 +216,6 @@
                             statusToggle.checked = !isChecked;
                             showToast('Có lỗi xảy ra khi cập nhật trạng thái.', 'error');
                         });
-                });
-            }
-
-            // --- Logic cho query thu nhập ---
-            const periodButtons = document.querySelectorAll('#period-buttons button');
-            if (periodButtons.length > 0) {
-                // Đảm bảo nút "Hôm nay" được active ban đầu
-                periodButtons.forEach(button => {
-                    if (button.dataset.period === 'today') {
-                        button.classList.add('bg-orange-100', 'text-orange-600');
-                    } else {
-                        button.classList.remove('bg-orange-100', 'text-orange-600');
-                    }
-                });
-
-                periodButtons.forEach(button => {
-                    button.addEventListener('click', function() {
-                        periodButtons.forEach(btn => btn.classList.remove('bg-orange-100',
-                            'text-orange-600'));
-                        this.classList.add('bg-orange-100', 'text-orange-600');
-                        const period = this.dataset.period;
-                        fetch(`{{ route('driver.earnings.query') }}?period=${period}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                document.getElementById('earnings-value').textContent = data
-                                    .earnings;
-                                document.getElementById('earnings-count').textContent = data
-                                    .order_count + ' đơn đã giao';
-                            }).catch(error => {
-                                console.error('Earnings Query Error:', error);
-                                showToast('Không thể tải dữ liệu thu nhập.', 'error');
-                            });
-                    });
                 });
             }
 

@@ -18,30 +18,35 @@ class DriverController extends Controller
     {
         $driver = Auth::guard('driver')->user();
 
-        // CẬP NHẬT: Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received'
+        // Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received' hôm nay
         $ordersDeliveredToday = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['delivered', 'item_received'])
             ->whereDate('actual_delivery_time', Carbon::today())
             ->get();
         $totalEarnedToday = $ordersDeliveredToday->sum('driver_earning');
+        $deliveredOrdersCountToday = $ordersDeliveredToday->count();
 
-        // CẬP NHẬT: Lấy các đơn hàng tài xế đang xử lý
-        // Should now include 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'
+        // Tính thu nhập trung bình mỗi đơn hôm nay
+        $averageEarningPerOrder = $deliveredOrdersCountToday > 0 ? 
+            $totalEarnedToday / $deliveredOrdersCountToday : 0;
+
+        // Lấy các đơn hàng tài xế đang xử lý
         $processingOrders = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
             ->latest()->get();
 
-        // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế (chưa có driver_id)
-        $availableOrders = Order::where('driver_id', $driver->id)
+        // Lấy các đơn hàng mới đang chờ tài xế
+        $availableOrders = Order::whereNull('driver_id')
             ->where('status', 'awaiting_driver')
             ->latest()->take(5)->get();
 
         return view('driver.dashboard', compact(
             'driver',
-            'ordersDeliveredToday',
             'totalEarnedToday',
+            'deliveredOrdersCountToday',
+            'averageEarningPerOrder',
             'processingOrders',
-            'availableOrders',
+            'availableOrders'
         ));
     }
 
@@ -83,7 +88,8 @@ class DriverController extends Controller
                 $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]); //
                 break;
             case 'month':
-                $query->whereMonth('actual_delivery_time', Carbon::now()->month); //
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month)
+                      ->whereYear('actual_delivery_time', Carbon::now()->year);
                 break;
                 // Case 'all' không cần thêm điều kiện ngày
         }
@@ -112,7 +118,8 @@ class DriverController extends Controller
                 $label = 'tuần này';
                 break;
             case 'month':
-                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month)
+                      ->whereYear('actual_delivery_time', Carbon::now()->year);
                 $label = 'tháng này';
                 break;
             default: // today
@@ -122,10 +129,13 @@ class DriverController extends Controller
 
         $completedOrders = $query->get();
 
+        // Tính toán tips từ delivery_fee (giả sử 10% delivery_fee là tips)
+        $totalTips = $completedOrders->sum('delivery_fee') * 0.1;
+
         $stats = [
             'total_earnings' => $completedOrders->sum('driver_earning'),
             'total_orders' => $completedOrders->count(),
-            'total_tips' => $completedOrders->sum('tip_amount'), // Giả sử có cột tip_amount
+            'total_tips' => $totalTips,
             'avg_per_order' => $completedOrders->count() > 0 ? $completedOrders->sum('driver_earning') / $completedOrders->count() : 0,
         ];
 
@@ -168,36 +178,6 @@ class DriverController extends Controller
             'success' => true,
             'is_available' => (bool)$driver->is_available, //
             'message' => $driver->is_available ? 'Bạn đã Online.' : 'Bạn đã Offline.', //
-        ]);
-    }
-
-    // Phương thức để lấy thu nhập
-    public function queryEarnings(Request $request)
-    {
-        $driverId = $request->user('driver')->id;
-        $period = $request->query('period', 'today');
-
-        // CẬP NHẬT QUAN TRỌNG: Thay đổi where('status', 'delivered') thành whereIn và sử dụng actual_delivery_time
-        $query = Order::where('driver_id', $driverId)->whereIn('status', ['delivered', 'item_received']); //
-
-        switch ($period) { //
-            case 'week':
-                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]); //
-                break;
-            case 'month':
-                $query->whereMonth('actual_delivery_time', Carbon::now()->month); //
-                break;
-            default: // today
-                $query->whereDate('actual_delivery_time', Carbon::today()); //
-                break;
-        }
-
-        $totalEarnings = $query->sum('driver_earning'); //
-        $orderCount = $query->count(); //
-
-        return response()->json([ //
-            'earnings' => number_format($totalEarnings, 0, ',', '.') . ' đ',
-            'order_count' => $orderCount,
         ]);
     }
 }
