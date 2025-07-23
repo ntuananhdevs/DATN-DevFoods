@@ -382,10 +382,12 @@
                                         <p class="text-xs text-gray-500">
                                             @if ($isCombo)
                                                 Combo
+                                            @elseif ($variant && $variant->variantValues && $variant->variantValues->count() > 0)
+                                                @foreach ($variant->variantValues as $variantValue)
+                                                    {{ $variantValue->attribute->name }}: {{ $variantValue->value }}{{ !$loop->last ? ', ' : '' }}
+                                                @endforeach
                                             @elseif ($variant && $variant->variant_description)
                                                 {{ $variant->variant_description }}
-                                            @elseif ($variant && $variant->variantValues)
-                                                {{ implode(', ', $variant->variantValues->pluck('value')->toArray()) }}
                                             @else
                                                 &mdash;
                                             @endif

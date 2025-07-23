@@ -44,9 +44,26 @@ class CheckoutController extends Controller
             if ($buyNow['type'] === 'product') {
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
-                    $variant = \App\Models\ProductVariant::with('product')->find($buyNow['variant_id']);
+                    $variant = \App\Models\ProductVariant::with([
+                        'product',
+                        'variantValues.attribute'
+                    ])->find($buyNow['variant_id']);
                 }
                 if ($variant) {
+                    // Debug log for Buy Now variant
+                    \Log::debug('Buy Now variant loaded:', [
+                        'variant_id' => $variant->id,
+                        'product_name' => $variant->product->name ?? 'unknown',
+                        'variant_values_count' => $variant->variantValues ? $variant->variantValues->count() : 0,
+                        'variant_values' => $variant->variantValues ? $variant->variantValues->map(function($vv) {
+                            return [
+                                'id' => $vv->id,
+                                'value' => $vv->value,
+                                'attribute_name' => $vv->attribute->name ?? 'unknown'
+                            ];
+                        })->toArray() : []
+                    ]);
+                    
                     $item = new \stdClass();
                     $item->variant = $variant;
                     $item->quantity = $buyNow['quantity'];
@@ -279,7 +296,10 @@ class CheckoutController extends Controller
                 if ($buyNow['type'] === 'product') {
                     $variant = null;
                     if (!empty($buyNow['variant_id'])) {
-                        $variant = \App\Models\ProductVariant::with('product')->find($buyNow['variant_id']);
+                        $variant = \App\Models\ProductVariant::with([
+                            'product',
+                            'variantValues.attribute'
+                        ])->find($buyNow['variant_id']);
                     }
                     if ($variant) {
                         $item = new \stdClass();
@@ -958,12 +978,25 @@ class CheckoutController extends Controller
      */
     public function productBuyNow(Request $request)
     {
+        // Debug log for Buy Now request
+        \Log::debug('Buy Now request:', $request->all());
+        
         $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'required|integer|min:1',
             'variant_id' => 'nullable|integer|exists:product_variants,id',
             'toppings' => 'nullable|array'
         ]);
+        
+        // Log the variant being saved to session
+        \Log::debug('Buy Now saving to session:', [
+            'type' => 'product',
+            'product_id' => $request->product_id,
+            'variant_id' => $request->variant_id,
+            'toppings' => $request->toppings ?? [],
+            'quantity' => $request->quantity
+        ]);
+        
         session()->forget('buy_now_checkout');
         session(['buy_now_checkout' => [
             'type' => 'product',
