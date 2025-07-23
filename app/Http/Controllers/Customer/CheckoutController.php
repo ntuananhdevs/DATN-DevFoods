@@ -18,6 +18,7 @@ use App\Services\BranchService;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
+use App\Services\OrderSnapshotService;
 
 class CheckoutController extends Controller
 {
@@ -489,6 +490,10 @@ class CheckoutController extends Controller
                 }
             }
             
+            // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến
+            $order->load(['orderItems.toppings']);
+            OrderSnapshotService::snapshotOrder($order);
+            
             // Clear cart after order is placed by marking it as completed
             $cart->status = 'completed';
             $cart->save();
@@ -611,6 +616,12 @@ class CheckoutController extends Controller
                     $order->status = 'awaiting_confirmation';
                     $order->save();
 
+                    // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến (nếu chưa có)
+                    $order->load(['orderItems.toppings']);
+                    if (!$order->orderItems->first() || !$order->orderItems->first()->hasSnapshotData()) {
+                        OrderSnapshotService::snapshotOrder($order);
+                    }
+                    
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
 

@@ -41,7 +41,14 @@ class Order extends Model
         'subtotal',
         'total_amount',
         'delivery_address',
-        'notes'
+        'notes',
+        // Snapshot fields cho địa chỉ giao hàng
+        'delivery_address_line',
+        'delivery_ward',
+        'delivery_district',
+        'delivery_province',
+        'delivery_phone',
+        'delivery_recipient_name',
     ];
 
     protected $casts = [
@@ -291,5 +298,108 @@ class Order extends Model
         return Attribute::make(
             get: fn() => static::$statusAttributes[$this->status]['text_color'] ?? static::$statusAttributes['default']['text_color'],
         );
+    }
+    
+    /**
+     * Accessor methods cho địa chỉ giao hàng
+     * Ưu tiên hiển thị snapshot data, fallback về data gốc
+     */
+    
+    /**
+     * Lấy địa chỉ giao hàng hiển thị
+     */
+    protected function displayDeliveryAddress(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_address_line 
+                ?? ($this->address ? $this->address->address_line : $this->guest_address)
+                ?? 'Không có địa chỉ'
+        );
+    }
+    
+    /**
+     * Lấy phường/xã giao hàng hiển thị
+     */
+    protected function displayDeliveryWard(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_ward 
+                ?? ($this->address ? $this->address->ward : $this->guest_ward)
+                ?? 'Không có'
+        );
+    }
+    
+    /**
+     * Lấy quận/huyện giao hàng hiển thị
+     */
+    protected function displayDeliveryDistrict(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_district 
+                ?? ($this->address ? $this->address->district : $this->guest_district)
+                ?? 'Không có'
+        );
+    }
+    
+    /**
+     * Lấy tỉnh/thành phố giao hàng hiển thị
+     */
+    protected function displayDeliveryProvince(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_province 
+                ?? ($this->address ? $this->address->province : $this->guest_city)
+                ?? 'Không có'
+        );
+    }
+    
+    /**
+     * Lấy số điện thoại giao hàng hiển thị
+     */
+    protected function displayDeliveryPhone(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_phone 
+                ?? ($this->address ? $this->address->phone : $this->guest_phone)
+                ?? 'Không có'
+        );
+    }
+    
+    /**
+     * Lấy tên người nhận hàng hiển thị
+     */
+    protected function displayRecipientName(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_recipient_name 
+                ?? ($this->address ? $this->address->recipient_name : $this->guest_name)
+                ?? 'Không có'
+        );
+    }
+    
+    /**
+     * Lấy địa chỉ đầy đủ để hiển thị
+     */
+    protected function displayFullDeliveryAddress(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => trim(implode(', ', array_filter([
+                $this->display_delivery_address,
+                $this->display_delivery_ward,
+                $this->display_delivery_district,
+                $this->display_delivery_province
+            ])))
+        );
+    }
+    
+    /**
+     * Kiểm tra xem có dữ liệu snapshot địa chỉ không
+     */
+    public function hasAddressSnapshot(): bool
+    {
+        return !empty($this->delivery_address_line) || 
+               !empty($this->delivery_ward) || 
+               !empty($this->delivery_district) || 
+               !empty($this->delivery_province);
     }
 }
