@@ -54,7 +54,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="block text-xs text-gray-500 mb-1">Chọn vị trí trên bản đồ</label>
-                        <div id="map" style="height: 200px; border-radius: 8px;"></div>
+                        <div id="map" style="height: 200px; width: 100%; border-radius: 8px;"></div>
                         <input type="hidden" id="latitude" name="latitude">
                         <input type="hidden" id="longitude" name="longitude">
                     </div>
@@ -77,6 +77,9 @@
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<!-- Include modal.js for confirmation dialogs -->
+<script src="{{ asset('js/modal.js') }}"></script>
 
 <script>
 var MAPBOX_TOKEN = "{{ config('services.mapbox.access_token') }}";
@@ -135,7 +138,7 @@ function fetchCities(selected = null) {
     citySelect.value = 'Hà Nội';
 }
 // Lấy quận/huyện
-function fetchDistricts(selected = null) {
+function fetchDistricts(cityName = null, selected = null) {
     const hanoiCode = 1;
     fetch(`https://provinces.open-api.vn/api/p/${hanoiCode}?depth=2`)
         .then(res => res.json())
@@ -196,7 +199,7 @@ wardSelect.addEventListener('change', function() {
 
 // Khi chọn quận/huyện, reset xã
 citySelect.addEventListener('change', function() {
-    fetchDistricts(this.value);
+    fetchDistricts(this.value, null);
     wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
 });
 districtSelect.addEventListener('change', function() {
@@ -346,7 +349,7 @@ addNewAddressBtn.onclick = function() {
     fetchCities();
     districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
     wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-    fetchDistricts(); // Không truyền gì để giữ dòng 'Chọn quận/huyện'
+    fetchDistricts('Hà Nội', null); // Sửa lại để truyền đúng tham số
     setTimeout(() => initMap(), 300);
     modal.classList.remove('hidden');
 };
@@ -389,16 +392,87 @@ addressList.addEventListener('click', function(e) {
     if (e.target.classList.contains('delete-address')) {
         e.preventDefault();
         const id = e.target.dataset.id;
-        if (confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
-            fetch(`/profile/addresses/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
+        
+        // Lấy thông tin địa chỉ để hiển thị trong modal
+        fetch('/profile/addresses')
             .then(res => res.json())
-            .then(() => fetchAddresses());
-        }
+            .then(addresses => {
+                const addr = addresses.find(a => a.id == id);
+                const addressName = addr ? `${addr.recipient_name} - ${addr.address_line}, ${addr.ward}, ${addr.district}, ${addr.city}` : 'địa chỉ này';
+                
+                // Sử dụng modal xác nhận từ modal.js
+                dtmodalConfirmDelete({
+                    title: 'Xác nhận xóa địa chỉ',
+                    subtitle: 'Bạn có chắc chắn muốn xóa địa chỉ này?',
+                    message: 'Hành động này không thể hoàn tác.',
+                    itemName: addressName,
+                    onConfirm: function() {
+                        // Thực hiện xóa địa chỉ
+                        fetch(`/profile/addresses/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success || res.ok) {
+                                // Hiển thị toast thành công
+                                dtmodalShowToast('success', {
+                                    title: 'Thành công!',
+                                    message: 'Địa chỉ đã được xóa thành công.'
+                                });
+                                fetchAddresses(); // Refresh danh sách địa chỉ
+                            } else {
+                                // Hiển thị toast lỗi
+                                dtmodalShowToast('error', {
+                                    title: 'Lỗi!',
+                                    message: data.message || 'Có lỗi xảy ra khi xóa địa chỉ.'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi!',
+                                message: 'Có lỗi xảy ra khi xóa địa chỉ.'
+                            });
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching addresses:', error);
+                // Fallback nếu không lấy được thông tin địa chỉ
+                dtmodalConfirmDelete({
+                    title: 'Xác nhận xóa địa chỉ',
+                    subtitle: 'Bạn có chắc chắn muốn xóa địa chỉ này?',
+                    message: 'Hành động này không thể hoàn tác.',
+                    onConfirm: function() {
+                        fetch(`/profile/addresses/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(() => {
+                            dtmodalShowToast('success', {
+                                title: 'Thành công!',
+                                message: 'Địa chỉ đã được xóa thành công.'
+                            });
+                            fetchAddresses();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi!',
+                                message: 'Có lỗi xảy ra khi xóa địa chỉ.'
+                            });
+                        });
+                    }
+                });
+            });
     }
 });
 
@@ -474,9 +548,31 @@ addressForm.onsubmit = function(e) {
         body: JSON.stringify(data)
     })
     .then(res => res.json())
-    .then(() => {
-        modal.classList.add('hidden');
-        fetchAddresses();
+    .then(data => {
+        if (data.success || data.id) {
+            modal.classList.add('hidden');
+            fetchAddresses();
+            
+            // Hiển thị toast thành công
+            const actionText = editingAddressId ? 'cập nhật' : 'thêm';
+            dtmodalShowToast('success', {
+                title: 'Thành công!',
+                message: `Địa chỉ đã được ${actionText} thành công.`
+            });
+        } else {
+            // Hiển thị toast lỗi
+            dtmodalShowToast('error', {
+                title: 'Lỗi!',
+                message: data.message || 'Có lỗi xảy ra khi lưu địa chỉ.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        dtmodalShowToast('error', {
+            title: 'Lỗi!',
+            message: 'Có lỗi xảy ra khi lưu địa chỉ.'
+        });
     });
 };
 

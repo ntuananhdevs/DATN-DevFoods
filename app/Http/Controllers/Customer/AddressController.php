@@ -27,12 +27,25 @@ class AddressController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
         
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'phone_number' => 'required|string|max:20',
-            'address_line' => 'required|string|max:500', // For full address text
-            'is_default' => 'nullable|boolean',
-        ]);
+        try {
+            $validated = $request->validate([
+                'recipient_name' => 'required|string|max:255',
+                'phone_number' => 'required|string|max:20',
+                'address_line' => 'required|string|max:500',
+                'city' => 'nullable|string|max:255',
+                'district' => 'nullable|string|max:255', 
+                'ward' => 'nullable|string|max:255',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+                'is_default' => 'nullable|boolean',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         try {
             // --- NEW: Geocoding the address ---
@@ -73,13 +86,18 @@ class AddressController extends Controller
             // Create and save the new address
             $address = new Address();
             $address->user_id = $user->id;
-            $address->full_name = $validated['full_name'];
+            $address->recipient_name = $validated['recipient_name'];
             $address->phone_number = $validated['phone_number'];
             $address->address_line = $validated['address_line'];
             
-            // Add coordinates
-            $address->latitude = $latitude;
-            $address->longitude = $longitude;
+            // Add coordinates from form or geocoding
+            $address->latitude = $validated['latitude'] ?? $latitude;
+            $address->longitude = $validated['longitude'] ?? $longitude;
+            
+            // Add city/district/ward if provided
+            $address->city = $validated['city'] ?? null;
+            $address->district = $validated['district'] ?? null;
+            $address->ward = $validated['ward'] ?? null;
             
             // The new inline form does not provide structured city/district/ward.
             // This is a trade-off for a simpler UI.
@@ -109,4 +127,4 @@ class AddressController extends Controller
             ], 500);
         }
     }
-} 
+}
