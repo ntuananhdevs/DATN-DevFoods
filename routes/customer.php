@@ -68,6 +68,9 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
+    // --- Thêm route cho Mua ngay ---
+    Route::post('/checkout/combo-buy-now', [CustomerCheckoutController::class, 'comboBuyNow'])->name('checkout.comboBuyNow');
+    Route::post('/checkout/product-buy-now', [CustomerCheckoutController::class, 'productBuyNow'])->name('checkout.productBuyNow');
 
     // About, Contact, Promotion, Branches, Support
     Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');

@@ -184,7 +184,7 @@
                         <i class="fas {{ isset($combo->has_stock) && $combo->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
                         <span>{{ isset($combo->has_stock) && !$combo->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                     </button>
-                    <button id="buy-now-combo" data-combo-id="{{ $combo->id }}"
+                    <button id="buy-now-combo-btn" data-combo-id="{{ $combo->id }}"
                         class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         @if(isset($combo->has_stock) && !$combo->has_stock) disabled @endif>
                         Mua ngay
