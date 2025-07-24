@@ -1053,9 +1053,9 @@ class ProductController extends Controller
         
         // Redirect về trang tương ứng
         if ($type === 'product') {
-            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
+            return redirect()->route('products.show', $item->slug)->with('success', 'Đánh giá của bạn đã được gửi!');
         } else {
-            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
+            return redirect()->route('combos.show', $item->slug)->with('success', 'Đánh giá của bạn đã được gửi!');
         }
     }
 
