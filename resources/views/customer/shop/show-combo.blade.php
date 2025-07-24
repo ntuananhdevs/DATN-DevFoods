@@ -777,6 +777,7 @@
     <script>
         window.csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
     </script>
+    <script>window.comboId = {{ $combo->id }};</script>
     @include('partials.customer.branch-check')
     <script src="{{ asset('js/Customer/Shop/combo.js') }}"></script>
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>

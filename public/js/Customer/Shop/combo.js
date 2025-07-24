@@ -844,3 +844,96 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// === Realtime review (Pusher) cho combo ===
+if (window.comboId && window.pusherKey && window.pusherCluster) {
+    const comboReviewsPusher = new Pusher(window.pusherKey, {
+        cluster: window.pusherCluster,
+        encrypted: true,
+        enabledTransports: ['ws', 'wss']
+    });
+    const comboReviewsChannel = comboReviewsPusher.subscribe('combo-reviews.' + window.comboId);
+
+    comboReviewsChannel.bind('review-created', function(data) {
+        // Kiểm tra nếu review đã có trên trang thì bỏ qua
+        if (document.querySelector(`[data-review-id="${data.review.id}"]`)) return;
+
+        // Tìm container danh sách review
+        const reviewsList = document.querySelector('#content-reviews .divide-y');
+        if (!reviewsList) return;
+
+        // Tạo HTML cho review mới (template đơn giản, có thể mở rộng thêm)
+        const review = data.review;
+        const user = review.user;
+        const branch = review.branch;
+        let reviewHtml = `
+        <div class="p-6 hover:bg-gray-50/50 transition-colors" data-review-id="${review.id}">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-semibold text-lg">
+                            ${user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-medium text-gray-900">${user.name || 'Ẩn danh'}</span>
+                            ${review.is_verified_purchase ? `<span class=\"inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-check-circle\"></i>Đã mua hàng</span>` : ''}
+                            ${review.is_featured ? `<span class=\"inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-award\"></i>Đánh giá nổi bật</span>` : ''}
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1 space-x-2">
+                            <span>${formatDate(review.review_date)}</span>
+                            ${branch ? `<span>•</span><span>${branch.name}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                    <div class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
+                        <span class="font-medium text-yellow-700">${review.rating}.0</span>
+                        <div class="flex items-center">
+                            ${[1,2,3,4,5].map(i => i <= review.rating ? '<i class=\'fas fa-star text-yellow-400\'></i>' : '<i class=\'far fa-star text-yellow-400\'></i>').join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 space-y-3">
+                <p class="text-gray-700 leading-relaxed">${review.review}</p>
+                ${review.review_image ? `<div class=\"mt-3\"><img src=\"${review.review_image}\" alt=\"Review image\" class=\"rounded-lg max-h-48 object-cover hover:opacity-95 transition-opacity cursor-pointer\"></div>` : ''}
+                <div class="flex items-center gap-6 pt-2">
+                    <button class="inline-flex items-center gap-2 text-sm helpful-btn" data-review-id="${review.id}" data-helpful="0">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>Hữu ích (<span class="helpful-count">0</span>)</span>
+                    </button>
+                    <button class="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-600 transition-colors report-review-btn" data-review-id="${review.id}">
+                        <i class="fas fa-flag"></i>
+                        <span>Báo cáo</span>
+                        <span class="ml-1 text-xs report-count" style="display:none"></span>
+                    </button>
+                    <button class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn" data-review-id="${review.id}" data-user-name="${user.name || 'Ẩn danh'}" data-route-reply="/reviews/${review.id}/reply">
+                        <i class="fas fa-reply"></i>
+                        <span>Phản hồi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+        // Thêm review mới vào đầu danh sách
+        reviewsList.insertAdjacentHTML('afterbegin', reviewHtml);
+        // Gắn lại event cho các nút trong review mới
+        const newReviewElem = reviewsList.querySelector(`[data-review-id="${review.id}"]`);
+        if (newReviewElem) {
+            bindHelpfulButton(newReviewElem);
+            bindReportButton(newReviewElem);
+            bindReplyButton(newReviewElem);
+            bindDeleteReviewButton(newReviewElem);
+        }
+    });
+}
+
+// Định nghĩa hàm formatDate cho realtime review
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const pad = n => n < 10 ? '0' + n : n;
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
