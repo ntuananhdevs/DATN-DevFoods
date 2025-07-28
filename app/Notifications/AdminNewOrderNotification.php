@@ -34,4 +34,4 @@ class AdminNewOrderNotification extends Notification
             'created_at' => now()->toDateTimeString(),
         ];
     }
-} 
+}

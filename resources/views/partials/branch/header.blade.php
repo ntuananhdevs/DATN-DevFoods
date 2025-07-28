@@ -100,7 +100,7 @@
                 class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-bell">
+                    class="lucide lucide-bell header-bell-icon">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
@@ -227,6 +227,80 @@
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.0/dist/echo.iife.js"></script>
 
+<style>
+    /* Header bell animation styles */
+    .header-bell-shake {
+        animation: headerBellShake 0.6s ease-in-out 2, headerBellGlow 0.6s ease-in-out 2;
+        transform-origin: top center;
+    }
+
+    @keyframes headerBellShake {
+
+        0%,
+        100% {
+            transform: rotate(0deg) scale(1);
+        }
+
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+            transform: rotate(-8deg) scale(1.1);
+        }
+
+        20%,
+        40%,
+        60%,
+        80% {
+            transform: rotate(8deg) scale(1.1);
+        }
+    }
+
+    @keyframes headerBellGlow {
+
+        0%,
+        100% {
+            filter: drop-shadow(0 0 0px currentColor);
+        }
+
+        50% {
+            filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 10px rgba(59, 130, 246, 0.2));
+        }
+    }
+
+    .header-bell-icon {
+        transition: all 0.3s ease;
+    }
+
+    .header-bell-icon:hover {
+        transform: scale(1.1);
+    }
+
+    .notification-unread-count {
+        transition: all 0.3s ease;
+    }
+
+    .notification-count-update {
+        animation: countPulse 0.6s ease-in-out;
+    }
+
+    @keyframes countPulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.3);
+            background-color: #2563eb;
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>
+
 <script>
     window.Echo = new Echo({
         broadcaster: 'pusher',
@@ -262,10 +336,34 @@
             })
             .then(res => res.json())
             .then(data => {
+                const oldCount = parseInt(document.querySelector('.notification-unread-count')?.textContent || '0');
+                const newCount = data.unreadCount || 0;
 
                 document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                    el.textContent = newCount > 99 ? '99+' : newCount;
+
+                    // Trigger count update animation if count increased
+                    if (newCount > oldCount) {
+                        el.classList.add('notification-count-update');
+                        setTimeout(() => {
+                            el.classList.remove('notification-count-update');
+                        }, 600);
+                    }
                 });
+
+                // Trigger bell shake animation if new notifications
+                if (newCount > oldCount) {
+                    const bellIcon = document.querySelector('.header-bell-icon');
+                    if (bellIcon) {
+                        bellIcon.classList.remove('header-bell-shake');
+                        bellIcon.offsetHeight; // Force reflow
+                        bellIcon.classList.add('header-bell-shake');
+                        setTimeout(() => {
+                            bellIcon.classList.remove('header-bell-shake');
+                        }, 1200);
+                    }
+                }
+
                 // Cập nhật danh sách notification trong modal (chỉ update từng item)
                 let container = document.getElementById('branch-notification-list');
                 if (container && data.html) {

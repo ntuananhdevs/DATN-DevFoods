@@ -88,7 +88,7 @@
                 class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-bell animate-bell">
+                    class="lucide lucide-bell animate-bell admin-header-bell-icon">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
@@ -342,6 +342,74 @@
         }
     }
 
+    /* Admin header bell animation styles */
+    .admin-header-bell-shake {
+        animation: adminHeaderBellShake 0.6s ease-in-out 2, adminHeaderBellGlow 0.6s ease-in-out 2;
+        transform-origin: top center;
+    }
+
+    @keyframes adminHeaderBellShake {
+
+        0%,
+        100% {
+            transform: rotate(0deg) scale(1);
+        }
+
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+            transform: rotate(-8deg) scale(1.1);
+        }
+
+        20%,
+        40%,
+        60%,
+        80% {
+            transform: rotate(8deg) scale(1.1);
+        }
+    }
+
+    @keyframes adminHeaderBellGlow {
+
+        0%,
+        100% {
+            filter: drop-shadow(0 0 0px currentColor);
+        }
+
+        50% {
+            filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 10px rgba(59, 130, 246, 0.2));
+        }
+    }
+
+    .admin-header-bell-icon {
+        transition: all 0.3s ease;
+    }
+
+    .admin-header-bell-icon:hover {
+        transform: scale(1.1);
+    }
+
+    .admin-notification-count-update {
+        animation: adminCountPulse 0.6s ease-in-out;
+    }
+
+    @keyframes adminCountPulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.3);
+            background-color: #2563eb;
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
     /* Notification layout fixes */
     .notification-item {
         transition: all 0.2s ease;
@@ -464,5 +532,144 @@
                 }
             }
         });
+    }
+
+    // Real-time notification handling for admin header
+    function fetchAdminNotifications() {
+        fetch("{{ route('admin.notifications.index') }}?ajax=1", {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const oldCount = parseInt(document.querySelector('.notification-unread-count')?.textContent || '0');
+                const newCount = data.unreadCount || 0;
+
+                document.querySelectorAll('.notification-unread-count').forEach(el => {
+                    el.textContent = newCount > 99 ? '99+' : newCount;
+
+                    // Trigger count update animation if count increased
+                    if (newCount > oldCount) {
+                        el.classList.add('admin-notification-count-update');
+                        setTimeout(() => {
+                            el.classList.remove('admin-notification-count-update');
+                        }, 600);
+                    }
+                });
+
+                // Trigger bell shake animation if new notifications
+                if (newCount > oldCount) {
+                    const bellIcon = document.querySelector('.admin-header-bell-icon');
+                    if (bellIcon) {
+                        bellIcon.classList.remove('admin-header-bell-shake');
+                        bellIcon.offsetHeight; // Force reflow
+                        bellIcon.classList.add('admin-header-bell-shake');
+                        setTimeout(() => {
+                            bellIcon.classList.remove('admin-header-bell-shake');
+                        }, 1200);
+                    }
+                }
+
+                // Update notification list if provided
+                let container = document.getElementById('admin-notification-list');
+                if (container && data.html) {
+                    let tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = data.html;
+                    let newNotis = tempDiv.querySelectorAll('[id^="notification-item-"]');
+                    let newIds = new Set();
+                    newNotis.forEach(newNoti => {
+                        let id = newNoti.id;
+                        newIds.add(id);
+                        let oldNoti = document.getElementById(id);
+                        if (oldNoti) {
+                            oldNoti.outerHTML = newNoti.outerHTML;
+                        } else {
+                            container.prepend(newNoti);
+                        }
+                    });
+                    // Remove old notifications not in new list
+                    container.querySelectorAll('[id^="notification-item-"]').forEach(oldNoti => {
+                        if (!newIds.has(oldNoti.id)) {
+                            oldNoti.remove();
+                        }
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching admin notifications:', error));
+    }
+
+    // Initialize real-time notifications for admin header
+    if (typeof Pusher !== 'undefined') {
+        try {
+            const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                encrypted: true,
+                authEndpoint: '/admin/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                            'content') || ''
+                    }
+                }
+            });
+
+            // Connection status logging
+            pusher.connection.bind('connected', function() {
+                // Connected successfully
+            });
+
+            pusher.connection.bind('error', function(err) {
+                console.error('❌ Admin Header: Pusher connection error:', err);
+            });
+
+            // Subscribe to admin's private notification channel
+            const channel = pusher.subscribe('private-App.Models.User.{{ Auth::id() }}');
+
+            channel.bind('pusher:subscription_succeeded', function() {
+                // Successfully subscribed
+            });
+
+            channel.bind('pusher:subscription_error', function(error) {
+                console.error('❌ Admin Header: Subscription error:', error);
+            });
+
+            channel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(data) {
+                // Check if it's a chat message notification
+                if (data.type === 'App\\Notifications\\NewChatMessageNotification') {
+                    // Immediately increment count for instant feedback
+                    const countElements = document.querySelectorAll('.notification-unread-count');
+                    countElements.forEach(el => {
+                        const currentCount = parseInt(el.textContent) || 0;
+                        const newCount = currentCount + 1;
+                        el.textContent = newCount > 99 ? '99+' : newCount;
+
+                        // Trigger count update animation
+                        el.classList.add('admin-notification-count-update');
+                        setTimeout(() => {
+                            el.classList.remove('admin-notification-count-update');
+                        }, 600);
+                    });
+
+                    // Trigger bell shake animation
+                    const bellIcon = document.querySelector('.admin-header-bell-icon');
+                    if (bellIcon) {
+                        bellIcon.classList.remove('admin-header-bell-shake');
+                        bellIcon.offsetHeight; // Force reflow
+                        bellIcon.classList.add('admin-header-bell-shake');
+                        setTimeout(() => {
+                            bellIcon.classList.remove('admin-header-bell-shake');
+                        }, 1200);
+                    }
+
+                    // Fetch updated notifications from server for accuracy
+                    setTimeout(() => {
+                        fetchAdminNotifications();
+                    }, 500);
+                }
+            });
+        } catch (error) {
+            console.error('❌ Admin Header: Error initializing Pusher:', error);
+        }
     }
 </script>

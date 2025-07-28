@@ -50,7 +50,8 @@
 
 <body class="min-h-screen">
     <!-- Notification Container -->
-    <div id="notificationContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4">
+    <div id="notificationContainer"
+        class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-md px-4">
         @if (session('success'))
             <div class="notification-alert bg-white border-l-4 border-green-500 rounded-lg overflow-hidden mb-4 transition-all duration-300"
                 data-type="success" id="successNotification">
@@ -368,6 +369,13 @@
 
     <!-- Scripts -->
     <script>
+        // Set global user ID for notification system
+        @if (auth()->check())
+            window.currentUserId = {{ auth()->id() }};
+        @else
+            window.currentUserId = null;
+        @endif
+
         // Global function to update the cart counter
         window.updateCartCount = function(count) {
             // Update all cart counter elements on the page
@@ -493,9 +501,23 @@
                     authEndpoint: '/broadcasting/auth',
                     auth: {
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                                'content') || ''
                         }
                     }
+                });
+
+                // Add Pusher debugging
+                pusher.connection.bind('connected', function() {
+                    console.log('✅ Pusher connected successfully');
+                });
+
+                pusher.connection.bind('error', function(err) {
+                    console.error('❌ Pusher connection error:', err);
+                });
+
+                pusher.connection.bind('disconnected', function() {
+                    console.log('⚠️ Pusher disconnected');
                 });
 
                 // Subscribe to the correct private wishlist channel
@@ -516,66 +538,101 @@
                     console.error('Layout failed to subscribe to wishlist channel:', channelName, error);
                 });
 
-                // Subscribe to user's private notification channel
+                // Subscribe to user's private notification channel (Laravel style)
                 const notificationChannel = pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
 
-                notificationChannel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(data) {
-                    // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                    // Cách này đảm bảo giao diện luôn đồng bộ và không bị mất khi reload
+                // Listen for Laravel's notification broadcast event
+                notificationChannel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
+                    function(data) {
+                        console.log('🔔 Laravel Notification received:', data);
+
+
+
+                        // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
+                        if (typeof fetchNotifications === 'function') {
+                            fetchNotifications();
+                        }
+
+                        // Gọi hiệu ứng rung chuông (nếu có)
+                        if (typeof triggerBellShake === 'function') {
+                            triggerBellShake();
+                        }
+                    });
+
+                notificationChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log(
+                        '✅ Subscribed to Laravel notifications channel for user {{ auth()->id() }}');
+                });
+
+                notificationChannel.bind('pusher:subscription_error', (error) => {
+                    console.error('❌ Failed to subscribe to Laravel notifications channel:', error);
+                });
+
+                // Subscribe to custom notification channel (used by custom events)
+                const customNotificationChannel = pusher.subscribe('customer.{{ auth()->id() }}.notifications');
+
+                customNotificationChannel.bind('new-message', function(data) {
+
+
                     if (typeof fetchNotifications === 'function') {
                         fetchNotifications();
                     }
 
-                    // Gọi hiệu ứng rung chuông (nếu có)
                     if (typeof triggerBellShake === 'function') {
                         triggerBellShake();
                     }
                 });
 
-                notificationChannel.bind('pusher:subscription_succeeded', () => {
-                    console.log('Subscribed to notifications channel for user {{ auth()->id() }}');
+                customNotificationChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log(
+                        '✅ Subscribed to custom notifications channel for user {{ auth()->id() }}');
                 });
 
-                notificationChannel.bind('pusher:subscription_error', (error) => {
-                    console.error('Failed to subscribe to notifications channel:', error);
+                customNotificationChannel.bind('pusher:subscription_error', (error) => {
+                    console.error('❌ Failed to subscribe to custom notifications channel:', error);
                 });
             }
         });
     </script>
     @include('components.modal')
 
-    @if(isset($cartItems))
-    <script>
-        window.cartCountFromServer = {{ count($cartItems) }};
-    </script>
+    @if (isset($cartItems))
+        <script>
+            window.cartCountFromServer = {{ count($cartItems) }};
+        </script>
     @endif
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
-    if (!{{ auth()->check() ? 'true' : 'false' }}) {
-        window.updateWishlistCount(0);
-        localStorage.removeItem('wishlist_count');
-    }
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
+            if (!{{ auth()->check() ? 'true' : 'false' }}) {
+                window.updateWishlistCount(0);
+                localStorage.removeItem('wishlist_count');
+            }
+        });
 
-// Giữ lại các hàm cũ để tương thích ngược
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-function updateCsrfToken(newToken) {
-    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-    if (window.jQuery) {
-        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
-    }
-    if (window.axios) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-    }
-}
-</script>
+        // Giữ lại các hàm cũ để tương thích ngược
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
 
-{{-- Thêm component CSRF Auto-Refresh --}}
-@include('partials.csrf-refresh')
+        function updateCsrfToken(newToken) {
+            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+            if (window.jQuery) {
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': newToken
+                    }
+                });
+            }
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            }
+        }
+    </script>
+
+    {{-- Thêm component CSRF Auto-Refresh --}}
+    @include('partials.csrf-refresh')
 </body>
 
 </html>
