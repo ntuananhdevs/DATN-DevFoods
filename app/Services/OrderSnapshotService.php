@@ -162,6 +162,15 @@ class OrderSnapshotService
      */
     public static function snapshotOrder($order)
     {
+        // Log thông tin đơn hàng trước khi snapshot
+        \Illuminate\Support\Facades\Log::info('Starting order snapshot', [
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'address_id' => $order->address_id,
+            'has_address_relation' => $order->relationLoaded('address'),
+            'has_address' => $order->address ? true : false
+        ]);
+        
         // Snapshot địa chỉ giao hàng
         self::snapshotDeliveryAddress($order);
         
@@ -174,6 +183,15 @@ class OrderSnapshotService
                 self::snapshotOrderItemTopping($orderItemTopping);
             }
         }
+        
+        // Log kết quả snapshot
+        \Illuminate\Support\Facades\Log::info('Order snapshot completed', [
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'has_delivery_address_snapshot' => !empty($order->delivery_address_line_snapshot),
+            'delivery_address_snapshot' => $order->delivery_address_line_snapshot,
+            'delivery_recipient_name_snapshot' => $order->delivery_recipient_name_snapshot
+        ]);
     }
 
     /**
@@ -182,28 +200,56 @@ class OrderSnapshotService
     private static function snapshotDeliveryAddress($order)
     {
         // Nếu có address_id (khách hàng đã đăng ký)
-        if ($order->address_id && $order->address) {
-            $address = $order->address;
+        if ($order->address_id) {
+            // Đảm bảo address đã được load
+            if (!$order->relationLoaded('address')) {
+                $order->load('address');
+            }
             
-            $order->update([
-                'delivery_address_line_snapshot' => $address->address_line,
-                'delivery_ward_snapshot' => $address->ward,
-                'delivery_district_snapshot' => $address->district,
-                'delivery_province_snapshot' => $address->city,
-                'delivery_phone_snapshot' => $address->phone_number,
-                'delivery_recipient_name_snapshot' => $address->recipient_name,
-            ]);
+            if ($order->address) {
+                $address = $order->address;
+                
+                $order->update([
+                    'delivery_address_line_snapshot' => $address->address_line,
+                    'delivery_ward_snapshot' => $address->ward,
+                    'delivery_district_snapshot' => $address->district,
+                    'delivery_province_snapshot' => $address->city,
+                    'delivery_phone_snapshot' => $address->phone_number,
+                    'delivery_recipient_name_snapshot' => $address->recipient_name,
+                ]);
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Snapshot Delivery Address from registered address', [
+                    'order_id' => $order->id,
+                    'address_id' => $order->address_id,
+                    'address_data' => $address->toArray()
+                ]);
+                
+                return;
+            }
         }
-        // Nếu là khách vãng lai (guest)
-        else {
-            $order->update([
-                'delivery_address_line_snapshot' => $order->guest_address,
-                'delivery_ward_snapshot' => $order->guest_ward,
-                'delivery_district_snapshot' => $order->guest_district,
-                'delivery_province_snapshot' => $order->guest_city,
-                'delivery_phone_snapshot' => $order->guest_phone,
-                'delivery_recipient_name_snapshot' => $order->guest_name,
-            ]);
-        }
+        
+        // Nếu không có address_id hoặc không tìm thấy address, sử dụng thông tin khách vãng lai
+        $order->update([
+            'delivery_address_line_snapshot' => $order->guest_address,
+            'delivery_ward_snapshot' => $order->guest_ward,
+            'delivery_district_snapshot' => $order->guest_district,
+            'delivery_province_snapshot' => $order->guest_city,
+            'delivery_phone_snapshot' => $order->guest_phone,
+            'delivery_recipient_name_snapshot' => $order->guest_name,
+        ]);
+        
+        // Log để debug
+        \Illuminate\Support\Facades\Log::info('Snapshot Delivery Address from guest info', [
+            'order_id' => $order->id,
+            'guest_data' => [
+                'name' => $order->guest_name,
+                'phone' => $order->guest_phone,
+                'address' => $order->guest_address,
+                'ward' => $order->guest_ward,
+                'district' => $order->guest_district,
+                'city' => $order->guest_city
+            ]
+        ]);
     }
 }

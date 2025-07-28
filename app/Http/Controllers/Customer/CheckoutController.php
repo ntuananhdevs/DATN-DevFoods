@@ -265,6 +265,9 @@ class CheckoutController extends Controller
                     'longitude' => $validated['longitude'],
                     'is_default' => true,
                 ]);
+                
+                // Lưu address_id vào request để sử dụng khi tạo đơn hàng
+                $request->merge(['address_id' => $address->id]);
             }
         } else {
             // For guest users, require manual input
@@ -461,6 +464,20 @@ class CheckoutController extends Controller
                 
                 if ($selectedAddress) {
                     $order->address_id = $selectedAddress->id;
+                    
+                    // Log để debug
+                    \Illuminate\Support\Facades\Log::info('Setting address_id for order', [
+                        'order_code' => $order->order_code,
+                        'address_id' => $selectedAddress->id,
+                        'address_data' => $selectedAddress->toArray()
+                    ]);
+                } else {
+                    // Log lỗi nếu không tìm thấy địa chỉ
+                    \Illuminate\Support\Facades\Log::warning('Address not found for order', [
+                        'order_code' => $order->order_code,
+                        'requested_address_id' => $request->address_id,
+                        'user_id' => $userId
+                    ]);
                 }
             } else {
                 // Thông tin guest
@@ -605,8 +622,23 @@ class CheckoutController extends Controller
                 }
             }
             
+            // Đảm bảo đơn hàng đã được lưu trước khi snapshot
+            if (!$order->exists) {
+                $order->save();
+            }
+            
+            // Đảm bảo load đầy đủ các quan hệ cần thiết cho snapshot
+            $order->load(['orderItems.toppings', 'address']);
+            
+            // Log thông tin đơn hàng trước khi snapshot
+            \Illuminate\Support\Facades\Log::info('Order before snapshot', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'address_id' => $order->address_id,
+                'has_address' => $order->address ? true : false
+            ]);
+            
             // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến
-            $order->load(['orderItems.toppings']);
             OrderSnapshotService::snapshotOrder($order);
             
             // Clear cart or buy now session after order is placed
