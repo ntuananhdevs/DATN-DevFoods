@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class OrderItem extends Model
 {
@@ -23,7 +24,7 @@ class OrderItem extends Model
         'combo_name_snapshot',
         'combo_items_snapshot',
     ];
-    
+
     protected $appends = [
         'display_product_name',
         'display_product_image',
@@ -128,5 +129,45 @@ class OrderItem extends Model
     {
         // Luôn sử dụng unit_price cho mọi trường hợp
         return $this->unit_price;
+    }
+
+    protected function displayPrice(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Nếu là biến thể sản phẩm
+                if ($this->product_variant_id) {
+                    return $this->unit_price; // unit_price nên là giá của biến thể sản phẩm
+                }
+                // Nếu là combo
+                if ($this->combo_id) {
+                    // Sử dụng giá combo snapshot nếu có, nếu không thì dùng unit_price của item
+                    return $this->combo_price_snapshot ?? $this->unit_price;
+                }
+                return $this->unit_price; // Giá trị mặc định
+            }
+        );
+    }
+
+    /**
+     * Lấy tổng giá của item đơn hàng này, bao gồm cả giá của các topping đi kèm.
+     */
+    protected function totalPriceWithToppings(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                // Giá cơ bản của sản phẩm/combo (số lượng * đơn giá)
+                $basePrice = $this->unit_price * $this->quantity;
+
+                // Tổng giá của tất cả các topping cho item này
+                $toppingsPrice = $this->toppings->sum(function ($topping) {
+                    // Sử dụng topping_unit_price_snapshot nếu có, nếu không thì dùng topping->unit_price
+                    return ($topping->topping_unit_price_snapshot ?? $topping->unit_price) * $this->quantity;
+                });
+
+                // Tổng giá của item bao gồm cả topping
+                return $basePrice + $toppingsPrice;
+            }
+        );
     }
 }
