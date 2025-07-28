@@ -5,6 +5,89 @@
 @section('content')
 <x-customer-container>
 <style>
+    /* Reply styles kiểu Facebook */
+    .reply-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0;
+        margin-left: 56px;
+        margin-top: 12px;
+        position: relative;
+    }
+    
+    /* Đường kẻ dọc kiểu Facebook - màu xanh nhạt */
+    .reply-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: -12px;
+        width: 2px;
+        height: 24px;
+        background-color: #bfdbfe;
+    }
+    
+    /* Đường kẻ ngang - màu xanh nhạt */
+    .reply-item::after {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 12px;
+        width: 20px;
+        height: 2px;
+        background-color: #bfdbfe;
+    }
+    
+    .reply-item .reply-bubble {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        min-width: 0;
+        flex: 1;
+        margin-left: 8px;
+    }
+    
+    .reply-item .reply-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+    
+    .reply-item .reply-author {
+        font-weight: 600;
+        color: #1e40af;
+        font-size: 0.9rem;
+    }
+    
+    .reply-item .reply-time {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+    
+    .reply-item .reply-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 6px;
+    }
+    
+    .reply-item .reply-actions button {
+        background: none;
+        border: none;
+        color: #ef4444;
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    
+    .reply-item .reply-content {
+        color: #374151;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        word-break: break-word;
+    }
+
     #report-review-modal .bg-white {
         max-width: 40rem;
         width: 100%;
@@ -98,6 +181,8 @@
             padding: 0.5rem 0.2rem;
         }
     }
+    
+
 </style>
     <div class="container mx-auto px-4 py-8">
         <!-- Product Info Section -->
@@ -410,33 +495,22 @@
                                     </div>
                                     <!-- Hiển thị các reply -->
                                     @foreach ($review->replies as $reply)
-                                        <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative"
-                                            data-reply-id="{{ $reply->id }}">
-                                            <div class="reply-arrow">
-                                                <svg width="24" height="24" viewBox="0 0 24 24"
-                                                    class="text-blue-400">
-                                                    <path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor"
-                                                        stroke-width="2" fill="none" stroke-linecap="round"
-                                                        stroke-linejoin="round" />
-                                                </svg>
-                                            </div>
-                                            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
-                                                <div class="flex items-center gap-2 mb-1">
-                                                    <span
-                                                        class="font-semibold text-blue-700">{{ $reply->user->name }}</span>
-                                                    <span
-                                                        class="text-xs text-gray-400">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
+                                        <div class="reply-item" data-reply-id="{{ $reply->id }}">
+                                            <div class="reply-bubble">
+                                                <div class="reply-header">
+                                                    <span class="reply-author">{{ $reply->user->name }}</span>
+                                                    <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
                                                     @auth
                                                         @if ($reply->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
-                                                            <button
-                                                                class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn"
-                                                                data-reply-id="{{ $reply->id }}">
-                                                                <i class="fas fa-trash-alt"></i> Xóa
-                                                            </button>
+                                                            <span class="reply-actions">
+                                                                <button class="delete-reply-btn" data-reply-id="{{ $reply->id }}">
+                                                                    <i class="fas fa-trash-alt"></i> Xóa
+                                                                </button>
+                                                            </span>
                                                         @endif
                                                     @endauth
                                                 </div>
-                                                <div class="text-gray-700">{{ $reply->reply }}</div>
+                                                <div class="reply-content">{{ $reply->reply }}</div>
                                             </div>
                                         </div>
                                     @endforeach
