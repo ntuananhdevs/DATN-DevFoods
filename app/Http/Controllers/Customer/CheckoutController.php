@@ -609,9 +609,6 @@ class CheckoutController extends Controller
             $order->load(['orderItems.toppings']);
             OrderSnapshotService::snapshotOrder($order);
             
-            // Clear cart after order is placed by marking it as completed
-            $cart->status = 'completed';
-            $cart->save();
             // Clear cart or buy now session after order is placed
             if ($buyNow) {
                 // Clear buy now session

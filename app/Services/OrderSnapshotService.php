@@ -41,13 +41,11 @@ class OrderSnapshotService
         
         // Snapshot thông tin sản phẩm
         $orderItem->update([
-            'product_name' => $product->name,
-            'product_sku' => $product->sku,
-            'product_description' => $product->description,
-            'product_image' => $product->image,
-            'variant_name' => $variant->name,
-            'variant_attributes' => self::getVariantAttributes($variant),
-            'variant_price' => $variantPrice
+            'product_name_snapshot' => $product->name,
+            'base_price_snapshot' => $product->price,
+            'variant_name_snapshot' => $variant->name,
+            'variant_attributes_snapshot' => self::getVariantAttributes($variant),
+            'variant_price_snapshot' => $variantPrice
         ]);
     }
 
@@ -65,11 +63,9 @@ class OrderSnapshotService
 
         // Snapshot thông tin combo
         $orderItem->update([
-            'combo_name' => $combo->name,
-            'combo_description' => $combo->description,
-            'combo_image' => $combo->image,
-            'combo_items' => self::getComboItems($combo),
-            'combo_price' => $combo->price
+            'combo_name_snapshot' => $combo->name,
+            'combo_items_snapshot' => self::getComboItems($combo),
+            'combo_price_snapshot' => $combo->price
         ]);
     }
 
@@ -85,11 +81,8 @@ class OrderSnapshotService
         }
 
         $orderItemTopping->update([
-            'topping_name' => $topping->name,
-            'topping_sku' => $topping->sku,
-            'topping_description' => $topping->description,
-            'topping_image' => $topping->image,
-            'topping_unit_price' => $topping->price
+            'topping_name_snapshot' => $topping->name,
+            'topping_unit_price_snapshot' => $topping->price
         ]);
     }
 
@@ -122,10 +115,10 @@ class OrderSnapshotService
             foreach ($combo->comboItems as $comboItem) {
                 if ($comboItem->productVariant && $comboItem->productVariant->product) {
                     $items[] = [
-                        'product_name' => $comboItem->productVariant->product->name,
-                        'variant_name' => $comboItem->productVariant->name,
+                        'product_name_snapshot' => $comboItem->productVariant->product->name,
+                        'variant_name_snapshot' => $comboItem->productVariant->name,
                         'quantity' => $comboItem->quantity,
-                        'price' => $comboItem->productVariant->price
+                        'price_snapshot' => $comboItem->productVariant->price
                     ];
                 }
             }
@@ -163,23 +156,23 @@ class OrderSnapshotService
             $address = $order->address;
             
             $order->update([
-                'delivery_address_line' => $address->address_line,
-                'delivery_ward' => $address->ward,
-                'delivery_district' => $address->district,
-                'delivery_province' => $address->city, // Sửa từ province thành city
-                'delivery_phone' => $address->phone_number, // Sửa từ phone thành phone_number
-                'delivery_recipient_name' => $address->recipient_name,
+                'delivery_address_line_snapshot' => $address->address_line,
+                'delivery_ward_snapshot' => $address->ward,
+                'delivery_district_snapshot' => $address->district,
+                'delivery_province_snapshot' => $address->city, // Sửa từ province thành city
+                'delivery_phone_snapshot' => $address->phone_number, // Sửa từ phone thành phone_number
+                'delivery_recipient_name_snapshot' => $address->recipient_name,
             ]);
         }
         // Nếu là khách vãng lai (guest)
         else {
             $order->update([
-                'delivery_address_line' => $order->guest_address,
-                'delivery_ward' => $order->guest_ward,
-                'delivery_district' => $order->guest_district,
-                'delivery_province' => $order->guest_city,
-                'delivery_phone' => $order->guest_phone,
-                'delivery_recipient_name' => $order->guest_name,
+                'delivery_address_line_snapshot' => $order->guest_address,
+                'delivery_ward_snapshot' => $order->guest_ward,
+                'delivery_district_snapshot' => $order->guest_district,
+                'delivery_province_snapshot' => $order->guest_city,
+                'delivery_phone_snapshot' => $order->guest_phone,
+                'delivery_recipient_name_snapshot' => $order->guest_name,
             ]);
         }
     }

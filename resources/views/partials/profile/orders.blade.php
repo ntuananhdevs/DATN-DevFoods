@@ -1,5 +1,5 @@
 <section id="orders" class="mb-10">
-    <h3 class="text-2xl font-bold mb-6">Đơn Hàng Gần Đây</h3>
+    <h3 class="text-2xl font-bold mb-2">Đơn Hàng Gần Đây</h3>
     <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
         <div class="flex justify-end items-center mb-1 mr-1">
             <a href="{{ route('customer.orders.index') }}" class="text-orange-500 hover:underline text-sm font-medium">Xem
