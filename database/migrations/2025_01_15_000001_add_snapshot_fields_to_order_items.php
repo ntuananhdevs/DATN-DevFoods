@@ -15,17 +15,15 @@ return new class extends Migration
         Schema::table('order_items', function (Blueprint $table) {
             // Thêm các trường snapshot sản phẩm
             $table->string('product_name_snapshot')->nullable()->after('total_price');
-            $table->decimal('base_price_snapshot', 10, 2)->nullable()->after('product_name_snapshot');
             
             // Thêm các trường snapshot biến thể
-            $table->string('variant_name_snapshot')->nullable()->after('base_price_snapshot');
+            $table->string('variant_name_snapshot')->nullable()->after('product_name_snapshot');
             $table->json('variant_attributes_snapshot')->nullable()->after('variant_name_snapshot');
-            $table->decimal('variant_price_snapshot', 10, 2)->nullable()->after('variant_attributes_snapshot');
             
             // Thêm các trường snapshot combo
-            $table->string('combo_name_snapshot')->nullable()->after('variant_price_snapshot');
+            $table->string('combo_name_snapshot')->nullable()->after('variant_attributes_snapshot');
             $table->json('combo_items_snapshot')->nullable()->after('combo_name_snapshot');
-            $table->decimal('combo_price_snapshot', 10, 2)->nullable()->after('combo_items_snapshot');
+
         });
         
         // Thêm snapshot địa chỉ vào bảng orders
@@ -56,10 +54,8 @@ return new class extends Migration
         Schema::table('order_items', function (Blueprint $table) {
             $table->dropColumn([
                 'product_name_snapshot',
-                'base_price_snapshot',
                 'variant_name_snapshot',
                 'variant_attributes_snapshot',
-                'variant_price_snapshot',
                 'combo_name_snapshot',
                 'combo_items_snapshot',
                 'combo_price_snapshot'

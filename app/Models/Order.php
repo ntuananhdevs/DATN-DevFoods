@@ -43,12 +43,12 @@ class Order extends Model
         'delivery_address',
         'notes',
         // Snapshot fields cho địa chỉ giao hàng
-        'delivery_address_line',
-        'delivery_ward',
-        'delivery_district',
-        'delivery_province',
-        'delivery_phone',
-        'delivery_recipient_name',
+        'delivery_address_line_snapshot',
+        'delivery_ward_snapshot',
+        'delivery_district_snapshot',
+        'delivery_province_snapshot',
+        'delivery_phone_snapshot',
+        'delivery_recipient_name_snapshot',
     ];
 
     protected $casts = [
@@ -311,7 +311,7 @@ class Order extends Model
     protected function displayDeliveryAddress(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_address_line 
+            get: fn() => $this->delivery_address_line_snapshot 
                 ?? ($this->address ? $this->address->address_line : $this->guest_address)
                 ?? 'Không có địa chỉ'
         );
@@ -323,7 +323,7 @@ class Order extends Model
     protected function displayDeliveryWard(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_ward 
+            get: fn() => $this->delivery_ward_snapshot 
                 ?? ($this->address ? $this->address->ward : $this->guest_ward)
                 ?? 'Không có'
         );
@@ -335,7 +335,7 @@ class Order extends Model
     protected function displayDeliveryDistrict(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_district 
+            get: fn() => $this->delivery_district_snapshot 
                 ?? ($this->address ? $this->address->district : $this->guest_district)
                 ?? 'Không có'
         );
@@ -347,7 +347,7 @@ class Order extends Model
     protected function displayDeliveryProvince(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_province 
+            get: fn() => $this->delivery_province_snapshot 
                 ?? ($this->address ? $this->address->province : $this->guest_city)
                 ?? 'Không có'
         );
@@ -359,7 +359,7 @@ class Order extends Model
     protected function displayDeliveryPhone(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_phone 
+            get: fn() => $this->delivery_phone_snapshot 
                 ?? ($this->address ? $this->address->phone : $this->guest_phone)
                 ?? 'Không có'
         );
@@ -371,7 +371,7 @@ class Order extends Model
     protected function displayRecipientName(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->delivery_recipient_name 
+            get: fn() => $this->delivery_recipient_name_snapshot 
                 ?? ($this->address ? $this->address->recipient_name : $this->guest_name)
                 ?? 'Không có'
         );
@@ -397,9 +397,9 @@ class Order extends Model
      */
     public function hasAddressSnapshot(): bool
     {
-        return !empty($this->delivery_address_line) || 
-               !empty($this->delivery_ward) || 
-               !empty($this->delivery_district) || 
-               !empty($this->delivery_province);
+        return !empty($this->delivery_address_line_snapshot) || 
+               !empty($this->delivery_ward_snapshot) || 
+               !empty($this->delivery_district_snapshot) || 
+               !empty($this->delivery_province_snapshot);
     }
 }
