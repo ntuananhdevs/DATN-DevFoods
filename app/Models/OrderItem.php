@@ -17,18 +17,20 @@ class OrderItem extends Model
         'unit_price',
         'total_price',
         // Snapshot fields
-        'product_name',
-        'product_sku',
-        'product_description',
-        'product_image',
-        'variant_name',
-        'variant_attributes',
-        'variant_price',
-        'combo_name',
-        'combo_description',
-        'combo_image',
-        'combo_items',
-        'combo_price',
+        'product_name_snapshot',
+        'variant_name_snapshot',
+        'variant_attributes_snapshot',
+        'combo_name_snapshot',
+        'combo_items_snapshot',
+    ];
+    
+    protected $appends = [
+        'display_product_name',
+        'display_product_image',
+        'display_variant_name',
+        'display_combo_name',
+        'display_price',
+        'display_total_price'
     ];
 
     protected $casts = [
@@ -84,7 +86,7 @@ class OrderItem extends Model
      */
     public function getDisplayProductNameAttribute()
     {
-        return $this->product_name ?? $this->productVariant?->product?->name ?? $this->combo?->name ?? 'Không xác định';
+        return $this->product_name_snapshot ?? $this->productVariant?->product?->name ?? $this->combo?->name ?? 'Không xác định';
     }
 
     /**
@@ -92,7 +94,7 @@ class OrderItem extends Model
      */
     public function getDisplayProductImageAttribute()
     {
-        return $this->product_image ?? $this->productVariant?->product?->image ?? $this->combo?->image ?? null;
+        return $this->product_image_snapshot ?? $this->productVariant?->product?->image ?? $this->combo?->image ?? null;
     }
 
     /**
@@ -100,7 +102,7 @@ class OrderItem extends Model
      */
     public function getDisplayVariantNameAttribute()
     {
-        return $this->variant_name ?? $this->productVariant?->name ?? null;
+        return $this->variant_name_snapshot ?? $this->productVariant?->variant_description ?? null;
     }
 
     /**
@@ -108,7 +110,7 @@ class OrderItem extends Model
      */
     public function getDisplayComboNameAttribute()
     {
-        return $this->combo_name ?? $this->combo?->name ?? null;
+        return $this->combo_name_snapshot ?? $this->combo?->name ?? null;
     }
 
     /**
@@ -116,6 +118,15 @@ class OrderItem extends Model
      */
     public function hasSnapshotData()
     {
-        return !empty($this->product_name) || !empty($this->combo_name);
+        return !empty($this->product_name_snapshot) || !empty($this->combo_name_snapshot);
+    }
+
+    /**
+     * Get display price based on snapshot data
+     */
+    public function getDisplayPriceAttribute()
+    {
+        // Luôn sử dụng unit_price cho mọi trường hợp
+        return $this->unit_price;
     }
 }

@@ -1,6 +1,11 @@
 <footer class="bg-gray-900 text-gray-300">
     <!-- Top Footer -->
-    <div class="container mx-auto px-4 pt-16 pb-8">
+    <style>
+        .container-ft {
+            max-width: 1240px;
+        }
+    </style>
+    <div class="container-ft mx-auto px-4 pt-16 pb-8">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <!-- About -->
             <div>
@@ -125,7 +130,6 @@
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Middle Footer - Popular Locations -->
     <div class="border-t border-gray-800 py-8">
@@ -169,4 +173,6 @@
             </div>
         </div>
     </div>
+        </div>
+
 </footer>

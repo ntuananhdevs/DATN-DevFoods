@@ -36,18 +36,24 @@ class OrderSnapshotService
 
         $product = $variant->product;
         
-        // Tính giá = giá gốc sản phẩm + giá biến thể
-        $variantPrice = $product->price + ($variant->price_adjustment ?? 0);
+        // Lấy price_adjustment từ variant values
+        $priceAdjustment = $variant->variantValues->sum('price_adjustment');
         
         // Snapshot thông tin sản phẩm
         $orderItem->update([
+            'product_name_snapshot' => $product->name,
+            'variant_name_snapshot' => $variant->variant_description, // Sử dụng variant_description thay vì name
+            'variant_attributes_snapshot' => self::getVariantAttributes($variant)
+        ]);
+        
+        // Log để debug
+        \Illuminate\Support\Facades\Log::info('Snapshot Product Variant', [
+            'product_id' => $product->id,
             'product_name' => $product->name,
-            'product_sku' => $product->sku,
-            'product_description' => $product->description,
-            'product_image' => $product->image,
-            'variant_name' => $variant->name,
-            'variant_attributes' => self::getVariantAttributes($variant),
-            'variant_price' => $variantPrice
+            'variant_id' => $variant->id,
+            'variant_name' => $variant->variant_description, // Sử dụng variant_description thay vì name
+            'price_adjustment' => $priceAdjustment,
+            'variant_values' => $variant->variantValues->toArray()
         ]);
     }
 
@@ -65,11 +71,15 @@ class OrderSnapshotService
 
         // Snapshot thông tin combo
         $orderItem->update([
+            'combo_name_snapshot' => $combo->name,
+            'combo_items_snapshot' => self::getComboItems($combo)
+        ]);
+        
+        // Log để debug
+        \Illuminate\Support\Facades\Log::info('Snapshot Combo', [
+            'combo_id' => $combo->id,
             'combo_name' => $combo->name,
-            'combo_description' => $combo->description,
-            'combo_image' => $combo->image,
-            'combo_items' => self::getComboItems($combo),
-            'combo_price' => $combo->price
+            'combo_items' => self::getComboItems($combo)
         ]);
     }
 
@@ -85,11 +95,8 @@ class OrderSnapshotService
         }
 
         $orderItemTopping->update([
-            'topping_name' => $topping->name,
-            'topping_sku' => $topping->sku,
-            'topping_description' => $topping->description,
-            'topping_image' => $topping->image,
-            'topping_unit_price' => $topping->price
+            'topping_name_snapshot' => $topping->name,
+            'topping_unit_price_snapshot' => $topping->price
         ]);
     }
 
@@ -121,11 +128,27 @@ class OrderSnapshotService
         if ($combo->comboItems) {
             foreach ($combo->comboItems as $comboItem) {
                 if ($comboItem->productVariant && $comboItem->productVariant->product) {
+                    $variant = $comboItem->productVariant;
+                    $product = $variant->product;
+                    
+                    // Lấy price_adjustment từ variant values
+                    $priceAdjustment = $variant->variantValues->sum('price_adjustment');
+                    
+                    // Log thông tin từng item trong combo
+                    \Illuminate\Support\Facades\Log::info('Combo Item', [
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'variant_id' => $variant->id,
+                        'variant_name' => $variant->variant_description, // Sử dụng variant_description thay vì name
+                        'base_price' => $product->base_price,
+                        'price_adjustment' => $priceAdjustment,
+                        'quantity' => $comboItem->quantity
+                    ]);
+                    
                     $items[] = [
-                        'product_name' => $comboItem->productVariant->product->name,
-                        'variant_name' => $comboItem->productVariant->name,
-                        'quantity' => $comboItem->quantity,
-                        'price' => $comboItem->productVariant->price
+                        'product_name_snapshot' => $product->name,
+                        'variant_name_snapshot' => $variant->variant_description, // Sử dụng variant_description thay vì name
+                        'quantity' => $comboItem->quantity
                     ];
                 }
             }
@@ -139,6 +162,15 @@ class OrderSnapshotService
      */
     public static function snapshotOrder($order)
     {
+        // Log thông tin đơn hàng trước khi snapshot
+        \Illuminate\Support\Facades\Log::info('Starting order snapshot', [
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'address_id' => $order->address_id,
+            'has_address_relation' => $order->relationLoaded('address'),
+            'has_address' => $order->address ? true : false
+        ]);
+        
         // Snapshot địa chỉ giao hàng
         self::snapshotDeliveryAddress($order);
         
@@ -151,6 +183,15 @@ class OrderSnapshotService
                 self::snapshotOrderItemTopping($orderItemTopping);
             }
         }
+        
+        // Log kết quả snapshot
+        \Illuminate\Support\Facades\Log::info('Order snapshot completed', [
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'has_delivery_address_snapshot' => !empty($order->delivery_address_line_snapshot),
+            'delivery_address_snapshot' => $order->delivery_address_line_snapshot,
+            'delivery_recipient_name_snapshot' => $order->delivery_recipient_name_snapshot
+        ]);
     }
 
     /**
@@ -159,28 +200,56 @@ class OrderSnapshotService
     private static function snapshotDeliveryAddress($order)
     {
         // Nếu có address_id (khách hàng đã đăng ký)
-        if ($order->address_id && $order->address) {
-            $address = $order->address;
+        if ($order->address_id) {
+            // Đảm bảo address đã được load
+            if (!$order->relationLoaded('address')) {
+                $order->load('address');
+            }
             
-            $order->update([
-                'delivery_address_line' => $address->address_line,
-                'delivery_ward' => $address->ward,
-                'delivery_district' => $address->district,
-                'delivery_province' => $address->city, // Sửa từ province thành city
-                'delivery_phone' => $address->phone_number, // Sửa từ phone thành phone_number
-                'delivery_recipient_name' => $address->recipient_name,
-            ]);
+            if ($order->address) {
+                $address = $order->address;
+                
+                $order->update([
+                    'delivery_address_line_snapshot' => $address->address_line,
+                    'delivery_ward_snapshot' => $address->ward,
+                    'delivery_district_snapshot' => $address->district,
+                    'delivery_province_snapshot' => $address->city,
+                    'delivery_phone_snapshot' => $address->phone_number,
+                    'delivery_recipient_name_snapshot' => $address->recipient_name,
+                ]);
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Snapshot Delivery Address from registered address', [
+                    'order_id' => $order->id,
+                    'address_id' => $order->address_id,
+                    'address_data' => $address->toArray()
+                ]);
+                
+                return;
+            }
         }
-        // Nếu là khách vãng lai (guest)
-        else {
-            $order->update([
-                'delivery_address_line' => $order->guest_address,
-                'delivery_ward' => $order->guest_ward,
-                'delivery_district' => $order->guest_district,
-                'delivery_province' => $order->guest_city,
-                'delivery_phone' => $order->guest_phone,
-                'delivery_recipient_name' => $order->guest_name,
-            ]);
-        }
+        
+        // Nếu không có address_id hoặc không tìm thấy address, sử dụng thông tin khách vãng lai
+        $order->update([
+            'delivery_address_line_snapshot' => $order->guest_address,
+            'delivery_ward_snapshot' => $order->guest_ward,
+            'delivery_district_snapshot' => $order->guest_district,
+            'delivery_province_snapshot' => $order->guest_city,
+            'delivery_phone_snapshot' => $order->guest_phone,
+            'delivery_recipient_name_snapshot' => $order->guest_name,
+        ]);
+        
+        // Log để debug
+        \Illuminate\Support\Facades\Log::info('Snapshot Delivery Address from guest info', [
+            'order_id' => $order->id,
+            'guest_data' => [
+                'name' => $order->guest_name,
+                'phone' => $order->guest_phone,
+                'address' => $order->guest_address,
+                'ward' => $order->guest_ward,
+                'district' => $order->guest_district,
+                'city' => $order->guest_city
+            ]
+        ]);
     }
 }
