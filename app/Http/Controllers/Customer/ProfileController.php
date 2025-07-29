@@ -232,23 +232,62 @@ class ProfileController extends Controller
     // API: Cập nhật địa chỉ
     public function updateAddress(Request $request, $id)
     {
-        $address = Auth::user()->addresses()->findOrFail($id);
-        $data = $request->validate([
-            'recipient_name' => 'required|string|max:255',
-            'address_line' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'district' => 'required|string|max:100',
-            'ward' => 'required|string|max:100',
-            'phone_number' => 'required|string|max:20',
-            'is_default' => 'boolean',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
-        if (!empty($data['is_default'])) {
-            Address::where('user_id', Auth::id())->update(['is_default' => false]);
+        try {
+            $address = Auth::user()->addresses()->findOrFail($id);
+            
+            $data = $request->validate([
+                'recipient_name' => 'required|string|max:255',
+                'address_line' => 'required|string|max:255',
+                'city' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'ward' => 'required|string|max:100',
+                'phone_number' => 'required|string|max:20',
+                'is_default' => 'boolean',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+            ]);
+            
+            // If setting as default, remove default from other addresses
+            if (!empty($data['is_default'])) {
+                Address::where('user_id', Auth::id())->update(['is_default' => false]);
+            }
+            
+            $address->update($data);
+            
+            // Prepare response data with all necessary fields
+            $responseData = [
+                'id' => $address->id,
+                'recipient_name' => $address->recipient_name,
+                'phone_number' => $address->phone_number,
+                'address_line' => $address->address_line,
+                'city' => $address->city,
+                'district' => $address->district,
+                'ward' => $address->ward,
+                'latitude' => $address->latitude,
+                'longitude' => $address->longitude,
+                'is_default' => $address->is_default,
+                'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Địa chỉ đã được cập nhật thành công!',
+                'data' => $responseData
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Update address error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật địa chỉ: ' . $e->getMessage()
+            ], 500);
         }
-        $address->update($data);
-        return response()->json($address);
     }
 
     // API: Xóa địa chỉ
