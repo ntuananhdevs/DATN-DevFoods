@@ -57,14 +57,20 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/send-message', [BranchChatController::class, 'sendMessage'])->name('send');
         Route::post('/update-status', [BranchChatController::class, 'updateStatus'])->name('status');
         Route::post('/typing', [BranchChatController::class, 'typingIndicator'])->name('typing');
+        Route::get('/unread-count', [BranchChatController::class, 'getUnreadChatCount'])->name('unread-count');
     });
 
     // Broadcasting authentication route for branch
     Route::post('/broadcasting/auth', function (Request $request) {
+        // Set default guard to manager for broadcast auth
+        Auth::setDefaultDriver('manager');
+
+        $user = Auth::guard('manager')->user();
         Log::info('[Broadcasting] Auth request received', [
             'channel' => $request->input('channel_name'),
             'socket_id' => $request->input('socket_id'),
-            'user' => Auth::guard('manager')->user(),
+            'user' => $user,
+            'user_has_branch' => $user ? ($user->branch ? $user->branch->id : 'no_branch') : 'no_user',
             'session' => $request->session()->all()
         ]);
 
@@ -77,7 +83,7 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            throw $e;
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
     })->middleware(['web']);
 
