@@ -32,7 +32,7 @@
                         </p>
 
                         {{-- Sử dụng optional() và format() để xử lý ngày tháng tốt hơn --}}
-                        {{-- <p class="text-sm text-gray-500 flex items-center">
+                        {{-- <p class="delivery-time text-sm text-gray-500 flex items-center">
                             Dự kiến giao:
                             {{ optional($order->estimated_delivery_time)->format('H:i') ?? 'N/A' }}
                         </p> --}}
