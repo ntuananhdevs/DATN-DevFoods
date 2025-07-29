@@ -19,6 +19,7 @@ use App\Services\ShippingService;
 use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
 use App\Services\OrderSnapshotService;
+use App\Models\GeneralSetting;
 
 class CheckoutController extends Controller
 {
@@ -103,6 +104,7 @@ class CheckoutController extends Controller
                     ->get();
             }
             $currentBranch = $this->branchService->getCurrentBranch();
+            
             return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
         }
 
@@ -270,7 +272,7 @@ class CheckoutController extends Controller
                 $request->merge(['address_id' => $address->id]);
             }
         } else {
-            // For guest users, require manual input
+            // For guest users, require manual input including coordinates
             $validated = $request->validate([
                 'full_name' => 'required|string|max:255',
                 'phone' => 'required|string|max:20',
@@ -279,6 +281,8 @@ class CheckoutController extends Controller
                 'city' => 'required|string|max:100',
                 'district' => 'required|string|max:100',
                 'ward' => 'required|string|max:100',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
                 'payment_method' => 'required|string|in:cod,vnpay,balance',
                 'notes' => 'nullable|string',
                 'terms' => 'required',
@@ -383,11 +387,9 @@ class CheckoutController extends Controller
                 $deliveryLat = $address->latitude;
                 $deliveryLon = $address->longitude;
             } else {
-                // Đối với guest, ta cần có tọa độ. Giả sử nó được gửi lên từ form
-                // Nếu không, ta không thể tính phí theo khoảng cách.
-                // For now, we'll assume guest checkout doesn't support distance-based fees
-                // unless we implement address->lat/lng conversion on the fly.
-                 throw new \Exception('Tính năng đặt hàng cho khách chưa hỗ trợ phí vận chuyển theo khoảng cách.');
+                // Đối với guest, lấy tọa độ từ form input
+                $deliveryLat = $validated['latitude'];
+                $deliveryLon = $validated['longitude'];
             }
 
             if(is_null($deliveryLat) || is_null($deliveryLon)) {
@@ -402,11 +404,14 @@ class CheckoutController extends Controller
                 $deliveryLon
             );
 
+            // Kiểm tra giới hạn khoảng cách giao hàng
+            $maxDeliveryDistance = GeneralSetting::getMaxDeliveryDistance();
+            if ($distance > $maxDeliveryDistance) {
+                throw new \Exception("Địa chỉ giao hàng nằm ngoài vùng phục vụ. Khoảng cách tối đa: {$maxDeliveryDistance}km, khoảng cách thực tế: " . round($distance, 1) . "km");
+            }
+
             // Tính phí vận chuyển
             $shipping = ShippingService::calculateFee($subtotal, $distance);
-            if ($shipping < 0) {
-                 throw new \Exception('Địa chỉ giao hàng nằm ngoài vùng phục vụ.');
-            }
 
             // Tính thời gian giao hàng dự kiến
             $estimatedMinutes = ShippingService::calculateEstimatedDeliveryTime($cartItems, $distance);
