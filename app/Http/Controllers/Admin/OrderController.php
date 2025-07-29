@@ -51,6 +51,30 @@ class OrderController extends Controller
             'refunded' => Order::where('status', 'refunded')->count(),
         ];
 
+        // Nếu là AJAX request, trả về JSON
+        if ($request->ajax() || $request->has('ajax')) {
+            $html = '';
+            
+            if ($orders->count() > 0) {
+                foreach ($orders as $order) {
+                    $html .= view('admin.order._order_row', compact('order'))->render();
+                }
+            } else {
+                $html = '<tr id="empty-state"><td colspan="8" class="text-center py-8 text-gray-500">Không có đơn hàng nào.</td></tr>';
+            }
+            
+            return response()->json([
+                'html' => $html,
+                'counts' => $counts,
+                'pagination' => [
+                    'from' => $orders->firstItem(),
+                    'to' => $orders->lastItem(),
+                    'total' => $orders->total(),
+                    'links' => $orders->appends($request->except('page'))->links()->render()
+                ]
+            ]);
+        }
+        
         return view('admin.order.index', [
             'orders' => $orders,
             'status' => $request->status,
@@ -120,4 +144,4 @@ class OrderController extends Controller
         return redirect()->route('admin.orders.show', $orderId)
             ->with('success', 'Đơn hàng đã được hủy thành công!');
     }
-} 
+}
