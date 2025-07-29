@@ -25,6 +25,7 @@ use App\Http\Controllers\Customer\Auth\RegisterController;
 use App\Http\Controllers\Customer\NotificationController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\Customer\AddressController as CustomerAddressController;
 use App\Http\Controllers\Customer\ReviewReplyController;
 
 // API Controllers for Customer
@@ -123,10 +124,14 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
     Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
-    Route::get('/profile/addresses', [CustomerProfileController::class, 'getAddresses'])->name('customer.profile.addresses');
+    Route::get('/profile/addresses', [CustomerProfileController::class, 'getAddresses'])->name('customer.profile.addresses.index');
     Route::post('/profile/addresses', [CustomerProfileController::class, 'storeAddress'])->name('customer.profile.addresses.store');
     Route::put('/profile/addresses/{id}', [CustomerProfileController::class, 'updateAddress'])->name('customer.profile.addresses.update');
     Route::delete('/profile/addresses/{id}', [CustomerProfileController::class, 'deleteAddress'])->name('customer.profile.addresses.delete');
+    
+    // Address Controller routes (alternative endpoints)
+    Route::post('/addresses', [CustomerAddressController::class, 'store'])->name('customer.addresses.store');
+    Route::put('/addresses/{id}', [CustomerAddressController::class, 'update'])->name('customer.addresses.update');
 });
 
 // Phone Required routes (không cần phone.required middleware)
