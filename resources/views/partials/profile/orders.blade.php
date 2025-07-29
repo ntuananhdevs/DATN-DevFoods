@@ -7,7 +7,7 @@
         </div>
 
         @forelse($recentOrders as $order)
-            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm">
+            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm mb-4">
                 {{-- Header --}}
                 <div class="flex justify-between items-start mb-3">
                     <div class="flex items-center gap-4">
@@ -72,11 +72,28 @@
                         </span>
                     </div>
 
-                    <div class="flex items-center gap-1">
-                        <span class="text-gray-600">Phí giao hàng:</span>
-                        <span class="font-semibold text-gray-900">
-                            {{ number_format($order->delivery_fee, 0, ',', '.') }}đ
-                        </span>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-1">
+                            <span class="text-gray-600">Dự kiến giao:</span>
+                            <span class="font-semibold text-blue-600">
+                                @if($order->estimated_delivery_time)
+                                    @php
+                                        $orderTime = \Carbon\Carbon::parse($order->created_at);
+                                        $estimatedTime = \Carbon\Carbon::parse($order->estimated_delivery_time);
+                                        $deliveryDurationMinutes = $orderTime->diffInMinutes($estimatedTime);
+                                    @endphp
+                                    {{ $deliveryDurationMinutes }} phút
+                                @else
+                                    Đang xử lý
+                                @endif
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-gray-600">Phí giao hàng:</span>
+                            <span class="font-semibold text-gray-900">
+                                {{ number_format($order->delivery_fee, 0, ',', '.') }}đ
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -121,21 +138,43 @@
                             <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 {{-- Thông tin sản phẩm --}}
                                 <div class="flex justify-between items-start mb-2">
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-gray-900 text-sm">
-                                            @if ($item->product_name_snapshot)
-                                                {{ $item->product_name_snapshot }}
-                                                @if ($item->variant_name_snapshot)
-                                                    <span class="text-gray-600">({{ $item->variant_name_snapshot }})</span>
-                                                @endif
-                                            @elseif ($item->combo_name_snapshot)
-                                                {{ $item->combo_name_snapshot }}
+                                    <div class="flex items-start gap-3 flex-1">
+                                        {{-- Hình ảnh sản phẩm --}}
+                                        <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
+                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
+                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}" 
+                                                     alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}" 
+                                                     class="w-full h-full object-cover">
+                                            @elseif ($item->combo && $item->combo->image)
+                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}" 
+                                                     alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}" 
+                                                     class="w-full h-full object-cover">
                                             @else
-                                                {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
+                                                <div class="w-full h-full bg-gray-300 flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
                                             @endif
-                                        </h4>
-                                        <div class="text-sm text-gray-600 mt-1">
-                                            Số lượng: {{ $item->quantity }} | Đơn giá: {{ number_format($item->unit_price, 0, ',', '.') }}đ
+                                        </div>
+                                        
+                                        {{-- Thông tin sản phẩm --}}
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900 text-sm">
+                                                @if ($item->product_name_snapshot)
+                                                    {{ $item->product_name_snapshot }}
+                                                    @if ($item->variant_name_snapshot)
+                                                        <span class="text-gray-600">({{ $item->variant_name_snapshot }})</span>
+                                                    @endif
+                                                @elseif ($item->combo_name_snapshot)
+                                                    {{ $item->combo_name_snapshot }}
+                                                @else
+                                                    {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
+                                                @endif
+                                            </h4>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                Số lượng: {{ $item->quantity }} | Đơn giá: {{ number_format($item->unit_price, 0, ',', '.') }}đ
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-right">
@@ -162,7 +201,7 @@
                                 @if ($item->toppings->count() > 0)
                                     <div class="mt-3 pt-2 border-t border-gray-300">
                                         <p class="text-xs font-medium text-orange-600 mb-2">Topping:</p>
-                                        <div class="space-y-1">
+                                        <div class="ms-3 space-y-1">
                                             @foreach ($item->toppings as $topping)
                                                 <div class="flex justify-between items-center text-xs">
                                                     <span class="text-gray-600">
@@ -185,9 +224,10 @@
                 </div>
 
                 {{-- Tổng tiền + hành động --}}
-                <div class="flex justify-between items-center border-t pt-3">
-                    <div class="text-xl font-bold text-orange-600">
-                        {{ number_format($order->total_amount, 0, ',', '.') }}đ
+                <div class="flex justify-between items-center border-t pt-3 border-gray-300">
+                    <div class="text-md font-medium">
+                        <span class="text-gray-700">Tổng đơn hàng (x{{ $order->orderItems->sum('quantity') }} sản phẩm) :</span>
+                        <span class="text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }} đ</span>
                     </div>
 
                     <div class="flex items-center gap-2">
