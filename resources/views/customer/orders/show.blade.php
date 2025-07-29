@@ -40,7 +40,7 @@
         <div class="absolute inset-0 bg-black/10"></div>
         <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
-        <div class="container mx-auto px-4 relative z-10">
+        <div class="container-ft mx-auto px-4 relative z-10">
             <div class="flex items-center mb-4">
                 <a href="{{ route('customer.orders.index') }}" class="text-white hover:text-white/80 mr-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200">
                     <i class="fas fa-arrow-left text-lg"></i>
@@ -63,10 +63,10 @@
         </div>
     </div>
 
-    <div class="container mx-auto px-4 py-8 -mt-16 relative z-20">
+    <div class="container-ft mx-auto px-4 py-8 ">
         <div class="flex flex-col gap-8">
             <section class="mb-10">
-                <div id="order-details-card" class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden backdrop-blur-sm"
+                <div id="order-details-card" class="rounded-2xl   overflow-hidden backdrop-blur-sm"
                     data-order-id="{{ $order->id }}">
                     <div class="p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                         <div class="flex flex-col lg:flex-row justify-between lg:items-start gap-6">
