@@ -236,6 +236,11 @@ if (window.adminOrdersRealtimeInitialized) {
             }
 
             updateOrderCount(orderStatus = 'awaiting_confirmation') {
+                // Chỉ cập nhật count nếu đang ở trang quản lý đơn hàng
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+                
                 // Cập nhật tab "all" vì đơn hàng mới thuộc về tất cả
                 const allTab = document.querySelector('a[href*="status="]');
                 if (allTab) {
@@ -274,6 +279,11 @@ if (window.adminOrdersRealtimeInitialized) {
             }
 
             addOrderRow(order) {
+                // Chỉ thêm row nếu đang ở trang quản lý đơn hàng
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+                
                 // Lấy status tab hiện tại
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentStatus = urlParams.get('status') || '';
@@ -307,7 +317,11 @@ if (window.adminOrdersRealtimeInitialized) {
                         return response.text();
                     })
                     .then(html => {
-                        const tableBody = document.querySelector('tbody');
+                        // Chỉ tìm tbody trong table đơn hàng, không phải tất cả tbody
+                        const ordersTable = document.querySelector('#ordersTable tbody') || 
+                                          document.querySelector('.orders-table tbody') ||
+                                          document.querySelector('table[data-table="orders"] tbody');
+                        const tableBody = ordersTable || document.querySelector('tbody');
                         if (!tableBody) {
                             return;
                         }
@@ -540,4 +554,4 @@ if (window.adminOrdersRealtimeInitialized) {
     document.addEventListener('DOMContentLoaded', function() {
         window.adminOrdersRealtime = new AdminOrdersRealtime();
     }); 
-} 
+}

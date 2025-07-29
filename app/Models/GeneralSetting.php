@@ -27,10 +27,8 @@ class GeneralSetting extends Model
      */
     public static function get($key, $default = null)
     {
-        return Cache::remember("setting_{$key}", 3600, function () use ($key, $default) {
-            $setting = self::where('key', $key)->first();
-            return $setting ? $setting->value : $default;
-        });
+        $setting = self::where('key', $key)->first();
+        return $setting ? $setting->value : $default;
     }
 
     /**
@@ -50,9 +48,6 @@ class GeneralSetting extends Model
                 'description' => $description
             ]
         );
-
-        // Clear cache
-        Cache::forget("setting_{$key}");
 
         return $setting ? true : false;
     }
