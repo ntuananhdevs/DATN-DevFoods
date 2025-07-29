@@ -40,9 +40,9 @@ if (addToCartBtn) {
                         alert("Thêm combo thành công!");
                     }
                     // Cập nhật số lượng giỏ hàng nếu có
-                    const cartCounter = document.getElementById("cart-counter");
-                    if (cartCounter && data.cart_count !== undefined)
-                        cartCounter.textContent = data.cart_count;
+                    if (window.updateCartCount && data.cart_count !== undefined) {
+                        window.updateCartCount(data.cart_count);
+                    }
                 } else {
                     if (window.dtmodalShowToast) {
                         dtmodalShowToast("error", {
@@ -73,7 +73,7 @@ if (buyNowBtn) {
         const quantity =
             parseInt(document.getElementById("quantity").textContent) || 1;
         buyNowBtn.disabled = true;
-        fetch("/cart/add-combo", {
+        fetch("/checkout/combo-buy-now", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -82,7 +82,6 @@ if (buyNowBtn) {
             body: JSON.stringify({
                 combo_id: comboId,
                 quantity: quantity,
-                buy_now: true,
             }),
         })
             .then((res) => res.json())

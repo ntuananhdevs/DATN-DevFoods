@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class OrderStatusNotification extends Notification
@@ -24,7 +25,7 @@ class OrderStatusNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase($notifiable)
@@ -34,6 +35,17 @@ class OrderStatusNotification extends Notification
             'status' => $this->status,
             'message' => $this->message,
             'customer_name' => $this->order->customer->name ?? '',
+            'title' => 'Cập nhật đơn hàng',
         ], $this->extra);
     }
-} 
+
+    public function toBroadcast($notifiable)
+    {
+        return new BroadcastMessage([
+            'message' => $this->message,
+            'order_code' => $this->order->order_code,
+            'status' => $this->status,
+            'title' => 'Cập nhật đơn hàng',
+        ]);
+    }
+}

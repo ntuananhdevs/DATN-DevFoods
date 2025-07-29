@@ -1,7 +1,8 @@
 @if ($orders->count() > 0)
     <div class="space-y-4">
         @foreach ($orders as $order)
-            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm mb-4">
+            {{-- Đã loại bỏ 'mb-4' vì 'space-y-4' trên phần tử cha đã xử lý khoảng cách giữa các thẻ đơn hàng --}}
+            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm">
                 {{-- Header --}}
                 <div class="flex justify-between items-start mb-3">
                     <div class="flex items-center gap-4">
@@ -24,6 +25,13 @@
                             </svg>
                             {{ $order->order_date->format('d/m/Y H:i') }}
                         </p>
+
+                        {{-- Sử dụng optional() và format() để xử lý ngày tháng tốt hơn --}}
+                        <p class="text-sm text-gray-500 flex items-center">
+                            Dự kiến giao:
+                            {{ optional($order->estimated_delivery_time)->format('H:i') ?? 'N/A' }}
+                        </p>
+
                         <span class="text-xs font-medium px-2 py-1 rounded-full"
                             style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color }};">
                             {{ $order->status_text }}
@@ -32,35 +40,39 @@
                 </div>
 
                 {{-- Trạng thái đơn & thanh toán --}}
-                <div class="flex flex-wrap items-center gap-4 mb-3 text-sm">
-                    {{-- <span>Trạng thái đặt hàng:
-                        <span class="text-xs font-medium px-2 py-1 rounded-full"
-                            style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color }};">
-                            {{ $order->status_text }}
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-3 text-sm">
+                    <div class="flex items-center gap-1">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
+                                </path>
+                            </svg> Thanh toán:
+                            @if ($order->payment_status === 'completed')
+                                <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Thành
+                                    công</span>
+                            @elseif ($order->payment_status === 'pending')
+                                <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded">Chờ
+                                    xử
+                                    lý</span>
+                            @elseif ($order->payment_status === 'failed')
+                                <span class="bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded">Thất
+                                    bại</span>
+                            @elseif ($order->payment_status === 'refunded')
+                                <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded">Đã hoàn
+                                    tiền</span>
+                            @else
+                                <span class="text-gray-500">Không rõ</span>
+                            @endif
                         </span>
-                    </span> --}}
-                    <span class="flex items-center gap-1">
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
-                            </path>
-                        </svg> Thanh toán:
-                        @if ($order->payment_status === 'completed')
-                            <span class="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded">Thành
-                                công</span>
-                        @elseif ($order->payment_status === 'pending')
-                            <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded">Chờ xử
-                                lý</span>
-                        @elseif ($order->payment_status === 'failed')
-                            <span class="bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded">Thất
-                                bại</span>
-                        @elseif ($order->payment_status === 'refunded')
-                            <span class="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded">Đã hoàn
-                                tiền</span>
-                        @else
-                            <span class="text-gray-500">Không rõ</span>
-                        @endif
-                    </span>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <span class="text-gray-600">Phí giao hàng:</span>
+                        <span class="font-semibold text-gray-900">
+                            {{ number_format($order->delivery_fee, 0, ',', '.') }}đ
+                        </span>
+                    </div>
                 </div>
 
                 {{-- Thông tin người nhận --}}
@@ -71,7 +83,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                             </svg>
-                            <span class="font-medium">{{ $order->customer_name }}</span>
+                            <span class="font-medium">{{ $order->display_recipient_name }}</span>
                         </span>
                         <span class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +91,7 @@
                                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
                                 </path>
                             </svg>
-                            {{ $order->customer_phone }}
+                            {{ $order->display_delivery_phone }}
                         </span>
                     </div>
                     <div class="flex items-start gap-2">
@@ -91,19 +103,49 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
-                        <span>{{ $order->delivery_address ?? 'Không có địa chỉ' }}</span>
+                        <span>{{ $order->display_full_delivery_address ?? 'Không có địa chỉ' }}</span>
                     </div>
                 </div>
 
                 {{-- Sản phẩm --}}
-                <div class="mb-4">
+                <div class="mb-2">
                     <p class="text-sm font-semibold text-gray-800 mb-1">Sản phẩm:</p>
                     <ul class="list-disc ml-6 text-sm text-gray-700 space-y-1">
                         @foreach ($order->orderItems as $item)
                             <li>
-                                {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
+                                {{-- Sử dụng accessor display_name nếu bạn tạo trong OrderItem model --}}
+                                {{-- Ví dụ: {{ $item->display_name }} --}}
+
+                                {{-- Giữ nguyên logic hiện tại nếu không tạo accessor --}}
+                                @if ($item->product_name_snapshot)
+                                    {{ $item->product_name_snapshot }}
+                                    @if ($item->variant_name_snapshot)
+                                        ({{ $item->variant_name_snapshot }})
+                                    @endif
+                                @elseif ($item->combo_name_snapshot)
+                                    {{ $item->combo_name_snapshot }}
+                                @else
+                                    {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
+                                @endif
                                 x{{ $item->quantity }} -
                                 {{ number_format($item->unit_price, 0, ',', '.') }}đ
+
+                                {{-- Hiển thị các topping nếu có --}}
+                                @if ($item->toppings->count() > 0)
+                                    <ul class="list-disc ml-6 text-sm text-gray-600">
+                                        @foreach ($item->toppings as $topping)
+                                            <li>
+                                                {{ $topping->topping_name_snapshot ?? optional($topping->topping)->name }}
+                                                {{-- Chỉ hiển thị "x số lượng" nếu số lượng topping lớn hơn 1 --}}
+                                                @if ($item->quantity > 1)
+                                                    x {{ $item->quantity }}
+                                                @endif
+                                                -
+                                                {{ number_format($topping->topping_unit_price_snapshot ?? $topping->unit_price, 0, ',', '.') }}đ
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
                             </li>
                         @endforeach
                     </ul>
@@ -142,7 +184,7 @@
                                 </button>
                             </form>
                         @elseif ($order->status == 'item_received')
-                            <a href="#"
+                            <a href="#" {{-- Cân nhắc tạo một route thực tế cho việc đánh giá --}}
                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -161,34 +203,3 @@
         <p>Bạn chưa có đơn hàng nào.</p>
     </div>
 @endif
-{{-- <div class="pagination-container">
-    @if ($orders->hasPages())
-        @if ($orders->onFirstPage())
-            <span class="pagination-item disabled">
-                <i class="fas fa-chevron-left"></i>
-            </span>
-        @else
-            <a href="{{ $orders->previousPageUrl() }}" class="pagination-item">
-                <i class="fas fa-chevron-left"></i>
-            </a>
-        @endif
-
-        @foreach ($orders->getUrlRange(1, $orders->lastPage()) as $page => $url)
-            @if ($page == $orders->currentPage())
-                <span class="pagination-item active">{{ $page }}</span>
-            @else
-                <a href="{{ $url }}" class="pagination-item">{{ $page }}</a>
-            @endif
-        @endforeach
-
-        @if ($orders->hasMorePages())
-            <a href="{{ $orders->nextPageUrl() }}" class="pagination-item">
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        @else
-            <span class="pagination-item disabled">
-                <i class="fas fa-chevron-right"></i>
-            </span>
-        @endif
-    @endif
-</div> --}}

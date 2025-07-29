@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('review_replies', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('review_id')->constrained('product_reviews');
-            $table->foreignId('user_id')->constrained('users'); // Người phản hồi
+            $table->foreignId('review_id')->constrained('product_reviews')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Người phản hồi
             $table->text('reply'); // Nội dung phản hồi
             $table->dateTime('reply_date');
             $table->boolean('is_official')->default(false); // Phản hồi chính thức từ cửa hàng

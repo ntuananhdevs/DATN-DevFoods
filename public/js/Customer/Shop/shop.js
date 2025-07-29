@@ -285,9 +285,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         message: data.message,
                     });
                     // Cập nhật số lượng giỏ hàng trên header
-                    const cartCounter = document.getElementById("cart-counter");
-                    if (cartCounter) {
-                        cartCounter.textContent = data.cart_count;
+                    if (window.updateCartCount && data.cart_count !== undefined) {
+                        window.updateCartCount(data.cart_count);
                     }
                 } else {
                     dtmodalShowToast("error", {

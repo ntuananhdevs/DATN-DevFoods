@@ -391,4 +391,26 @@ class BranchChatController extends Controller
         broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();
         return response()->json(['success' => true]);
     }
+
+    public function getUnreadChatCount()
+    {
+        try {
+            $user = Auth::guard('manager')->user();
+            $branch = $user ? $user->branch : null;
+
+            if (!$branch instanceof \App\Models\Branch) {
+                return response()->json(['count' => 0]);
+            }
+
+            // Count unread chat messages (NewChatMessageNotification) for this branch
+            $unreadChatCount = $branch->notifications()
+                ->whereNull('read_at')
+                ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                ->count();
+
+            return response()->json(['count' => $unreadChatCount]);
+        } catch (\Exception $e) {
+            return response()->json(['count' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 }
