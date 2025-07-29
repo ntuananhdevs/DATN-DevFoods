@@ -108,47 +108,97 @@
                 </div>
 
                 {{-- Sản phẩm --}}
-                <div class="mb-2">
-                    <p class="text-sm font-semibold text-gray-800 mb-1">Sản phẩm:</p>
-                    <ul class="list-disc ml-6 text-sm text-gray-700 space-y-1">
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-800 mb-3">Sản phẩm đã đặt:</h3>
+                    
+                    <div class="space-y-3">
                         @foreach ($order->orderItems as $item)
-                            <li>
-                                {{-- Sử dụng accessor display_name nếu bạn tạo trong OrderItem model --}}
-                                {{-- Ví dụ: {{ $item->display_name }} --}}
-
-                                {{-- Giữ nguyên logic hiện tại nếu không tạo accessor --}}
-                                @if ($item->product_name_snapshot)
-                                    {{ $item->product_name_snapshot }}
-                                    @if ($item->variant_name_snapshot)
-                                        ({{ $item->variant_name_snapshot }})
-                                    @endif
-                                @elseif ($item->combo_name_snapshot)
-                                    {{ $item->combo_name_snapshot }}
-                                @else
-                                    {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
-                                @endif
-                                x{{ $item->quantity }} -
-                                {{ number_format($item->unit_price, 0, ',', '.') }}đ
-
-                                {{-- Hiển thị các topping nếu có --}}
-                                @if ($item->toppings->count() > 0)
-                                    <ul class="list-disc ml-6 text-sm text-gray-600">
-                                        @foreach ($item->toppings as $topping)
-                                            <li>
-                                                {{ $topping->topping_name_snapshot ?? optional($topping->topping)->name }}
-                                                {{-- Chỉ hiển thị "x số lượng" nếu số lượng topping lớn hơn 1 --}}
-                                                @if ($item->quantity > 1)
-                                                    x {{ $item->quantity }}
+                            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                {{-- Thông tin sản phẩm --}}
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-start gap-3 flex-1">
+                                        {{-- Hình ảnh sản phẩm --}}
+                                        <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
+                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
+                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}" 
+                                                     alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}" 
+                                                     class="w-full h-full object-cover">
+                                            @elseif ($item->combo && $item->combo->image)
+                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}" 
+                                                     alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}" 
+                                                     class="w-full h-full object-cover">
+                                            @else
+                                                <div class="w-full h-full bg-gray-300 flex items-center justify-center">
+                                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        
+                                        {{-- Thông tin sản phẩm --}}
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900 text-sm">
+                                                @if ($item->product_name_snapshot)
+                                                    {{ $item->product_name_snapshot }}
+                                                    @if ($item->variant_name_snapshot)
+                                                        <span class="text-gray-600">({{ $item->variant_name_snapshot }})</span>
+                                                    @endif
+                                                @elseif ($item->combo_name_snapshot)
+                                                    {{ $item->combo_name_snapshot }}
+                                                @else
+                                                    {{ optional(optional($item->productVariant)->product)->name ?? (optional($item->combo)->name ?? 'Sản phẩm') }}
                                                 @endif
-                                                -
-                                                {{ number_format($topping->topping_unit_price_snapshot ?? $topping->unit_price, 0, ',', '.') }}đ
-                                            </li>
-                                        @endforeach
-                                    </ul>
+                                            </h4>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                Số lượng: {{ $item->quantity }} | Đơn giá: {{ number_format($item->unit_price, 0, ',', '.') }}đ
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-semibold text-orange-600">
+                                            @php
+                                                $totalItemPrice = $item->unit_price * $item->quantity;
+                                                $totalToppingPrice = 0;
+                                                foreach ($item->toppings as $topping) {
+                                                    $totalToppingPrice += ($topping->topping_unit_price_snapshot ?? $topping->unit_price) * $item->quantity;
+                                                }
+                                                $finalPrice = $totalItemPrice + $totalToppingPrice;
+                                            @endphp
+                                            {{ number_format($finalPrice, 0, ',', '.') }}đ
+                                        </p>
+                                        @if ($item->toppings->count() > 0)
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                (Đã bao gồm topping)
+                                            </p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- Topping --}}
+                                @if ($item->toppings->count() > 0)
+                                    <div class="mt-3 pt-2 border-t border-gray-300">
+                                        <p class="text-xs font-medium text-orange-600 mb-2">Topping:</p>
+                                        <div class="ms-3 space-y-1">
+                                            @foreach ($item->toppings as $topping)
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="text-gray-600">
+                                                        • {{ $topping->topping_name_snapshot ?? optional($topping->topping)->name }}
+                                                        @if ($item->quantity > 1)
+                                                            (x{{ $item->quantity }})
+                                                        @endif
+                                                    </span>
+                                                    <span class="font-medium text-green-600">
+                                                        +{{ number_format($topping->topping_unit_price_snapshot ?? $topping->unit_price, 0, ',', '.') }}đ
+                                                    </span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 @endif
-                            </li>
+                            </div>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
 
                 {{-- Tổng tiền + hành động --}}
