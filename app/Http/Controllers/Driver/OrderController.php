@@ -170,7 +170,7 @@ class OrderController extends Controller
     public function show($orderId)
     {
         $driverId = Auth::guard('driver')->id();
-        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage'])->findOrFail($orderId);
+        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage', 'address'])->findOrFail($orderId);
 
         // Logic mới:
         // 1. Nếu đơn hàng chưa có tài xế và đang chờ -> Cho phép xem để nhận đơn.
@@ -180,23 +180,46 @@ class OrderController extends Controller
             abort(403, 'Bạn không có quyền xem đơn hàng này.');
         }
 
-        return view('driver.orders.show', compact('order'));
+        // Ưu tiên lấy vĩ độ/kinh độ từ address, nếu không có thì lấy từ guest_latitude/guest_longitude
+        $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
+        $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+        $branchLat = $order->branch->latitude ?? null;
+        $branchLng = $order->branch->longitude ?? null;
+
+        return view('driver.orders.show', compact('order', 'latitude', 'longitude', 'branchLat', 'branchLng'));
     }
 
     /**
      * Hiển thị trang điều hướng cho một đơn hàng.
      */
-    public function navigate($orderId)
+    public function navigate($orderId, Request $request)
     {
         $driverId = Auth::guard('driver')->id();
-
-        // Lấy thông tin đơn hàng để biết tọa độ của khách hàng và chi nhánh
-        $order = Order::with(['customer.addresses', 'branch', 'address'])
+        $order = Order::with(['customer', 'address', 'branch'])
             ->where('id', $orderId)
             ->where('driver_id', $driverId)
             ->firstOrFail();
 
-        return view('driver.orders.navigate', compact('order'));
+        $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
+        $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+        $branchLat = $order->branch->latitude ?? null;
+        $branchLng = $order->branch->longitude ?? null;
+
+        $customerName = $order->customer->full_name ?? $order->guest_name;
+        $customerPhone = $order->customer->phone ?? $order->guest_phone;
+        $deliveryAddress = $order->address->address_line ?? $order->guest_address;
+        $notes = $order->notes;
+
+        $type = $request->query('type');
+
+        $branchName = $order->branch->name ?? '';
+        $branchPhone = $order->branch->phone ?? '';
+        $branchAddress = $order->branch->address ?? '';
+
+        return view('driver.orders.navigate', compact(
+            'order', 'latitude', 'longitude', 'branchLat', 'branchLng', 'customerName', 'customerPhone', 'deliveryAddress', 'notes', 'type',
+            'branchName', 'branchPhone', 'branchAddress'
+        ));
     }
 
     // === CÁC HÀNH ĐỘNG CỦA TÀI XẾ - ĐƯỢC SẮP XẾP LẠI LOGIC ===
@@ -246,14 +269,27 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận đã lấy hàng (waiting_driver_pick_up -> driver_picked_up)
      */
-    public function confirmPickup(Order $order): JsonResponse
+    public function confirmPickup(Order $order, Request $request)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'waiting_driver_pick_up') {
-            return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            }
+            return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'driver_picked_up';
-        return $this->processUpdate($order, 'Bạn đã lấy hàng thành công!');
+        $order->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Bạn đã lấy hàng thành công! Đang giao hàng.'
+            ]);
+        }
+
+        return redirect()->route('driver.orders.show', $order->id)
+            ->with('success', 'Bạn đã lấy hàng thành công!');
     }
 
     /**
@@ -272,15 +308,35 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận giao thành công (in_transit -> delivered)
      */
-    public function confirmDelivery(Order $order): JsonResponse
+    public function confirmDelivery(Order $order, Request $request)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'in_transit') {
-            return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            }
+            return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
-        return $this->processUpdate($order, 'Đã giao hàng thành công!');
+        
+        // Tính toán thu nhập cho tài xế 
+        if (is_null($order->driver_earning) && $order->delivery_fee > 0) {
+            $commissionRate = config('shipping.driver_commission_rate', 0.6);
+            $order->driver_earning = $order->delivery_fee * $commissionRate;
+        }
+        
+        $order->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã giao hàng thành công!'
+            ]);
+        }
+
+        return redirect()->route('driver.orders.show', $order->id)
+            ->with('success', 'Đã giao hàng thành công!');
     }
 
     /**

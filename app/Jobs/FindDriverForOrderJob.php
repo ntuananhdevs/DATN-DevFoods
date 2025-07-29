@@ -18,13 +18,21 @@ class FindDriverForOrderJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $order;
+    private $attempt;
+    private $maxAttempts = 30; // e.g. retry for ~5 minutes if delay is 10s
+    private $delaySeconds = 10;
+    // Tìm tài xế trong bán kính, tăng dần theo số lần thử
+    private $searchRadiusStart = 3; // km
+    private $searchRadiusStep = 2; // km
+    private $searchRadiusMax = 15; // km
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Order $order)
+    public function __construct(Order $order, $attempt = 1)
     {
         $this->order = $order;
+        $this->attempt = $attempt;
     }
 
     /**
@@ -33,11 +41,19 @@ class FindDriverForOrderJob implements ShouldQueue
     public function handle()
     {
         $order = $this->order;
-        
+        $attempt = $this->attempt;
+        $maxAttempts = $this->maxAttempts;
+        $delaySeconds = $this->delaySeconds;
+        $searchRadius = min($this->searchRadiusStart + ($attempt - 1) * $this->searchRadiusStep, $this->searchRadiusMax);
+        $maxOrders = ($attempt > 15) ? 15 : 10;
+
         Log::info('Bắt đầu tìm tài xế cho đơn hàng', [
             'order_id' => $order->id,
             'order_code' => $order->order_code,
-            'branch_id' => $order->branch_id
+            'branch_id' => $order->branch_id,
+            'attempt' => $attempt,
+            'search_radius_km' => $searchRadius,
+            'max_orders_per_driver' => $maxOrders
         ]);
 
         // Lấy toạ độ giao hàng
@@ -56,30 +72,13 @@ class FindDriverForOrderJob implements ShouldQueue
             return;
         }
 
-        // Số đơn tối đa mỗi tài xế có thể nhận
-        $maxOrders = 10;
-
         // Tìm tài xế active, available, số đơn đang nhận < maxOrders
         $driversRaw = \App\Models\Driver::where('status', 'active')
             ->where('is_available', true)
             ->with('location')
             ->get();
         Log::info('Tổng số tài xế active, available:', ['count' => $driversRaw->count()]);
-        $drivers = $driversRaw->filter(function ($driver) use ($maxOrders) {
-            $currentOrders = \App\Models\Order::where('driver_id', $driver->id)
-                ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
-                ->count();
-            if ($currentOrders >= $maxOrders) {
-                \Log::info('Loại tài xế do quá số đơn:', [
-                    'driver_id' => $driver->id,
-                    'name' => $driver->full_name,
-                    'current_orders' => $currentOrders
-                ]);
-                return false;
-            }
-            return true;
-        })
-        ->filter(function ($driver) {
+        $drivers = $driversRaw->filter(function ($driver) use ($maxOrders, $lat, $lng, $searchRadius) {
             if ($driver->location === null) {
                 \Log::info('Loại tài xế do không có vị trí:', [
                     'driver_id' => $driver->id,
@@ -87,18 +86,39 @@ class FindDriverForOrderJob implements ShouldQueue
                 ]);
                 return false;
             }
-            return true;
-        })
-        ->sortBy(function ($driver) use ($lat, $lng) {
             $distance = $this->haversine($lat, $lng, $driver->location->latitude, $driver->location->longitude);
+            if ($distance > $searchRadius) {
+                \Log::info('Loại tài xế do ngoài bán kính:', [
+                    'driver_id' => $driver->id,
+                    'name' => $driver->full_name,
+                    'distance_km' => $distance,
+                    'search_radius_km' => $searchRadius
+                ]);
+                return false;
+            }
+            $currentOrders = \App\Models\Order::where('driver_id', $driver->id)
+                ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
+                ->count();
+            if ($currentOrders >= $maxOrders) {
+                \Log::info('Loại tài xế do quá số đơn:', [
+                    'driver_id' => $driver->id,
+                    'name' => $driver->full_name,
+                    'current_orders' => $currentOrders,
+                    'max_orders' => $maxOrders
+                ]);
+                return false;
+            }
             \Log::info('Tài xế hợp lệ:', [
                 'driver_id' => $driver->id,
                 'name' => $driver->full_name,
                 'lat' => $driver->location->latitude,
                 'lng' => $driver->location->longitude,
-                'distance_km' => $distance
+                'distance_km' => $distance,
+                'current_orders' => $currentOrders
             ]);
-            return $distance;
+            return true;
+        })->sortBy(function ($driver) use ($lat, $lng) {
+            return $this->haversine($lat, $lng, $driver->location->latitude, $driver->location->longitude);
         });
 
         $driver = $drivers->first();
@@ -107,12 +127,24 @@ class FindDriverForOrderJob implements ShouldQueue
             Log::info('Không tìm thấy tài xế phù hợp cho đơn hàng', [
                 'order_id' => $order->id,
                 'total_drivers_checked' => \App\Models\Driver::where('status', 'active')->count(),
-                'available_drivers' => \App\Models\Driver::where('status', 'active')->where('is_available', true)->count()
+                'available_drivers' => \App\Models\Driver::where('status', 'active')->where('is_available', true)->count(),
+                'attempt' => $attempt
             ]);
             
-            // Gửi notification cho branch về việc không có tài xế
-            $this->notifyBranchNoDriver($order, 'Không có tài xế phù hợp');
-            return;
+            if ($attempt < $maxAttempts) {
+                // Re-dispatch job with delay
+                Log::info('Retry tìm tài xế, sẽ thử lại sau', [
+                    'order_id' => $order->id,
+                    'next_attempt' => $attempt + 1,
+                    'delay_seconds' => $delaySeconds
+                ]);
+                self::dispatch($order, $attempt + 1)->delay(now()->addSeconds($delaySeconds));
+                return;
+            } else {
+                // Gửi notification cho branch về việc không có tài xế
+                $this->notifyBranchNoDriver($order, 'Không có tài xế phù hợp sau nhiều lần thử');
+                return;
+            }
         }
 
         // Gán đơn cho tài xế

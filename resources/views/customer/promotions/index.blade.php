@@ -3,12 +3,6 @@
 @section('title', 'FastFood - Khuyến Mãi')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-</style>
 {{-- <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Khuyến Mãi</h1>
@@ -20,9 +14,10 @@
 
 
     @php
-        $promotionsBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('promotions');
+        $promotionsBanner = app('App\\Http\\Controllers\\Customer\\BannerController')->getBannersByPosition('promotions');
     @endphp
     @include('components.banner', ['banners' => $promotionsBanner])
+    <x-customer-container>
 
 <div class="container mx-auto px-4 py-12">
     <!-- Khuyến mãi nổi bật -->
@@ -237,6 +232,7 @@
         </form>
     </div>
 </div>
+</x-customer-container>
 @endsection
 
 @section('scripts')

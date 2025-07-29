@@ -4,10 +4,6 @@
 
 @section('content')
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
    /* Example for badges - adjust to your styling system */
     .custom-badge {
         font-size: 0.75rem; /* 12px */
@@ -79,8 +75,7 @@
         </div>
     </div>
 
-
-
+    <div class="max-w-[1240px] mx-auto w-full"> 
 
     <div class="container mx-auto px-4 py-8">
         <!-- Categories Section -->
@@ -124,7 +119,7 @@
                     data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
 
                     <div class="relative">
-                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                        <a href="{{ route('products.show', $product->slug) }}" class="block relative h-48 overflow-hidden">
                             @if($product->primary_image && $product->primary_image->s3_url)
                                 <img src="{{ $product->primary_image->s3_url }}"
                                     alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
@@ -184,7 +179,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $product->id) }}">
+                        <a href="{{ route('products.show', $product->slug) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $product->name }}
                             </h3>
@@ -245,7 +240,7 @@
                     data-combo-id="{{ $combo->id }}"
                     data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
                     <div class="relative">
-                        <a href="{{ route('combos.show', $combo->id) }}">
+                        <a href="{{ route('combos.show', $combo->slug) }}">
                             <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
                             <div class="absolute top-2 left-2">
                                 @if($combo->discount_percent > 0)
@@ -257,7 +252,7 @@
                         </a>
                     </div>
                     <div class="p-4">
-                        <a href="{{ route('combos.show', $combo->id) }}">
+                        <a href="{{ route('combos.show', $combo->slug) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
                         </a>
                         <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
@@ -305,7 +300,7 @@
                     data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
 
                     <div class="relative">
-                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                        <a href="{{ route('products.show', $product->slug) }}" class="block relative h-48 overflow-hidden">
                             <img src="{{ $product->primary_image->s3_url ?? asset('images/default-placeholder.png') }}"
                                 alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                         </a>
@@ -325,7 +320,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $product->id) }}">
+                        <a href="{{ route('products.show', $product->slug) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $product->name }}
                             </h3>
@@ -354,11 +349,10 @@
         </div>
     </div>
     </div>
-    </section>
+    <div class="max-w-[1240px] mx-auto w-full">
 
     <!-- Order Now Section -->
-    <section class="py-10 container">
-        <div class="rounded-xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-500">
+        <div class="rounded-xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-500 mb-8">
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="p-8 md:p-12 flex flex-col justify-center">
                     <h2 class="text-2xl md:text-3xl font-bold mb-4 text-white">Đặt Hàng Ngay!</h2>
@@ -403,8 +397,8 @@
                 </div>
             </div>
         </div>
-    </section>
     </div>
+    
 @endsection
 
 @section('scripts')

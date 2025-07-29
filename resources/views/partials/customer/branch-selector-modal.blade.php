@@ -1,5 +1,5 @@
 <!-- Branch Change Confirmation Modal -->
-<div id="branch-change-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center" style="display: none;">
+<div id="branch-change-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center" style="display: none;">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-transform">
         <div class="flex flex-col items-center mb-4 text-center">
             <div class="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4">
@@ -20,7 +20,7 @@
 </div>
 
 <!-- Branch Selection Modal -->
-<div id="branch-selector-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" 
+<div id="branch-selector-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[9998] flex items-center justify-center" 
      style="display: none;">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4 transform transition-transform">
         <div class="flex justify-between items-center mb-4">
@@ -336,121 +336,108 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmBranchChange.addEventListener('click', function() {
             // Hide the confirmation modal
             branchChangeConfirmationModal.style.display = 'none';
-            
+
             // If there's a pending branch selection, process it
             if (pendingBranchSelection) {
                 // Get the selected branch from the pending selection
                 const selectedBranch = pendingBranchSelection;
-                
+
                 // Show loading state on the confirm button in the original modal
                 if (confirmBranch) {
                     confirmBranch.disabled = true;
                     confirmBranch.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
                 }
-                
-                // Set branch in session via AJAX
-                fetch('/branches/set-selected', {
+
+                // Gọi API xóa giỏ hàng trước khi chuyển chi nhánh
+                fetch('/cart/clear', {
                     method: 'POST',
-                    credentials: 'same-origin', // Important to include cookies
+                    credentials: 'same-origin',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        branch_id: selectedBranch.value
-                    })
+                    }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Set cookie directly here as a fallback
-                        setCookie('selected_branch', selectedBranch.value, 30); // 30 days
-                        console.log('Set branch cookie directly:', selectedBranch.value);
-                        
-                        // Hide modal
-                        hideBranchModal();
-                        
-                        // Update the UI to reflect the selected branch instead of reloading
-                        const branchName = selectedBranch.closest('.branch-item').querySelector('.font-medium').textContent;
-                        const branchSelector = document.getElementById('branch-selector-button');
-                        if (branchSelector) {
-                            branchSelector.innerHTML = `
-                                <i class="fas fa-store text-orange-500"></i>
-                                <span class="hidden sm:inline text-sm font-medium truncate max-w-28">${branchName}</span>
-                                <i class="fas fa-chevron-down text-xs"></i>
-                            `;
-                        }
-                        
-                        // Show the change branch button if it's hidden
-                        if (changeBranchBtn) {
-                            changeBranchBtn.classList.remove('hidden');
-                            // Update the text to show branch name
-                            changeBranchBtn.innerHTML = `
-                                <i class="fas fa-store h-4 w-4"></i>
-                                <span>${branchName}</span>
-                            `;
-                        }
-                        
-                        // Append the branch ID to all forms as a hidden input
-                        document.querySelectorAll('form').forEach(form => {
-                            let input = form.querySelector('input[name="branch_id"]');
-                            if (!input) {
-                                input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = 'branch_id';
-                                form.appendChild(input);
-                            }
-                            input.value = selectedBranch.value;
-                        });
-                        
-                        // If on a product listing page, reload the products
-                        if (typeof loadProducts === 'function') {
-                            loadProducts();
-                        } else {
-                            // Store the branch ID in localStorage as a backup
-                            localStorage.setItem('selected_branch_id', selectedBranch.value);
-                            localStorage.setItem('selected_branch_timestamp', Date.now());
-                            
-                            // Also set a cookie as fallback
+                .then(() => {
+                    // Sau khi xóa giỏ hàng, tiếp tục chuyển chi nhánh như cũ
+                    fetch('/branches/set-selected', {
+                        method: 'POST',
+                        credentials: 'same-origin', // Important to include cookies
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            branch_id: selectedBranch.value
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
                             setCookie('selected_branch', selectedBranch.value, 30); // 30 days
-                            
-                            // Always reload the page to ensure proper filtering
-                            window.location.href = window.location.pathname + '?branch_id=' + selectedBranch.value;
+                            hideBranchModal();
+                            const branchName = selectedBranch.closest('.branch-item').querySelector('.font-medium').textContent;
+                            const branchSelector = document.getElementById('branch-selector-button');
+                            if (branchSelector) {
+                                branchSelector.innerHTML = `
+                                    <i class="fas fa-store text-orange-500"></i>
+                                    <span class="hidden sm:inline text-sm font-medium truncate max-w-28">${branchName}</span>
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                `;
+                            }
+                            if (changeBranchBtn) {
+                                changeBranchBtn.classList.remove('hidden');
+                                changeBranchBtn.innerHTML = `
+                                    <i class="fas fa-store h-4 w-4"></i>
+                                    <span>${branchName}</span>
+                                `;
+                            }
+                            document.querySelectorAll('form').forEach(form => {
+                                let input = form.querySelector('input[name="branch_id"]');
+                                if (!input) {
+                                    input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = 'branch_id';
+                                    form.appendChild(input);
+                                }
+                                input.value = selectedBranch.value;
+                            });
+                            if (typeof loadProducts === 'function') {
+                                loadProducts();
+                            } else {
+                                localStorage.setItem('selected_branch_id', selectedBranch.value);
+                                localStorage.setItem('selected_branch_timestamp', Date.now());
+                                setCookie('selected_branch', selectedBranch.value, 30); // 30 days
+                                window.location.href = window.location.pathname + '?branch_id=' + selectedBranch.value;
+                            }
+                        } else {
+                            if (confirmBranch) {
+                                confirmBranch.disabled = false;
+                                confirmBranch.innerHTML = 'Xác Nhận Chi Nhánh';
+                            }
+                            if (window.showToast) {
+                                window.showToast(data.message || 'Có lỗi xảy ra khi chọn chi nhánh', 'error');
+                            } else {
+                                alert(data.message || 'Có lỗi xảy ra khi chọn chi nhánh');
+                            }
                         }
-                    } else {
-                        // Reset button state
+                    })
+                    .catch(error => {
+                        console.error('Error selecting branch:', error);
                         if (confirmBranch) {
                             confirmBranch.disabled = false;
                             confirmBranch.innerHTML = 'Xác Nhận Chi Nhánh';
                         }
-                        
                         if (window.showToast) {
-                            window.showToast(data.message || 'Có lỗi xảy ra khi chọn chi nhánh', 'error');
+                            window.showToast('Có lỗi xảy ra khi chọn chi nhánh', 'error');
                         } else {
-                            alert(data.message || 'Có lỗi xảy ra khi chọn chi nhánh');
+                            alert('Có lỗi xảy ra khi chọn chi nhánh');
                         }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error selecting branch:', error);
-                    
-                    // Reset button state
-                    if (confirmBranch) {
-                        confirmBranch.disabled = false;
-                        confirmBranch.innerHTML = 'Xác Nhận Chi Nhánh';
-                    }
-                    
-                    if (window.showToast) {
-                        window.showToast('Có lỗi xảy ra khi chọn chi nhánh', 'error');
-                    } else {
-                        alert('Có lỗi xảy ra khi chọn chi nhánh');
-                    }
+                    });
+                    // Reset pending selection
+                    pendingBranchSelection = null;
                 });
-                
-                // Reset pending selection
-                pendingBranchSelection = null;
             }
         });
     }

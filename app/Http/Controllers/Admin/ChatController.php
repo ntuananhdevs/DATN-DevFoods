@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class ChatController extends Controller
 {
@@ -40,11 +41,12 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request)
     {
-        Log::info('Admin gửi tin nhắn', [
-            'conversation_id' => $request->conversation_id,
-            'message' => $request->message,
+        Log::info('--- BẮT ĐẦU sendMessage ---', [
+            'time' => now(),
+            'ip' => $request->ip(),
             'user_id' => Auth::id(),
-            'has_attachment' => $request->hasFile('attachment')
+            'has_attachment' => $request->hasFile('attachment'),
+            'message' => $request->message,
         ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
@@ -82,15 +84,58 @@ class ChatController extends Controller
             'attachment_type' => $attachmentType,
             'sent_at' => now(),
             'status' => 'sent',
-            'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
+            'branch_id' => $conversation->branch_id,
         ]);
         Log::info('Admin đã tạo message', ['message_id' => $message->id, 'message' => $message->toArray()]);
-        $message->load(['sender' => function ($query) {
+        $message = ChatMessage::with(['sender' => function ($query) {
             $query->select('id', 'full_name');
-        }]);
+        }])->find($message->id);
         Log::info('Sender loaded:', ['sender' => $message->sender]);
         broadcast(new NewMessage($message, $conversation->id))->toOthers();
         broadcast(new ConversationUpdated($conversation, 'created'))->toOthers();
+
+        // Gửi cho branch (nếu có)
+        if ($conversation->branch_id) {
+            $branch = Branch::find($conversation->branch_id);
+            if ($branch) {
+                $branch->notify(new NewChatMessageNotification($message));
+                $existing = $branch->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($branch));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+            }
+        }
+
+        // Gửi cho customer (nếu có)
+        if ($conversation->customer_id) {
+            $customer = \App\Models\User::find($conversation->customer_id);
+            if ($customer) {
+                $existing = $customer->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
+                    $existing->created_at = now();
+                    $existing->save();
+                } else {
+                    // Tạo notification mới nếu chưa có
+                    $customer->notify(new NewChatMessageNotification($message));
+                }
+
+                // Broadcast lên channel tổng cho customer
+                broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => [
@@ -257,6 +302,35 @@ class ChatController extends Controller
                 'success' => false,
                 'message' => 'Lỗi khi lấy tin nhắn: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::user();
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new \App\Events\Chat\UserTyping($conversationId, $user->id, $user->full_name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
+    }
+
+    public function getUnreadChatCount()
+    {
+        try {
+            $admin = Auth::user();
+            if (!$admin instanceof \App\Models\User) {
+                return response()->json(['count' => 0]);
+            }
+
+            // Count unread chat messages (NewChatMessageNotification)
+            $unreadChatCount = $admin->notifications()
+                ->whereNull('read_at')
+                ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                ->count();
+
+            return response()->json(['count' => $unreadChatCount]);
+        } catch (\Exception $e) {
+            return response()->json(['count' => 0, 'error' => $e->getMessage()]);
         }
     }
 };

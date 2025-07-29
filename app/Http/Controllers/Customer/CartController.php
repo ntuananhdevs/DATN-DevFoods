@@ -58,6 +58,7 @@ class CartController extends Controller
 
         if ($cart) {
             $cartItems = CartItem::with([
+                'combo', // thêm dòng này để load combo cho cart item
                 'variant.product' => function($query) {
                     $query->with('images', 'variants.variantValues');
                 },
@@ -67,17 +68,22 @@ class CartController extends Controller
 
             // Calculate subtotal
             foreach ($cartItems as $item) {
+                if ($item->combo_id && $item->combo) {
+                    $subtotal += $item->combo->price * $item->quantity;
+                } elseif ($item->variant) {
                 $subtotal += $item->variant->price * $item->quantity;
-
                 // Add topping prices to subtotal
                 foreach ($item->toppings as $topping) {
                     $subtotal += $topping->price * $item->quantity;
+                    }
                 }
 
                 // Set primary image for display
+                if ($item->variant && $item->variant->product) {
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
                     ->first() ?? $item->variant->product->images->first();
+                }
             }
         }
 
@@ -87,15 +93,33 @@ class CartController extends Controller
 
         // === SUGGESTED PRODUCTS LOGIC ===
         $suggestedProducts = collect();
-        $cartProductIds = $cartItems->pluck('variant.product.id')->unique()->toArray();
-        $cartCategoryIds = $cartItems->pluck('variant.product.category_id')->unique()->toArray();
-        $cartProducts = $cartItems->map(function($item) {
-            return [
+        $cartProductIds = [];
+        $cartCategoryIds = [];
+        $cartProducts = collect();
+        foreach ($cartItems as $item) {
+            if ($item->variant && $item->variant->product) {
+                $cartProducts->push([
                 'product_id' => $item->variant->product->id,
                 'category_id' => $item->variant->product->category_id
-            ];
-        });
-
+                ]);
+                $cartProductIds[] = $item->variant->product->id;
+                $cartCategoryIds[] = $item->variant->product->category_id;
+            } elseif ($item->combo_id && $item->combo) {
+                // Lấy các sản phẩm trong combo
+                foreach ($item->combo->comboItems as $comboItem) {
+                    if ($comboItem->productVariant && $comboItem->productVariant->product) {
+                        $cartProducts->push([
+                            'product_id' => $comboItem->productVariant->product->id,
+                            'category_id' => $comboItem->productVariant->product->category_id
+                        ]);
+                        $cartProductIds[] = $comboItem->productVariant->product->id;
+                        $cartCategoryIds[] = $comboItem->productVariant->product->category_id;
+                    }
+                }
+            }
+        }
+        $cartProductIds = array_unique($cartProductIds);
+        $cartCategoryIds = array_unique($cartCategoryIds);
         $cartCount = $cartProducts->count();
         $suggestionPlan = [];
         if ($cartCount == 1) {
@@ -191,6 +215,7 @@ class CartController extends Controller
         });
         // Tính min_price cho mỗi product trong cart (giống show/index)
         foreach ($cartItems as $item) {
+            if ($item->variant && $item->variant->product) {
             $product = $item->variant->product;
             $product->min_price = $product->base_price;
             if ($product->variants && $product->variants->count() > 0) {
@@ -212,9 +237,11 @@ class CartController extends Controller
                 'calculated_min_price' => $product->min_price,
                 'base_price' => $product->base_price
             ]);
+            }
         }
         // Tính discount cho từng item
         foreach ($cartItems as $item) {
+            if ($item->variant && $item->variant->product) {
             $product = $item->variant->product;
             $originPrice = $item->variant->price;
             $item->origin_price = $originPrice;
@@ -271,6 +298,7 @@ class CartController extends Controller
                 'topping_names' => $item->toppings->map(function($t) { return $t->topping->name ?? null; }),
             ]);
             $item->final_price = max(0, $originPrice - $maxValue) + $toppingSumWithRelation;
+            }
         }
 
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
@@ -309,6 +337,17 @@ class CartController extends Controller
             // Get or create cart
             $userId = Auth::id();
             $sessionId = session()->getId();
+
+            // Validate user exists if authenticated
+            if ($userId) {
+                $userExists = \App\Models\User::where('id', $userId)->exists();
+                if (!$userExists) {
+                    // User doesn't exist, clear authentication and use session-based cart
+                    Auth::logout();
+                    $userId = null;
+                    Log::warning('User ID ' . $userId . ' does not exist, falling back to session-based cart');
+                }
+            }
 
             $cart = Cart::where('status', 'active')
                 ->when($userId, function($query) use ($userId) {
@@ -462,6 +501,77 @@ class CartController extends Controller
     }
 
     /**
+     * Thêm combo vào giỏ hàng
+     */
+    public function addComboToCart(Request $request)
+    {
+        $request->validate([
+            'combo_id' => 'required|exists:combos,id',
+            'quantity' => 'required|integer|min:1|max:20',
+        ]);
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist, falling back to session-based cart');
+            }
+        }
+        
+        $cart = \App\Models\Cart::firstOrCreate(
+            [
+                'user_id' => $userId,
+                'session_id' => $userId ? null : $sessionId,
+                'status' => 'active'
+            ],
+            [
+                'user_id' => $userId,
+                'session_id' => $userId ? null : $sessionId,
+                'status' => 'active'
+            ]
+        );
+        $combo = \App\Models\Combo::find($request->combo_id);
+        if (!$combo || $combo->status !== 'selling') {
+            return response()->json(['success' => false, 'message' => 'Combo không khả dụng'], 400);
+        }
+        // Lấy branch_id hiện tại (ưu tiên cart->branch_id, fallback 1)
+        $branchId = $cart->branch_id ?? 1;
+        $comboStock = $combo->comboBranchStocks->where('branch_id', $branchId)->first();
+        $stockQty = $comboStock ? $comboStock->quantity : 0;
+        // Tổng số lượng combo này đã có trong cart
+        $cartItem = $cart->items()->where('combo_id', $combo->id)->first();
+        $currentQty = $cartItem ? $cartItem->quantity : 0;
+        $newQty = $currentQty + $request->quantity;
+        if ($stockQty > 0 && $newQty > $stockQty) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Số lượng combo trong kho không đủ. Chỉ còn ' . $stockQty . ' combo tại chi nhánh này.'
+            ], 400);
+        }
+        if ($cartItem) {
+            $cartItem->quantity = $newQty;
+            $cartItem->save();
+        } else {
+            $cart->items()->create([
+                'combo_id' => $combo->id,
+                'quantity' => $request->quantity,
+            ]);
+        }
+        $cartCount = $cart->items()->count();
+        session(['cart_count' => $cartCount]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Combo đã được thêm vào giỏ hàng',
+            'cart_count' => $cartCount
+        ]);
+    }
+
+    /**
      * Update cart item quantity
      */
     public function update(Request $request)
@@ -485,16 +595,28 @@ class CartController extends Controller
                     });
             })->findOrFail($request->cart_item_id);
 
-            // Check stock availability
+            // Nếu là combo thì kiểm tra tồn kho combo
+            if ($cartItem->combo_id) {
+                $branchId = $cartItem->cart->branch_id ?? 1;
+                $comboStock = $cartItem->combo->comboBranchStocks->where('branch_id', $branchId)->first();
+                $stockQty = $comboStock ? $comboStock->quantity : 0;
+                if ($stockQty > 0 && $request->quantity > $stockQty) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Số lượng combo trong kho không đủ. Chỉ còn ' . $stockQty . ' combo tại chi nhánh này.'
+                    ], 400);
+                }
+            } else {
+                // Check stock availability for product variant
             $stock = $cartItem->variant->branchStocks()
-                ->where('branch_id', $cartItem->cart->branch_id ?? 1) // Default branch if not set
+                    ->where('branch_id', $cartItem->cart->branch_id ?? 1)
                 ->first();
-
             if (!$stock || $stock->stock_quantity < $request->quantity) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Số lượng sản phẩm không đủ'
                 ], 400);
+                }
             }
 
             // Update quantity
@@ -509,13 +631,11 @@ class CartController extends Controller
                 'message' => 'Cập nhật số lượng thành công',
                 'cart_count' => $cartCount
             ]);
-
         } catch (\Exception $e) {
-            Log::error('Update cart item failed:', [
+            \Log::error('Update cart item failed:', [
                 'error' => $e->getMessage(),
-                'cart_item_id' => $request->cart_item_id ?? null
+                'trace' => $e->getTraceAsString()
             ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi cập nhật giỏ hàng'
@@ -576,5 +696,26 @@ class CartController extends Controller
                 'message' => 'Có lỗi xảy ra khi xóa sản phẩm'
             ], 500);
         }
+    }
+
+    /**
+     * Xóa toàn bộ giỏ hàng của khách hàng hiện tại
+     */
+    public function clear(Request $request)
+    {
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+        $cartQuery = \App\Models\Cart::query()->where('status', 'active');
+        if ($userId) {
+            $cartQuery->where('user_id', $userId);
+        } else {
+            $cartQuery->where('session_id', $sessionId);
+        }
+        $cart = $cartQuery->first();
+        if ($cart) {
+            $cart->items()->delete();
+            session(['cart_count' => 0]);
+        }
+        return response()->json(['success' => true]);
     }
 }

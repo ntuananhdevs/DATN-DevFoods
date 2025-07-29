@@ -16,7 +16,9 @@ use App\Models\Branch;
 use App\Models\Address;
 use App\Services\BranchService;
 use App\Services\ShippingService;
+use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
+use App\Services\OrderSnapshotService;
 
 class CheckoutController extends Controller
 {
@@ -33,11 +35,93 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
+        // Nếu không có from_buy_now=1 thì xóa session buy_now_checkout
+        if (!$request->has('from_buy_now') || $request->input('from_buy_now') != 1) {
+            session()->forget('buy_now_checkout');
+        }
+        $buyNow = session('buy_now_checkout');
+        if ($buyNow) {
+            $cartItems = collect();
+            if ($buyNow['type'] === 'product') {
+                $variant = null;
+                if (!empty($buyNow['variant_id'])) {
+                    $variant = \App\Models\ProductVariant::with([
+                        'product',
+                        'variantValues.attribute'
+                    ])->find($buyNow['variant_id']);
+                }
+                if ($variant) {
+                    // Debug log for Buy Now variant
+                    \Log::debug('Buy Now variant loaded:', [
+                        'variant_id' => $variant->id,
+                        'product_name' => $variant->product->name ?? 'unknown',
+                        'variant_values_count' => $variant->variantValues ? $variant->variantValues->count() : 0,
+                        'variant_values' => $variant->variantValues ? $variant->variantValues->map(function($vv) {
+                            return [
+                                'id' => $vv->id,
+                                'value' => $vv->value,
+                                'attribute_name' => $vv->attribute->name ?? 'unknown'
+                            ];
+                        })->toArray() : []
+                    ]);
+                    
+                    $item = new \stdClass();
+                    $item->variant = $variant;
+                    $item->quantity = $buyNow['quantity'];
+                    $item->toppings = collect();
+                    if (!empty($buyNow['toppings'])) {
+                        $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                    }
+                    $item->combo = null;
+                    $cartItems->push($item);
+                }
+            } elseif ($buyNow['type'] === 'combo') {
+                $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                if ($combo) {
+                    $item = new \stdClass();
+                    $item->variant = null;
+                    $item->combo = $combo;
+                    $item->quantity = $buyNow['quantity'];
+                    $item->toppings = collect();
+                    $cartItems->push($item);
+                }
+            }
+            
+            // Calculate subtotal for Buy Now items
+            $subtotal = $this->calculateBuyNowSubtotal($cartItems);
+            // Nếu không có sản phẩm hợp lệ trong buy now
+            if ($cartItems->isEmpty()) {
+                return redirect()->route('products.index')->with('error', 'Sản phẩm bạn chọn không hợp lệ hoặc đã hết hàng.');
+            }
+            $cart = null;
+            $userAddresses = null;
+            $userId = \Auth::id();
+            if ($userId) {
+                $userAddresses = \App\Models\Address::where('user_id', $userId)
+                    ->orderBy('is_default', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+            }
+            $currentBranch = $this->branchService->getCurrentBranch();
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+        }
+
         $cartItems = [];
         $subtotal = 0;
 
         $userId = Auth::id();
         $sessionId = session()->getId();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController, falling back to session-based cart');
+            }
+        }
 
         $cartQuery = Cart::query()->where('status', 'active');
         if ($userId) {
@@ -54,6 +138,7 @@ class CheckoutController extends Controller
             $query = CartItem::with([
                 'variant.product.images',
                 'variant.variantValues.attribute',
+                'combo', // Thêm eager load cho combo
                 'toppings'
             ])->where('cart_id', $cart->id);
 
@@ -67,10 +152,17 @@ class CheckoutController extends Controller
             $subtotal = $this->applyDiscountsToCartItems($cartItems);
 
             foreach ($cartItems as $item) {
-                // Đặt primary image
-                $item->variant->product->primary_image = $item->variant->product->images
-                    ->where('is_primary', true)
-                    ->first() ?? $item->variant->product->images->first();
+                // Xử lý cho sản phẩm lẻ
+                if ($item->variant && $item->variant->product) {
+                    // Đặt primary image
+                    $item->variant->product->primary_image = $item->variant->product->images
+                        ->where('is_primary', true)
+                        ->first() ?? $item->variant->product->images->first();
+                }
+                // Xử lý cho combo (nếu cần)
+                elseif ($item->combo) {
+                    // Combo không cần xử lý primary image ở đây
+                }
             }
         } else {
             $cartItems = collect([]);
@@ -106,31 +198,76 @@ class CheckoutController extends Controller
         // Get user ID to determine validation rules
         $userId = Auth::id();
         
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController process, falling back to session-based cart');
+            }
+        }
+        
         // Validate checkout data with different rules for authenticated vs guest users
         if ($userId) {
             // For authenticated users, require address_id selection
-            $validated = $request->validate([
-                'address_id' => 'required|exists:addresses,id',
-                'payment_method' => 'required|string|in:cod,vnpay,balance',
-                'notes' => 'nullable|string',
-                'terms' => 'required',
-                // Hidden fields that get populated by JavaScript
-                'full_name' => 'required|string|max:255',
-                'phone' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
-                'address' => 'required|string|max:255',
-                'city' => 'required|string|max:100',
-                'district' => 'required|string|max:100',
-                'ward' => 'required|string|max:100',
-            ]);
-            
-            // Verify the address belongs to the user
-            $address = Address::where('id', $request->address_id)
-                ->where('user_id', $userId)
-                ->first();
-            
-            if (!$address) {
-                throw new \Exception('Địa chỉ được chọn không hợp lệ.');
+            $userAddresses = \App\Models\Address::where('user_id', $userId)->count();
+            if ($userAddresses > 0) {
+                // User đã có địa chỉ, xử lý như cũ
+                $validated = $request->validate([
+                    'address_id' => 'required|exists:addresses,id',
+                    'payment_method' => 'required|string|in:cod,vnpay,balance',
+                    'notes' => 'nullable|string',
+                    'terms' => 'required',
+                    // Hidden fields that get populated by JavaScript
+                    'full_name' => 'required|string|max:255',
+                    'phone' => 'required|string|max:20',
+                    'email' => 'required|email|max:255',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'district' => 'required|string|max:100',
+                    'ward' => 'required|string|max:100',
+                ]);
+                // Verify the address belongs to the user
+                $address = Address::where('id', $request->address_id)
+                    ->where('user_id', $userId)
+                    ->first();
+                if (!$address) {
+                    throw new \Exception('Địa chỉ được chọn không hợp lệ.');
+                }
+            } else {
+                // User chưa có địa chỉ, validate các trường thông tin giao hàng và tạo mới địa chỉ
+                $validated = $request->validate([
+                    'full_name' => 'required|string|max:255',
+                    'phone' => 'required|string|max:20',
+                    'email' => 'required|email|max:255',
+                    'address' => 'required|string|max:255',
+                    'city' => 'required|string|max:100',
+                    'district' => 'required|string|max:100',
+                    'ward' => 'required|string|max:100',
+                    'latitude' => 'required|numeric',
+                    'longitude' => 'required|numeric',
+                    'payment_method' => 'required|string|in:cod,vnpay,balance',
+                    'notes' => 'nullable|string',
+                    'terms' => 'required',
+                ]);
+                // Tạo địa chỉ mới cho user
+                $address = Address::create([
+                    'user_id' => $userId,
+                    'recipient_name' => $validated['full_name'],
+                    'phone_number' => $validated['phone'],
+                    'address_line' => $validated['address'],
+                    'city' => $validated['city'],
+                    'district' => $validated['district'],
+                    'ward' => $validated['ward'],
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'is_default' => true,
+                ]);
+                
+                // Lưu address_id vào request để sử dụng khi tạo đơn hàng
+                $request->merge(['address_id' => $address->id]);
             }
         } else {
             // For guest users, require manual input
@@ -151,36 +288,84 @@ class CheckoutController extends Controller
         try {
             DB::beginTransaction();
             
-            // Get session ID for cart lookup
-            $sessionId = session()->getId();
+            // Kiểm tra xem có phải là "buy now" không
+            $buyNow = session('buy_now_checkout');
+            $cartItems = collect();
+            $cart = null;
             
-            // Query the cart based on user_id or session_id
-            $cartQuery = Cart::query()->where('status', 'active');
-            
-            if ($userId) {
-                $cartQuery->where('user_id', $userId);
+            if ($buyNow) {
+                // Xử lý "buy now" - tạo cart items từ session
+                if ($buyNow['type'] === 'product') {
+                    $variant = null;
+                    if (!empty($buyNow['variant_id'])) {
+                        $variant = \App\Models\ProductVariant::with([
+                            'product',
+                            'variantValues.attribute'
+                        ])->find($buyNow['variant_id']);
+                    }
+                    if ($variant) {
+                        $item = new \stdClass();
+                        $item->variant = $variant;
+                        $item->quantity = $buyNow['quantity'];
+                        $item->toppings = collect();
+                        if (!empty($buyNow['toppings'])) {
+                            $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                        }
+                        $item->combo = null;
+                        $cartItems->push($item);
+                    }
+                } elseif ($buyNow['type'] === 'combo') {
+                    $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                    if ($combo) {
+                        $item = new \stdClass();
+                        $item->variant = null;
+                        $item->combo = $combo;
+                        $item->quantity = $buyNow['quantity'];
+                        $item->toppings = collect();
+                        $cartItems->push($item);
+                    }
+                }
+                
+                if ($cartItems->isEmpty()) {
+                    throw new \Exception('Sản phẩm bạn chọn không hợp lệ hoặc đã hết hàng.');
+                }
             } else {
-                $cartQuery->where('session_id', $sessionId);
+                // Xử lý giỏ hàng thông thường
+                $sessionId = session()->getId();
+                
+                $cartQuery = Cart::query()->where('status', 'active');
+                
+                if ($userId) {
+                    $cartQuery->where('user_id', $userId);
+                } else {
+                    $cartQuery->where('session_id', $sessionId);
+                }
+                
+                $cart = $cartQuery->first();
+                
+                if (!$cart) {
+                    throw new \Exception('Không tìm thấy giỏ hàng.');
+                }
+                
+                $cartItems = CartItem::with(['variant', 'combo', 'toppings.topping'])
+                    ->where('cart_id', $cart->id)
+                    ->get();
+                
+                if ($cartItems->isEmpty()) {
+                    throw new \Exception('Giỏ hàng của bạn đang trống.');
+                }
             }
             
-            $cart = $cartQuery->first();
-            
-            if (!$cart) {
-                throw new \Exception('Không tìm thấy giỏ hàng.');
+            // Calculate totals - Different logic for Buy Now vs regular cart
+            if ($buyNow) {
+                // Buy Now: Apply discount only to products, not combos
+                $subtotal = $this->calculateBuyNowSubtotal($cartItems);
+            } else {
+                // Regular cart: Apply discounts to all items
+                $currentBranch = $this->branchService->getCurrentBranch();
+                $branchId = $currentBranch ? $currentBranch->id : null;
+                $subtotal = $this->applyDiscountsToCartItems($cartItems, $branchId);
             }
-            
-            // Get cart items
-            $cartItems = CartItem::with(['variant.product'])
-                ->where('cart_id', $cart->id)
-                ->get();
-            
-            if ($cartItems->isEmpty()) {
-                throw new \Exception('Giỏ hàng của bạn đang trống.');
-            }
-            
-            // Calculate totals - FIX: Include toppings for consistency with view
-            // Tính subtotal đồng bộ với view (đã bao gồm discount + topping)
-            $subtotal = $this->applyDiscountsToCartItems($cartItems);
             
             // Calculate shipping using ShippingService - FIX: Use consistent service-based calculation
             $currentBranch = $this->branchService->getCurrentBranch();
@@ -279,6 +464,20 @@ class CheckoutController extends Controller
                 
                 if ($selectedAddress) {
                     $order->address_id = $selectedAddress->id;
+                    
+                    // Log để debug
+                    \Illuminate\Support\Facades\Log::info('Setting address_id for order', [
+                        'order_code' => $order->order_code,
+                        'address_id' => $selectedAddress->id,
+                        'address_data' => $selectedAddress->toArray()
+                    ]);
+                } else {
+                    // Log lỗi nếu không tìm thấy địa chỉ
+                    \Illuminate\Support\Facades\Log::warning('Address not found for order', [
+                        'order_code' => $order->order_code,
+                        'requested_address_id' => $request->address_id,
+                        'user_id' => $userId
+                    ]);
                 }
             } else {
                 // Thông tin guest
@@ -344,20 +543,115 @@ class CheckoutController extends Controller
                 NewOrderReceived::dispatch($order);
             }
             
-            // Create order items
+            // Create order items - Hỗ trợ cả buy now và giỏ hàng thông thường
             foreach ($cartItems as $cartItem) {
                 $orderItem = new OrderItem();
                 $orderItem->order_id = $order->id;
-                $orderItem->product_variant_id = $cartItem->variant_id;
                 $orderItem->quantity = $cartItem->quantity;
-                $orderItem->unit_price = $cartItem->variant->price;
-                $orderItem->total_price = $cartItem->variant->price * $cartItem->quantity;
+
+                if ($buyNow) {
+                    // Xử lý cho "buy now"
+                    if ($cartItem->variant) {
+                        $orderItem->product_variant_id = $cartItem->variant->id;
+                        // Use final_price (after discount) if available, otherwise original price
+                        $unitPrice = isset($cartItem->final_price) ? $cartItem->final_price : $cartItem->variant->price;
+                        // Subtract toppings price from final_price to get base unit price
+                        $toppingsPrice = 0;
+                        if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                            $toppingsPrice = $cartItem->toppings->sum('price');
+                        }
+                        $orderItem->unit_price = $unitPrice - $toppingsPrice;
+                        $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                    } elseif ($cartItem->combo) {
+                        $orderItem->combo_id = $cartItem->combo->id;
+                        // For combo Buy Now: always use original price (no discount)
+                        $orderItem->unit_price = $cartItem->combo->price;
+                        $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    // Xử lý cho giỏ hàng thông thường - use final_price if available
+                    if ($cartItem->product_variant_id) {
+                        $orderItem->product_variant_id = $cartItem->product_variant_id;
+                        $originalPrice = $cartItem->variant ? $cartItem->variant->price : 0;
+                        $unitPrice = isset($cartItem->final_price) ? $cartItem->final_price : $originalPrice;
+                        // Subtract toppings price from final_price to get base unit price
+                        $toppingsPrice = 0;
+                        if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                            foreach ($cartItem->toppings as $topping) {
+                                if (isset($topping->topping) && $topping->topping) {
+                                    $toppingsPrice += $topping->topping->price * ($topping->quantity ?? 1);
+                                }
+                            }
+                        }
+                        $orderItem->unit_price = $unitPrice - $toppingsPrice;
+                        $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                    } elseif ($cartItem->combo_id) {
+                        $orderItem->combo_id = $cartItem->combo_id;
+                        $originalPrice = $cartItem->combo ? $cartItem->combo->price : 0;
+                        $orderItem->unit_price = isset($cartItem->final_price) ? $cartItem->final_price : $originalPrice;
+                        $orderItem->total_price = $orderItem->unit_price * $cartItem->quantity;
+                    } else {
+                        continue;
+                    }
+                }
                 $orderItem->save();
+
+                // Thêm topping cho order item nếu có
+                if ($cartItem->toppings && $cartItem->toppings->count() > 0) {
+                    if ($buyNow) {
+                        // Xử lý topping cho "buy now"
+                        foreach ($cartItem->toppings as $topping) {
+                            $orderItem->toppings()->create([
+                                'topping_id' => $topping->id,
+                                'quantity' => 1, // Mặc định quantity = 1 cho buy now
+                                'price' => $topping->price,
+                            ]);
+                        }
+                    } else {
+                        // Xử lý topping cho giỏ hàng thông thường
+                        foreach ($cartItem->toppings as $cartTopping) {
+                            $orderItem->toppings()->create([
+                                'topping_id' => $cartTopping->topping_id,
+                                'quantity' => $cartTopping->quantity,
+                                'price' => $cartTopping->topping ? $cartTopping->topping->price : 0,
+                            ]);
+                        }
+                    }
+                }
             }
             
-            // Clear cart after order is placed by marking it as completed
-            $cart->status = 'completed';
-            $cart->save();
+            // Đảm bảo đơn hàng đã được lưu trước khi snapshot
+            if (!$order->exists) {
+                $order->save();
+            }
+            
+            // Đảm bảo load đầy đủ các quan hệ cần thiết cho snapshot
+            $order->load(['orderItems.toppings', 'address']);
+            
+            // Log thông tin đơn hàng trước khi snapshot
+            \Illuminate\Support\Facades\Log::info('Order before snapshot', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'address_id' => $order->address_id,
+                'has_address' => $order->address ? true : false
+            ]);
+            
+            // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến
+            OrderSnapshotService::snapshotOrder($order);
+            
+            // Clear cart or buy now session after order is placed
+            if ($buyNow) {
+                // Clear buy now session
+                session()->forget('buy_now_checkout');
+            } else {
+                // Clear regular cart
+                if ($cart) {
+                    $cart->status = 'completed';
+                    $cart->save();
+                }
+            }
             
             // Clear discount after order is placed
             session()->forget('coupon_discount_amount');
@@ -477,6 +771,12 @@ class CheckoutController extends Controller
                     $order->status = 'awaiting_confirmation';
                     $order->save();
 
+                    // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến (nếu chưa có)
+                    $order->load(['orderItems.toppings']);
+                    if (!$order->orderItems->first() || !$order->orderItems->first()->hasSnapshotData()) {
+                        OrderSnapshotService::snapshotOrder($order);
+                    }
+                    
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
 
@@ -694,6 +994,65 @@ class CheckoutController extends Controller
     }
 
     /**
+     * Xử lý Mua ngay cho combo
+     */
+    public function comboBuyNow(Request $request)
+    {
+        $request->validate([
+            'combo_id' => 'required|integer|exists:combos,id',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        session()->forget('buy_now_checkout');
+        session(['buy_now_checkout' => [
+            'type' => 'combo',
+            'combo_id' => $request->combo_id,
+            'quantity' => $request->quantity
+        ]]);
+        return response()->json([
+            'success' => true,
+            'redirect_url' => route('checkout.index', ['from_buy_now' => 1])
+        ]);
+    }
+
+    /**
+     * Xử lý Mua ngay cho sản phẩm
+     */
+    public function productBuyNow(Request $request)
+    {
+        // Debug log for Buy Now request
+        \Log::debug('Buy Now request:', $request->all());
+        
+        $request->validate([
+            'product_id' => 'required|integer|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'variant_id' => 'nullable|integer|exists:product_variants,id',
+            'toppings' => 'nullable|array'
+        ]);
+        
+        // Log the variant being saved to session
+        \Log::debug('Buy Now saving to session:', [
+            'type' => 'product',
+            'product_id' => $request->product_id,
+            'variant_id' => $request->variant_id,
+            'toppings' => $request->toppings ?? [],
+            'quantity' => $request->quantity
+        ]);
+        
+        session()->forget('buy_now_checkout');
+        session(['buy_now_checkout' => [
+            'type' => 'product',
+            'product_id' => $request->product_id,
+            'variant_id' => $request->variant_id,
+            'toppings' => $request->toppings ?? [],
+            'quantity' => $request->quantity
+        ]]);
+        return response()->json([
+            'success' => true,
+            'redirect_url' => route('checkout.index', ['from_buy_now' => 1])
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -791,72 +1150,163 @@ class CheckoutController extends Controller
 
         // === CALCULATE MIN PRICE FOR EACH PRODUCT (needed for product_price requirement) ===
         foreach ($cartItems as $item) {
-            $product = $item->variant->product;
-            $product->min_price = $product->base_price;
-            if ($product->variants && $product->variants->count()) {
-                $variantPrices = [];
-                foreach ($product->variants as $variant) {
-                    $variantPrice = $product->base_price;
-                    if ($variant->variantValues && $variant->variantValues->count()) {
-                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+            // Xử lý cho sản phẩm lẻ
+            if ($item->variant && $item->variant->product) {
+                $product = $item->variant->product;
+                $product->min_price = $product->base_price;
+                if ($product->variants && $product->variants->count()) {
+                    $variantPrices = [];
+                    foreach ($product->variants as $variant) {
+                        $variantPrice = $product->base_price;
+                        if ($variant->variantValues && $variant->variantValues->count()) {
+                            $variantPrice += $variant->variantValues->sum('price_adjustment');
+                        }
+                        $variantPrices[] = $variantPrice;
                     }
-                    $variantPrices[] = $variantPrice;
+                    if ($variantPrices) {
+                        $product->min_price = min($variantPrices);
+                    }
                 }
-                if ($variantPrices) {
-                    $product->min_price = min($variantPrices);
-                }
+            }
+            // Xử lý cho combo - combo không cần tính min_price
+            elseif ($item->combo) {
+                // Combo không cần xử lý min_price
             }
         }
 
         // === APPLY DISCOUNT TO EACH ITEM ===
         $subtotal = 0;
         foreach ($cartItems as $item) {
-            $originPrice = $item->variant->price;
+            // Xử lý cho sản phẩm lẻ
+            if ($item->variant) {
+                $originPrice = $item->variant->price;
 
-            $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
-                // Scope ALL
-                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
-                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
-                        if ($discountCode->min_requirement_type === 'product_price') {
-                            if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
-                                return false;
+                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                    // Scope ALL
+                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                        if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                            if ($discountCode->min_requirement_type === 'product_price') {
+                                if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                                    return false;
+                                }
                             }
                         }
+                        return true;
                     }
-                    return true;
-                }
-                // Scope specific products/categories
-                $applies = $discountCode->products->contains(function($dp) use ($item){
-                    if ($dp->product_id === $item->variant->product->id) return true;
-                    if ($dp->category_id === $item->variant->product->category_id) return true;
-                    return false;
-                });
-                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
-                    if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                    // Scope specific products/categories
+                    $applies = $discountCode->products->contains(function($dp) use ($item){
+                        if ($dp->product_id === $item->variant->product->id) return true;
+                        if ($dp->category_id === $item->variant->product->category_id) return true;
                         return false;
+                    });
+                    if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                        if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                            return false;
+                        }
+                    }
+                    return $applies;
+                });
+
+                // Get best discount value
+                $maxValue = 0;
+                foreach ($applicableDiscounts as $d) {
+                    $value = 0;
+                    if ($d->discount_type === 'fixed_amount') {
+                        $value = $d->discount_value;
+                    } elseif ($d->discount_type === 'percentage') {
+                        $value = $originPrice * $d->discount_value / 100;
+                    }
+                    if ($value > $maxValue) $maxValue = $value;
+                }
+
+                $finalPrice = max(0, $originPrice - $maxValue);
+                
+                // Handle toppings - different structure for Buy Now vs regular cart
+                $toppingsPrice = 0;
+                if ($item->toppings && $item->toppings->count() > 0) {
+                    foreach ($item->toppings as $topping) {
+                        // Buy Now: direct Topping model
+                        if (isset($topping->price)) {
+                            $toppingsPrice += $topping->price;
+                        }
+                        // Regular cart: CartTopping with topping relation
+                        elseif (isset($topping->topping) && $topping->topping) {
+                            $toppingsPrice += $topping->topping->price * ($topping->quantity ?? 1);
+                        }
                     }
                 }
-                return $applies;
-            });
-
-            // Get best discount value
-            $maxValue = 0;
-            foreach ($applicableDiscounts as $d) {
-                $value = 0;
-                if ($d->discount_type === 'fixed_amount') {
-                    $value = $d->discount_value;
-                } elseif ($d->discount_type === 'percentage') {
-                    $value = $originPrice * $d->discount_value / 100;
-                }
-                if ($value > $maxValue) $maxValue = $value;
+                
+                $finalPrice += $toppingsPrice;
+                $item->final_price = $finalPrice;
+                $subtotal += $finalPrice * $item->quantity;
             }
+            // Xử lý cho combo
+            elseif ($item->combo) {
+                $originPrice = $item->combo->price;
 
-            $finalPrice = max(0, $originPrice - $maxValue);
-            $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
-            $item->final_price = $finalPrice;
-            $subtotal += $finalPrice * $item->quantity;
+                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                    // Scope ALL
+                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                        return true;
+                    }
+                    // Scope specific products/categories - combo có thể áp dụng discount cho category
+                    $applies = $discountCode->products->contains(function($dp) use ($item){
+                        if ($dp->category_id === $item->combo->category_id) return true;
+                        return false;
+                    });
+                    return $applies;
+                });
+
+                // Get best discount value
+                $maxValue = 0;
+                foreach ($applicableDiscounts as $d) {
+                    $value = 0;
+                    if ($d->discount_type === 'fixed_amount') {
+                        $value = $d->discount_value;
+                    } elseif ($d->discount_type === 'percentage') {
+                        $value = $originPrice * $d->discount_value / 100;
+                    }
+                    if ($value > $maxValue) $maxValue = $value;
+                }
+
+                $finalPrice = max(0, $originPrice - $maxValue);
+                $item->final_price = $finalPrice;
+                $subtotal += $finalPrice * $item->quantity;
+            }
         }
 
+        return $subtotal;
+    }
+
+    /**
+     * Calculate subtotal for Buy Now items
+     * Apply discount only to products, not combos
+     */
+    private function calculateBuyNowSubtotal($cartItems)
+    {
+        $subtotal = 0;
+        
+        foreach ($cartItems as $item) {
+            if ($item->variant) {
+                // For products: apply discount
+                $currentBranch = $this->branchService->getCurrentBranch();
+                $branchId = $currentBranch ? $currentBranch->id : null;
+                
+                // Create a temporary collection with just this product item
+                $tempItems = collect([$item]);
+                $discountedSubtotal = $this->applyDiscountsToCartItems($tempItems, $branchId);
+                $subtotal += $discountedSubtotal;
+                
+            } elseif ($item->combo) {
+                // For combos: no discount, use original price
+                $comboPrice = $item->combo->price * $item->quantity;
+                $subtotal += $comboPrice;
+                
+                // Set final_price for consistency (used in order creation)
+                $item->final_price = $item->combo->price;
+            }
+        }
+        
         return $subtotal;
     }
 }

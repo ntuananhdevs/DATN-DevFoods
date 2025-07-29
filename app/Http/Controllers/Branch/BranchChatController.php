@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Branch;
 
+use App\Events\Chat\UserTyping;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
-use App\Models\User;
+
 use App\Models\PromotionProgram;
 use App\Models\DiscountCode;
 
 use App\Events\Chat\NewMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class BranchChatController extends Controller
 {
@@ -28,14 +29,16 @@ class BranchChatController extends Controller
     {
         $user = Auth::guard('manager')->user();
         $branch = $user ? $user->branch : null;
-        
+
         if (!$branch) {
             return redirect()->back()->with('error', 'Không tìm thấy chi nhánh');
         }
 
-        // Lấy conversations thuộc branch của user
-        $conversations = Conversation::where('branch_id', $branch->id)
-            ->with(['customer', 'messages'])
+        // Lọc tất cả dữ liệu chat theo branch_id của manager
+        $conversations = Conversation::with(['customer', 'messages.sender'])
+            ->whereNotNull('branch_id')
+            ->where('branch_id', $branch->id)
+            ->whereIn('status', ['distributed', 'active', 'resolved', 'closed',])
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -213,6 +216,11 @@ class BranchChatController extends Controller
                 'status' => 'sent',
                 'branch_id' => $conversation->branch_id,
             ]);
+            // Load lại message từ DB để đảm bảo đủ trường attachment, attachment_type
+            $message = ChatMessage::with(['sender' => function ($query) {
+                $query->select('id', 'full_name');
+            }])->find($message->id);
+            broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
 
             if ($conversation->status === 'distributed') {
                 $conversation->update([
@@ -223,11 +231,48 @@ class BranchChatController extends Controller
                 $conversation->update(['updated_at' => now()]);
             }
 
-            $message->load(['sender' => function ($query) {
-                $query->select('id', 'full_name');
-            }]);
+            // Gửi cho admin (tất cả hoặc phụ trách)
+            $admins = \App\Models\User::whereHas('roles', function ($q) {
+                $q->where('name', 'admin');
+            })->get();
 
-            broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
+            foreach ($admins as $admin) {
+
+                $admin->notify(new NewChatMessageNotification($message));
+                $existing = $admin->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($admin));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+            }
+
+            // Gửi cho customer (nếu có)
+            if ($conversation->customer_id) {
+                $customer = \App\Models\User::find($conversation->customer_id);
+                if ($customer) {
+                    $existing = $customer->notifications()
+                        ->whereNull('read_at')
+                        ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                        ->where('data->conversation_id', $conversation->id)
+                        ->first();
+                    if ($existing) {
+                        $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
+                        $existing->created_at = now();
+                        $existing->save();
+                    } else {
+                        $customer->notify(new NewChatMessageNotification($message));
+                    }
+
+                    // Broadcast lên channel tổng cho customer
+                    broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -300,9 +345,9 @@ class BranchChatController extends Controller
 
             // Create system message about status change
             $statusMessages = [
-                'active' => '🟢 Cuộc trò chuyện đã được kích hoạt',
-                'resolved' => '✅ Cuộc trò chuyện đã được giải quyết',
-                'closed' => '🔒 Cuộc trò chuyện đã được đóng'
+                'active' => ' Cuộc trò chuyện đã được kích hoạt',
+                'resolved' => ' Cuộc trò chuyện đã được giải quyết',
+                'closed' => ' Cuộc trò chuyện đã được đóng'
             ];
 
             $systemMessage = ChatMessage::create([
@@ -333,6 +378,39 @@ class BranchChatController extends Controller
                 'success' => false,
                 'message' => 'Lỗi cập nhật trạng thái: ' . $e->getMessage()
             ], 500);
+        }
+    }
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::guard('manager')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Chưa đăng nhập!'], 401);
+        }
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
+    }
+
+    public function getUnreadChatCount()
+    {
+        try {
+            $user = Auth::guard('manager')->user();
+            $branch = $user ? $user->branch : null;
+
+            if (!$branch instanceof \App\Models\Branch) {
+                return response()->json(['count' => 0]);
+            }
+
+            // Count unread chat messages (NewChatMessageNotification) for this branch
+            $unreadChatCount = $branch->notifications()
+                ->whereNull('read_at')
+                ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                ->count();
+
+            return response()->json(['count' => $unreadChatCount]);
+        } catch (\Exception $e) {
+            return response()->json(['count' => 0, 'error' => $e->getMessage()]);
         }
     }
 }

@@ -1,5 +1,5 @@
 <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12">
-    <div class="container mx-auto px-4">
+    <div class="container-ft mx-auto px-4">
         <div class="flex flex-col md:flex-row items-center">
             <div class="relative mb-6 md:mb-0 md:mr-8">
                 <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white p-1 shadow-lg">

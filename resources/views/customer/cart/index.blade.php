@@ -3,13 +3,8 @@
 @section('title', 'FastFood - Giỏ Hàng')
 
 @section('content')
+<x-customer-container>
 <style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-   
-   /* Price update animation */
    @keyframes priceUpdate {
        0% { 
            transform: scale(1); 
@@ -89,22 +84,31 @@
                     @foreach($cartItems as $item)
                     <div class="p-4 md:p-6 cart-item grid md:grid-cols-12 gap-4 items-center" 
                          data-id="{{ $item->id }}"
+                         data-stock-quantity="{{ $item->combo_id ? ($item->combo && $item->combo->comboBranchStocks ? ($item->combo->comboBranchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->quantity ?? 0) : 0) : ($item->variant && $item->variant->branchStocks ? ($item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0) : 0) }}"
+                         @if($item->combo_id)
+                            data-combo-id="{{ $item->combo_id }}"
+                         @else
                          data-product-id="{{ $item->variant->product->id }}"
                          data-base-price="{{ $item->variant->product->base_price }}"
                          data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
                          data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
                          data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
                          data-topping-price="{{ $item->toppings->sum('price') }}"
-                         data-stock-quantity="{{ $item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0 }}">
+                         @endif
+                    >
                         <div class="md:col-span-1 flex justify-center items-center">
                             <input type="checkbox" class="cart-item-checkbox" name="cart_item_ids[]" value="{{ $item->id }}" checked>
                         </div>
                         <div class="md:col-span-5 flex items-center gap-4">
                             <div class="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
-                                @if($item->variant->product->primary_image)
-                                    <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" 
-                                         alt="{{ $item->variant->product->name }}" 
-                                         class="object-cover w-full h-full">
+                                @if($item->combo_id && $item->combo && $item->combo->image_url)
+                                    <img src="{{ $item->combo->image_url }}" alt="{{ $item->combo->name }}" class="object-cover w-full h-full">
+                                @elseif($item->combo_id && $item->combo)
+                                    <div class="h-full w-full bg-gray-200 flex items-center justify-center">
+                                        <i class="fas fa-image text-gray-400"></i>
+                                    </div>
+                                @elseif($item->variant && $item->variant->product && $item->variant->product->primary_image)
+                                    <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" alt="{{ $item->variant->product->name }}" class="object-cover w-full h-full">
                                 @else
                                     <div class="h-full w-full bg-gray-200 flex items-center justify-center">
                                         <i class="fas fa-image text-gray-400"></i>
@@ -112,17 +116,26 @@
                                 @endif
                             </div>
                             <div>
-                                <h3 class="font-medium">{{ $item->variant->product->name }}</h3>
-                                <p class="text-sm text-gray-500">
-                                    @if($item->variant->variant_description)
-                                        {{ $item->variant->variant_description }}
+                                <h3 class="font-medium">
+                                    @if($item->combo_id && $item->combo)
+                                        {{ $item->combo->name }}
+                                    @elseif($item->variant && $item->variant->product)
+                                        {{ $item->variant->product->name }}
                                     @else
+                                        Sản phẩm
+                                    @endif
+                                </h3>
+                                <p class="text-sm text-gray-500">
+                                    @if($item->combo_id && $item->combo)
+                                        Combo
+                                    @elseif($item->variant && $item->variant->variant_description)
+                                        {{ $item->variant->variant_description }}
+                                    @elseif($item->variant && $item->variant->variantValues)
                                         {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
                                     @endif
                                 </p>
-                                
-                                {{-- Display toppings --}}
-                                @if($item->toppings && $item->toppings->count() > 0)
+                                {{-- Display toppings (chỉ cho sản phẩm thường) --}}
+                                @if(!$item->combo_id && $item->toppings && $item->toppings->count() > 0)
                                     <div class="mt-1 space-y-1">
                                         <p class="text-xs font-medium text-orange-600">Toppings:</p>
                                         <ul class="text-xs text-gray-600 pl-2">
@@ -135,9 +148,7 @@
                                         </ul>
                                     </div>
                                 @endif
-
-                                <button type="button" class="text-red-500 text-sm flex items-center mt-1 hover:underline remove-item" 
-                                        data-id="{{ $item->id }}">
+                                <button type="button" class="text-red-500 text-sm flex items-center mt-1 hover:underline remove-item" data-id="{{ $item->id }}">
                                     <i class="fas fa-trash-alt h-3 w-3 mr-1"></i>
                                     Xóa
                                 </button>
@@ -147,10 +158,18 @@
                         <div class="md:col-span-2 text-center">
                             <span class="md:hidden font-medium mr-2">Giá:</span>
                             <span class="item-price">
-                                 <span class="text-orange-500 font-bold">{{ number_format($item->final_price, 0, '', '.') }} đ</span>
+                                <span class="text-orange-500 font-bold">
+                                    @if($item->combo_id && $item->combo)
+                                        {{ number_format($item->combo->price, 0, '', '.') }} đ
+                                    @elseif($item->variant)
+                                        {{ number_format($item->final_price, 0, '', '.') }} đ
+                                    @else
+                                        0 đ
+                                    @endif
+                                </span>
                             </span>
                             <div class="text-xs text-gray-500">
-                                @if($item->variant->price < $item->variant->product->base_price)
+                                @if(!$item->combo_id && $item->variant && $item->variant->price < $item->variant->product->base_price)
                                     <span>(Bao gồm topping)</span>
                                 @endif
                             </div>
@@ -172,7 +191,13 @@
                             <span class="md:hidden font-medium mr-2">Tổng:</span>
                             <span class="item-total">
                                 @php
+                                    if($item->combo_id && $item->combo) {
+                                        $itemTotal = $item->combo->price * $item->quantity;
+                                    } elseif($item->variant) {
                                     $itemTotal = $item->final_price * $item->quantity;
+                                    } else {
+                                        $itemTotal = 0;
+                                    }
                                 @endphp
                                 {{ number_format($itemTotal, 0, '', '.') }} đ
                             </span>
@@ -243,8 +268,11 @@
             @if(count($cartItems) > 0)
             @php
                 $cartCategoryIds = collect($cartItems)->map(function($item) {
+                    if ($item->variant && $item->variant->product) {
                     return $item->variant->product->category_id;
-                })->unique()->implode(',');
+                    }
+                    return null;
+                })->filter()->unique()->implode(',');
                 $categoryUrl = route('products.index') . ($cartCategoryIds ? ('?category=' . $cartCategoryIds) : '');
             @endphp
             <div class="mt-4 flex flex-wrap gap-4">
@@ -309,6 +337,7 @@
         </div>
     </div>
     </form>
+</x-customer-container>
 </div>
 
 <!-- Mini Cart Aside -->
@@ -325,18 +354,23 @@
             @foreach($cartItems as $item)
             <div class="flex gap-3 {{ !$loop->last ? 'pb-3 border-b mb-3' : '' }}"
                  data-id="{{ $item->id }}"
+                 @if($item->variant && $item->variant->product)
                  data-product-id="{{ $item->variant->product->id }}"
                  data-base-price="{{ $item->variant->product->base_price }}"
                  data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
                  data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
                  data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
                  data-topping-price="{{ $item->toppings->sum('price') }}"
-                 data-stock-quantity="{{ $item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0 }}">
+                     data-stock-quantity="{{ $item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0 }}"
+                 @elseif($item->combo_id)
+                     data-combo-id="{{ $item->combo_id }}"
+                 @endif
+            >
                 <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                    @if($item->variant->product->primary_image)
-                        <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" 
-                             alt="{{ $item->variant->product->name }}" 
-                             class="object-cover w-full h-full">
+                    @if($item->combo_id && $item->combo && $item->combo->image_url)
+                        <img src="{{ $item->combo->image_url }}" alt="{{ $item->combo->name }}" class="object-cover w-full h-full">
+                    @elseif($item->variant && $item->variant->product && $item->variant->product->primary_image)
+                        <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" alt="{{ $item->variant->product->name }}" class="object-cover w-full h-full">
                     @else
                         <div class="h-full w-full bg-gray-200 flex items-center justify-center">
                             <i class="fas fa-image text-gray-400"></i>
@@ -345,28 +379,36 @@
                 </div>
                 <div class="flex-1">
                     <div class="flex justify-between">
-                        <h3 class="font-medium text-sm">{{ $item->variant->product->name }}</h3>
+                        <h3 class="font-medium text-sm">
+                            @if($item->combo_id && $item->combo)
+                                {{ $item->combo->name }}
+                            @elseif($item->variant && $item->variant->product)
+                                {{ $item->variant->product->name }}
+                            @else
+                                Sản phẩm
+                            @endif
+                        </h3>
                         <button type="button" class="text-gray-400 hover:text-red-500 remove-item" data-id="{{ $item->id }}">
                             <i class="fas fa-times h-4 w-4"></i>
                         </button>
                     </div>
                     <p class="text-xs text-gray-500">
-                        @if($item->variant->variant_description)
+                        @if($item->combo_id && $item->combo)
+                            Combo
+                        @elseif($item->variant && $item->variant->variant_description)
                             {{ $item->variant->variant_description }}
-                        @else
+                        @elseif($item->variant && $item->variant->variantValues)
                             {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
                         @endif
                     </p>
-                    
-                    {{-- Display toppings --}}
-                    @if($item->toppings && $item->toppings->count() > 0)
+                    {{-- Display toppings (chỉ cho sản phẩm thường) --}}
+                    @if(!$item->combo_id && $item->toppings && $item->toppings->count() > 0)
                         <div class="mt-1">
                             <p class="text-xs text-orange-500">
                                 Toppings: {{ implode(', ', $item->toppings->pluck('topping.name')->toArray()) }}
                             </p>
                         </div>
                     @endif
-                    
                     <div class="flex justify-between items-center mt-2">
                         <div class="flex items-center border rounded">
                             <button type="button" class="px-1 py-0.5 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
@@ -379,9 +421,13 @@
                         </div>
                         <p class="font-medium">
                             @php
+                                if($item->combo_id && $item->combo) {
+                                    $itemPrice = $item->combo->price;
+                                } else {
                                 $itemPrice = $item->final_price;
                                 foreach ($item->toppings as $topping) {
                                     $itemPrice += $topping->price;
+                                    }
                                 }
                                 $itemTotal = $itemPrice * $item->quantity;
                             @endphp

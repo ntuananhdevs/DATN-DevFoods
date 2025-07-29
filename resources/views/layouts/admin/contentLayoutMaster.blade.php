@@ -80,51 +80,39 @@
     @stack('scripts')
     @include('components.modal')
     <script>
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-function updateCsrfToken(newToken) {
-    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-    if (window.jQuery) {
-        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
-    }
-    if (window.axios) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-    }
-}
-$(document).ajaxError(function(event, jqxhr, settings, thrownError) {
-    if (jqxhr.status === 419) {
-        fetch('/refresh-csrf')
-            .then(res => res.json())
-            .then(data => {
-                updateCsrfToken(data.csrf_token);
-                // Có thể gửi lại request ở đây nếu muốn
-            });
-    }
-});
-if (window.axios) {
-    window.axios.interceptors.response.use(null, async function(error) {
-        if (error.response && error.response.status === 419) {
-            const res = await fetch('/refresh-csrf');
-            const data = await res.json();
-            updateCsrfToken(data.csrf_token);
-            // Có thể gửi lại request ở đây nếu muốn
+        // Giữ lại các hàm cũ để tương thích ngược
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         }
-        return Promise.reject(error);
-    });
-}
-</script>
 
-<!-- Pusher for realtime -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+        function updateCsrfToken(newToken) {
+            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+            if (window.jQuery) {
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': newToken
+                    }
+                });
+            }
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            }
+        }
+    </script>
 
-<!-- Order notifications for all admin pages -->
-<script>
-    // Pusher configuration
-    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
-    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
-</script>
-<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+    {{-- Thêm component CSRF Auto-Refresh --}}
+    @include('partials.csrf-refresh')
+
+    <!-- Pusher for realtime -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+    <!-- Order notifications for all admin pages -->
+    <script>
+        // Pusher configuration
+        window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+        window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+    </script>
+    <script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
 
 </body>
 

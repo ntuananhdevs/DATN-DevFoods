@@ -9,6 +9,7 @@
 @section('title', 'FastFood - Tìm kiếm')
 
 @section('content')
+<x-customer-container>
 <style>
     .container {
         max-width: 1280px;
@@ -505,7 +506,7 @@
                             data-rating="0"
                             data-category="{{ $combo->category_id }}">
                             <div class="relative">
-                                <a href="{{ route('combos.show', $combo->id) }}" class="block relative h-48 overflow-hidden">
+                                <a href="{{ route('combos.show', $combo->slug) }}" class="block relative h-48 overflow-hidden">
                                     @if($combo->primary_image)
                                         <img src="{{ $combo->primary_image }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                                     @else
@@ -520,9 +521,9 @@
                                 @endif
                             </div>
                             <div class="p-4">
-                                <a href="">
+                                <a href="{{ route('combos.show', $combo->slug) }}">
                                     <h3 class="card-title font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                        <a href="{{ route('combos.show', $combo->id) }}">{{ $combo->name }}</a>
+                                        <a href="{{ route('combos.show', $combo->slug) }}">{{ $combo->name }}</a>
                                     </h3>
                                 </a>
                                 <p class="card-description text-gray-500 text-sm mb-3 line-clamp-2">
@@ -560,7 +561,7 @@
                     data-rating="{{ $product->average_rating ?? 0 }}">
 
                     <div class="relative">
-                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                        <a href="{{ route('products.show', $product->slug) }}" class="block relative h-48 overflow-hidden">
                             @if($product->primary_image && $product->primary_image->s3_url)
                                 <img src="{{ $product->primary_image->s3_url }}"
                                     alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
@@ -620,7 +621,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $product->id) }}">
+                        <a href="{{ route('products.show', $product->slug) }}">
                             <h3 class="card-title font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $product->name }}
                             </h3>
@@ -668,6 +669,7 @@
         </div>
     </div>
 </main>
+</x-customer-container>
 @endsection
 
 @section('scripts')

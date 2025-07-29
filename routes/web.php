@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Customer\CheckoutController;
+use App\Http\Controllers\Customer\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,3 +35,5 @@ Route::get('/checkout/vnpay-ipn', [App\Http\Controllers\Customer\CheckoutControl
 Route::get('/refresh-csrf', function () {
     return response()->json(['csrf_token' => csrf_token()]);
 });
+
+Route::get('/customer/profile/branches-map', [ProfileController::class, 'getBranchesForMap']);

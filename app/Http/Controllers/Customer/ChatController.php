@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Models\Conversation;
 use App\Models\ChatMessage;
-
+use App\Events\Chat\UserTyping;
 use App\Models\Branch;
 
 use App\Events\Chat\NewMessage;
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class ChatController extends Controller
 {
@@ -101,10 +102,39 @@ class ChatController extends Controller
             ];
             Log::info('Customer message data before create', $messageData);
             $message = ChatMessage::create($messageData);
-            $message->load(['sender' => function ($query) {
+            // Load lại message từ DB để đảm bảo đủ trường attachment, attachment_type
+            $message = ChatMessage::with(['sender' => function ($query) {
                 $query->select('id', 'full_name');
-            }]);
+            }])->find($message->id);
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
+
+            $admins = \App\Models\User::whereHas('roles', function ($q) {
+                $q->where('name', 'admin');
+            })->get();
+            foreach ($admins as $admin) {
+                // Always send notification for new message - this triggers real-time updates
+                $admin->notify(new NewChatMessageNotification($message));
+                Log::info('Customer: Sent notification to admin', [
+                    'admin_id' => $admin->id,
+                    'admin_name' => $admin->full_name,
+                    'message_id' => $message->id
+                ]);
+            }
+
+            // Gửi cho branch (nếu có)
+            if ($conversation->branch_id) {
+                $branch = Branch::find($conversation->branch_id);
+                if ($branch) {
+                    // Always send notification for new message - this triggers real-time updates
+                    $branch->notify(new NewChatMessageNotification($message));
+                    Log::info('Customer: Sent notification to branch', [
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'message_id' => $message->id
+                    ]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => [
@@ -301,5 +331,13 @@ class ChatController extends Controller
             ->get();
 
         return view('customer.chat', compact('conversations'));
+    }
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::user();
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
     }
 }

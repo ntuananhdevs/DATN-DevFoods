@@ -41,7 +41,14 @@ class Order extends Model
         'subtotal',
         'total_amount',
         'delivery_address',
-        'notes'
+        'notes',
+        // Snapshot fields cho địa chỉ giao hàng
+        'delivery_address_line_snapshot',
+        'delivery_ward_snapshot',
+        'delivery_district_snapshot',
+        'delivery_province_snapshot',
+        'delivery_phone_snapshot',
+        'delivery_recipient_name_snapshot',
     ];
 
     protected $casts = [
@@ -224,22 +231,98 @@ class Order extends Model
 
     // Định nghĩa tĩnh các thuộc tính trạng thái
     private static array $statusAttributes = [
-        'awaiting_confirmation' => ['text' => 'Chờ xác nhận', 'bg' => '#fcd34d', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-hourglass-half'], // Vàng nhạt -> Cam đậm
-        'awaiting_driver' => ['text' => 'Chờ tài xế', 'bg' => '#f97316', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-user-clock'],       // Cam -> Nâu đỏ
-        'driver_assigned' => ['text' => 'Tài xế đã được giao', 'bg' => '#60a5fa', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-clipboard-check'], // Xanh dương nhạt -> Xanh dương đậm
-        'driver_confirmed' => ['text' => 'Tài xế đã xác nhận', 'bg' => '#3b82f6', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-check-circle'], // Xanh dương trung bình -> Xanh đậm
-        'waiting_driver_pick_up' => ['text' => 'Chờ tài xế lấy hàng', 'bg' => '#818cf8', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-shopping-bag'], // Tím nhạt -> Tím đậm
-        'driver_picked_up' => ['text' => 'Đã nhận đơn', 'bg' => '#a78bfa', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-shopping-bag'],     // Tím nhạt -> Tím đậm
-        'in_transit' => ['text' => 'Đang giao', 'bg' => '#2dd4bf', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-truck'],               // Xanh ngọc lam -> Xanh lá cây đậm
-        'delivered' => ['text' => 'Đã giao', 'bg' => '#4ade80', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-check-double'],            // Xanh lá cây nhạt -> Xanh lá cây đậm hơn
-        'item_received' => ['text' => 'Khách đã nhận hàng', 'bg' => '#22c55e', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-home'],      // Xanh lá cây tươi -> Xanh lá cây rất đậm
-        'cancelled' => ['text' => 'Đã hủy', 'bg' => '#f87171', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-times-circle'],             // Đỏ nhạt -> Đỏ đậm
-        'refunded' => ['text' => 'Đã hoàn tiền', 'bg' => '#a5b4fc', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-undo-alt'],          // Tím xanh nhạt -> Xanh tím đậm
-        'payment_failed' => ['text' => 'Thanh toán thất bại', 'bg' => '#ef4444', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-exclamation-triangle'], // Đỏ -> Đỏ sẫm
-        'payment_received' => ['text' => 'Thanh toán đã nhận', 'bg' => '#84cc16', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-money-check-alt'], // Xanh lá cây tươi -> Xanh lá cây đậm
-        'order_failed' => ['text' => 'Đơn hàng đã thất bại', 'bg' => '#dc2626', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-times-circle'],     // Đỏ đậm -> Đỏ sẫm hơn
-        'default' => ['text' => 'Không xác định', 'bg' => '#e5e7eb', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-question-circle'], // Xám nhạt -> Xám đậm
+        'awaiting_confirmation' => [
+            'text' => 'Chờ xác nhận',
+            'bg' => '#fde68a', // Vàng nhạt
+            'text_color' => '#78350f',
+            'icon' => 'fas fa-hourglass-half'
+        ],
+        'awaiting_driver' => [
+            'text' => 'Chờ tài xế',
+            'bg' => '#fcd5ce', // Cam nhạt hồng pastel
+            'text_color' => '#7c2d12',
+            'icon' => 'fas fa-user-clock'
+        ],
+        'driver_assigned' => [
+            'text' => 'Tài xế đã được giao',
+            'bg' => '#cfe0f3', // Xanh dương nhạt
+            'text_color' => '#1e3a8a',
+            'icon' => 'fas fa-clipboard-check'
+        ],
+        'driver_confirmed' => [
+            'text' => 'Tài xế đã xác nhận',
+            'bg' => '#bfdbfe',
+            'text_color' => '#1e40af',
+            'icon' => 'fas fa-check-circle'
+        ],
+        'waiting_driver_pick_up' => [
+            'text' => 'Chờ tài xế lấy hàng',
+            'bg' => '#ddd6fe', // Tím pastel
+            'text_color' => '#4c1d95',
+            'icon' => 'fas fa-shopping-bag'
+        ],
+        'driver_picked_up' => [
+            'text' => 'Đã nhận đơn',
+            'bg' => '#e9d5ff',
+            'text_color' => '#6b21a8',
+            'icon' => 'fas fa-shopping-bag'
+        ],
+        'in_transit' => [
+            'text' => 'Đang giao',
+            'bg' => '#99f6e4', // Xanh ngọc nhạt
+            'text_color' => '#134e4a',
+            'icon' => 'fas fa-truck'
+        ],
+        'delivered' => [
+            'text' => 'Đã giao',
+            'bg' => '#bbf7d0', // Xanh lá nhạt
+            'text_color' => '#166534',
+            'icon' => 'fas fa-check-double'
+        ],
+        'item_received' => [
+            'text' => 'Khách đã nhận hàng',
+            'bg' => '#a7f3d0',
+            'text_color' => '#14532d',
+            'icon' => 'fas fa-home'
+        ],
+        'cancelled' => [
+            'text' => 'Đã hủy',
+            'bg' => '#fecaca', // Đỏ nhạt pastel
+            'text_color' => '#7f1d1d',
+            'icon' => 'fas fa-times-circle'
+        ],
+        'refunded' => [
+            'text' => 'Đã hoàn tiền',
+            'bg' => '#e0e7ff', // Xanh tím nhạt
+            'text_color' => '#3730a3',
+            'icon' => 'fas fa-undo-alt'
+        ],
+        'payment_failed' => [
+            'text' => 'Thanh toán thất bại',
+            'bg' => '#fca5a5',
+            'text_color' => '#7f1d1d',
+            'icon' => 'fas fa-exclamation-triangle'
+        ],
+        'payment_received' => [
+            'text' => 'Thanh toán đã nhận',
+            'bg' => '#dcfce7', // Xanh lá pastel sáng
+            'text_color' => '#15803d',
+            'icon' => 'fas fa-money-check-alt'
+        ],
+        'order_failed' => [
+            'text' => 'Đơn hàng đã thất bại',
+            'bg' => '#fecaca',
+            'text_color' => '#991b1b',
+            'icon' => 'fas fa-times-circle'
+        ],
+        'default' => [
+            'text' => 'Không xác định',
+            'bg' => '#e5e7eb',
+            'text_color' => '#374151',
+            'icon' => 'fas fa-question-circle'
+        ],
     ];
+
 
     /**
      * Lấy text trạng thái Tiếng Việt.
@@ -290,6 +373,131 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => static::$statusAttributes[$this->status]['text_color'] ?? static::$statusAttributes['default']['text_color'],
+        );
+    }
+
+    /**
+     * Accessor methods cho địa chỉ giao hàng
+     * Ưu tiên hiển thị snapshot data, fallback về data gốc
+     */
+
+    /**
+     * Lấy địa chỉ giao hàng hiển thị
+     */
+    protected function displayDeliveryAddress(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_address_line_snapshot
+                ?? ($this->address ? $this->address->address_line : $this->guest_address)
+                ?? 'Không có địa chỉ'
+        );
+    }
+
+    /**
+     * Lấy phường/xã giao hàng hiển thị
+     */
+    protected function displayDeliveryWard(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_ward_snapshot
+                ?? ($this->address ? $this->address->ward : $this->guest_ward)
+                ?? 'Không có'
+        );
+    }
+
+    /**
+     * Lấy quận/huyện giao hàng hiển thị
+     */
+    protected function displayDeliveryDistrict(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_district_snapshot
+                ?? ($this->address ? $this->address->district : $this->guest_district)
+                ?? 'Không có'
+        );
+    }
+
+    /**
+     * Lấy tỉnh/thành phố giao hàng hiển thị
+     */
+    protected function displayDeliveryProvince(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_province_snapshot
+                ?? ($this->address ? $this->address->province : $this->guest_city)
+                ?? 'Không có'
+        );
+    }
+
+    /**
+     * Lấy số điện thoại giao hàng hiển thị
+     */
+    protected function displayDeliveryPhone(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_phone_snapshot
+                ?? ($this->address ? $this->address->phone : $this->guest_phone)
+                ?? 'Không có'
+        );
+    }
+
+    /**
+     * Lấy tên người nhận hàng hiển thị
+     */
+    protected function displayRecipientName(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->delivery_recipient_name_snapshot
+                ?? ($this->address ? $this->address->recipient_name : $this->guest_name)
+                ?? 'Không có'
+        );
+    }
+
+    /**
+     * Lấy địa chỉ đầy đủ để hiển thị
+     */
+    protected function displayFullDeliveryAddress(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => trim(implode(', ', array_filter([
+                $this->display_delivery_address,
+                $this->display_delivery_ward,
+                $this->display_delivery_district,
+                $this->display_delivery_province
+            ])))
+        );
+    }
+
+    /**
+     * Kiểm tra xem có dữ liệu snapshot địa chỉ không
+     */
+    public function hasAddressSnapshot(): bool
+    {
+        return !empty($this->delivery_address_line_snapshot) ||
+            !empty($this->delivery_ward_snapshot) ||
+            !empty($this->delivery_district_snapshot) ||
+            !empty($this->delivery_province_snapshot);
+    }
+
+    protected function calculatedSubtotal(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                return $this->orderItems->sum(function ($item) {
+                    // Gọi accessor totalPriceWithToppings từ OrderItem
+                    return $item->totalPriceWithToppings;
+                });
+            }
+        );
+    }
+
+    // Đảm bảo total_amount được tính dựa trên calculatedSubtotal + delivery_fee - discount_amount
+    // Bạn có thể update cột total_amount trong DB khi tạo/cập nhật đơn hàng, hoặc cũng có thể là một accessor
+    // Ví dụ:
+    protected function calculatedTotalAmount(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => $this->calculatedSubtotal + $this->delivery_fee - $this->discount_amount
         );
     }
 }

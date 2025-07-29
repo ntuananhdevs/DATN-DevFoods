@@ -3,17 +3,12 @@
 @section('title', 'FastFood - Chi Nhánh')
 
 @section('content')
-<style>
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-   }
-</style>
 
 @php
     $branchBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('branch');
 @endphp
 @include('components.banner', ['banners' => $branchBanner])
+<div class="max-w-[1240px] mx-auto w-full">
 
 <div class="container mx-auto px-4 py-12">
     <!-- Tìm kiếm chi nhánh -->

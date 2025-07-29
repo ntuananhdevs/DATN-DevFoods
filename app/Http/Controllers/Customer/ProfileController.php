@@ -8,11 +8,13 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\EditProfileRequest;
 use Illuminate\Http\Request;
-use App\Models\UserRank; 
-use Illuminate\Validation\Rule; 
-use Illuminate\Support\Facades\Hash;    
-use Illuminate\Validation\Rules\Password; 
+use App\Models\UserRank;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use App\Models\Address;
+use App\Models\Branch;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
@@ -38,33 +40,27 @@ class ProfileController extends Controller
         // Lấy danh sách sản phẩm yêu thích (giả sử 6 sản phẩm)
         $favoriteProducts = $user->favorites()->with('product.primaryImage')->latest()->take(6)->get();
 
-        // --- Logic tính toán hạng thành viên ---
         $allRanks = UserRank::orderBy('min_spending', 'asc')->get();
         $currentRank = $user->userRank;
-        
-        // Xử lý trường hợp người dùng mới chưa có hạng
+
         if (!$currentRank && $allRanks->isNotEmpty()) {
             $currentRank = $allRanks->first();
         }
 
-        $nextRank = null;
-        $progressPercent = 0;
         $currentPoints = $user->total_spending;
 
-        if ($currentRank) {
-            $nextRank = $allRanks->firstWhere('min_spending', '>', $currentRank->min_spending);
-            if ($nextRank) {
-                $range = $nextRank->min_spending - $currentRank->min_spending;
-                $achieved = $currentPoints - $currentRank->min_spending;
-                if ($range > 0) {
-                    $progressPercent = min(100, ($achieved / $range) * 100);
-                }
-            } else {
-                // Đã đạt hạng cao nhất
-                $progressPercent = 100;
-            }
-        }
-        
+        // Mốc cao nhất dùng để hiển thị max tiến trình
+        $maxPoints = $allRanks->max('min_spending');
+
+        // Tính phần trăm từ 0 đến max
+        $progressPercent = $maxPoints > 0
+            ? min(100, ($currentPoints / $maxPoints) * 100)
+            : 0;
+
+        // Tìm mốc tiếp theo (gần nhất lớn hơn điểm hiện tại)
+        $nextRank = $allRanks->firstWhere('min_spending', '>', $currentPoints);
+
+
         // Trả về view với tất cả dữ liệu
         return view('customer.profile.index', compact(
             'user',
@@ -79,7 +75,7 @@ class ProfileController extends Controller
             'progressPercent'
         ));
     }
-    
+
     /**
      * Show the form for editing the user's profile.
      */
@@ -99,10 +95,10 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        
+
         $user = Auth::user();
 
-        
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
@@ -113,15 +109,15 @@ class ProfileController extends Controller
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120'], // 5MB
         ]);
 
-        
+
         if ($request->hasFile('avatar')) {
-            
+
             if ($user->avatar && $user->avatar !== 'avatars/default.jpg') {
                 Storage::disk('s3')->delete($user->avatar);
             }
-            
+
             $path = $request->file('avatar')->store('avatars', 's3');
-            
+
             $user->avatar = $path;
         }
 
@@ -130,29 +126,29 @@ class ProfileController extends Controller
         $user->phone = $validated['phone'];
         $user->birthday = $validated['birthday'];
         $user->gender = $validated['gender'];
-        
+
         $user->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật hồ sơ thành công!',
-            'avatar_url' => Storage::disk('s3')->url($user->avatar) 
+            'avatar_url' => Storage::disk('s3')->url($user->avatar)
         ]);
     }
 
     public function updatePassword(Request $request)
-{
-    $validated = $request->validateWithBag('updatePassword', [
-        'current_password' => ['required', 'current_password'],
-        'password' => ['required', Password::defaults(), 'confirmed'],
-    ]);
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
 
-    $request->user()->forceFill([
-        'password' => Hash::make($validated['password']),
-    ])->save();
+        $request->user()->forceFill([
+            'password' => Hash::make($validated['password']),
+        ])->save();
 
-    return response()->json(['status' => 'password-updated', 'message' => 'Mật khẩu đã được cập nhật thành công!']);
-}
+        return response()->json(['status' => 'password-updated', 'message' => 'Mật khẩu đã được cập nhật thành công!']);
+    }
 
     // API: Lấy danh sách địa chỉ của user
     public function getAddresses()
@@ -164,23 +160,73 @@ class ProfileController extends Controller
     // API: Thêm địa chỉ mới
     public function storeAddress(Request $request)
     {
-        $data = $request->validate([
-            'recipient_name' => 'required|string|max:255',
-            'address_line' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'district' => 'required|string|max:100',
-            'ward' => 'required|string|max:100',
-            'phone_number' => 'required|string|max:20',
-            'is_default' => 'boolean',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-        ]);
-        $data['user_id'] = Auth::id();
-        if (!empty($data['is_default'])) {
-            Address::where('user_id', Auth::id())->update(['is_default' => false]);
+        try {
+            $data = $request->validate([
+                'recipient_name' => 'required|string|max:255',
+                'address_line' => 'required|string|max:255',
+                'city' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'ward' => 'required|string|max:100',
+                'phone_number' => 'required|string|max:20',
+                'is_default' => 'nullable|boolean',
+                'latitude' => 'nullable|numeric',
+                'longitude' => 'nullable|numeric',
+            ]);
+            
+            $data['user_id'] = Auth::id();
+            
+            // Check if user has any existing addresses
+            $existingAddressCount = Address::where('user_id', Auth::id())->count();
+            
+            // If this is the first address, make it default automatically
+            if ($existingAddressCount == 0) {
+                $data['is_default'] = true;
+            } else {
+                // Handle checkbox value properly
+                $data['is_default'] = $request->has('is_default') && $request->input('is_default') == '1';
+            }
+            
+            // If setting as default, remove default from other addresses
+            if ($data['is_default']) {
+                Address::where('user_id', Auth::id())->update(['is_default' => false]);
+            }
+            
+            $address = Address::create($data);
+            
+            // Prepare response data with all necessary fields
+            $responseData = [
+                'id' => $address->id,
+                'recipient_name' => $address->recipient_name,
+                'phone_number' => $address->phone_number,
+                'address_line' => $address->address_line,
+                'city' => $address->city,
+                'district' => $address->district,
+                'ward' => $address->ward,
+                'latitude' => $address->latitude,
+                'longitude' => $address->longitude,
+                'is_default' => $address->is_default,
+                'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Địa chỉ đã được thêm thành công!',
+                'data' => $responseData
+            ], 201);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Store address error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi thêm địa chỉ: ' . $e->getMessage()
+            ], 500);
         }
-        $address = Address::create($data);
-        return response()->json($address, 201);
     }
 
     // API: Cập nhật địa chỉ
@@ -208,8 +254,25 @@ class ProfileController extends Controller
     // API: Xóa địa chỉ
     public function deleteAddress($id)
     {
-        $address = Auth::user()->addresses()->findOrFail($id);
-        $address->delete();
-        return response()->json(['success' => true]);
+        try {
+            $address = Auth::user()->addresses()->find($id);
+            if (!$address) {
+                return response()->json(['message' => 'Địa chỉ không tồn tại hoặc không thuộc về bạn'], 404);
+            }
+            $address->delete();
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Delete address error: ' . $e->getMessage());
+            return response()->json(['message' => 'Lỗi server: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Lấy danh sách branch (nhà hàng) cho view địa chỉ
+     */
+    public function getBranchesForMap()
+    {
+        $branches = Branch::select('id', 'name', 'latitude', 'longitude')->get();
+        return response()->json($branches);
     }
 }

@@ -66,9 +66,7 @@ class HomeController extends Controller
             'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
             },
-            'reviews' => function($query) {
-                $query->where('approved', true);
-            },
+            'reviews' => function($query) { $query; },
             'variants.branchStocks' => function($query) use ($selectedBranchId) {
                 if ($selectedBranchId) {
                     $query->where('branch_id', $selectedBranchId);
@@ -273,9 +271,7 @@ class HomeController extends Controller
 
             // Apply rating filter - only show products with minimum rating
             if ($minRating > 0) {
-                $products->whereHas('reviews', function($q) use ($minRating) {
-                    $q->where('approved', true);
-                });
+                $products->whereHas('reviews');
 
                 // Add having clause for average rating
                 $products->withAvg('reviews', 'rating')
@@ -291,14 +287,10 @@ class HomeController extends Controller
                     $products->orderBy('base_price', 'desc');
                     break;
                 case 'reviews':
-                    $products->withCount(['reviews' => function($q) {
-                        $q->where('approved', true);
-                    }])->orderBy('reviews_count', 'desc');
+                    $products->withCount(['reviews'])->orderBy('reviews_count', 'desc');
                     break;
                 default: // rating
-                    $products->withAvg(['reviews' => function($q) {
-                        $q->where('approved', true);
-                    }], 'rating')->orderBy('reviews_avg_rating', 'desc');
+                    $products->withAvg(['reviews'], 'rating')->orderBy('reviews_avg_rating', 'desc');
                     break;
             }
 
@@ -372,8 +364,8 @@ class HomeController extends Controller
                 }
 
                 // Đánh giá
-                $product->average_rating = $product->reviews->where('approved', true)->avg('rating') ?? 0;
-                $product->reviews_count = $product->reviews->where('approved', true)->count();
+                $product->average_rating = $product->reviews->avg('rating') ?? 0;
+                $product->reviews_count = $product->reviews->count();
 
                 // Tính giá hiển thị
                 $product->display_price = $product->discount_price ?? $product->base_price;
