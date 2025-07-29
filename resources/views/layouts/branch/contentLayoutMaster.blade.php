@@ -65,40 +65,45 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ asset('js/modal.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Pusher for realtime -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-    
+
     <!-- Order notifications for all branch pages -->
     <script>
         // Pusher configuration
-        window.PUSHER_KEY = '{{ config("broadcasting.connections.pusher.key") }}';
-        window.PUSHER_CLUSTER = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
+        window.PUSHER_KEY = '{{ config('broadcasting.connections.pusher.key') }}';
+        window.PUSHER_CLUSTER = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
     </script>
     <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script>
-    
+
     @yield('scripts')
     @stack('scripts')
     @include('components.modal')
     @yield('page-script')
     <script>
-// Giữ lại các hàm cũ để tương thích ngược
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-function updateCsrfToken(newToken) {
-    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-    if (window.jQuery) {
-        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
-    }
-    if (window.axios) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-    }
-}
-</script>
+        // Giữ lại các hàm cũ để tương thích ngược
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
 
-{{-- Thêm component CSRF Auto-Refresh --}}
-@include('partials.csrf-refresh')
+        function updateCsrfToken(newToken) {
+            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+            if (window.jQuery) {
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': newToken
+                    }
+                });
+            }
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            }
+        }
+    </script>
+
+    {{-- Thêm component CSRF Auto-Refresh --}}
+    @include('partials.csrf-refresh')
 </body>
 
 </html>

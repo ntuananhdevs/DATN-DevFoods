@@ -3,7 +3,7 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class NewChatMessageNotification extends Notification
@@ -19,7 +19,7 @@ class NewChatMessageNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', 'broadcast'];
     }
 
     public function toDatabase($notifiable)
@@ -28,7 +28,20 @@ class NewChatMessageNotification extends Notification
             'message' => 'Tin nhắn mới từ ' . ($this->message->sender->full_name ?? 'Khách'),
             'content' => $this->message->message,
             'conversation_id' => $this->message->conversation_id,
+            'sender_name' => $this->message->sender->full_name ?? 'Khách',
+            'title' => 'Tin nhắn mới',
             'created_at' => now()->toDateTimeString(),
         ];
+    }
+
+    public function toBroadcast($notifiable)
+    {
+        return new BroadcastMessage([
+            'message' => 'Tin nhắn mới từ ' . ($this->message->sender->full_name ?? 'Khách'),
+            'content' => $this->message->message,
+            'conversation_id' => $this->message->conversation_id,
+            'sender_name' => $this->message->sender->full_name ?? 'Khách',
+            'title' => 'Tin nhắn mới',
+        ]);
     }
 }

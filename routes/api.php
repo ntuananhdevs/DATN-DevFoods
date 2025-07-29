@@ -29,10 +29,10 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/shipping-fee', function () {
     $orderAmount = request('order_amount', 0);
     $distanceKm = request('distance_km', null);
-    
+
     $shippingFee = ShippingService::calculateShippingFee($distanceKm, $orderAmount);
     $freeShippingThreshold = \App\Models\GeneralSetting::getFreeShippingThreshold();
-    
+
     return response()->json([
         'shipping_fee' => $shippingFee,
         'free_shipping_threshold' => $freeShippingThreshold,
@@ -47,11 +47,11 @@ Route::middleware('auth')->group(function () {
         $address = \App\Models\Address::where('id', $id)
             ->where('user_id', auth()->id())
             ->first();
-        
+
         if (!$address) {
             return response()->json(['success' => false, 'message' => 'Địa chỉ không tìm thấy'], 404);
         }
-        
+
         return response()->json([
             'success' => true,
             'address' => [
@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function () {
             ]
         ]);
     });
-    
+
     Route::post('/user/addresses', [\App\Http\Controllers\Customer\AddressController::class, 'store'])
         ->middleware('auth:sanctum')
         ->name('api.user.addresses.store');
@@ -136,9 +136,9 @@ Route::get('/locations/districts/{code}/wards', function ($code) {
         ],
         // Add more districts as needed
     ];
-    
+
     $districtWards = $wards[$code] ?? [];
-    
+
     return response()->json([
         'wards' => $districtWards
     ]);

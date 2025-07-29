@@ -61,47 +61,48 @@
                 <div id="wishlist-container" class="relative flex items-center">
                     <a href="{{ route('wishlist.index') }}" class="relative flex items-center">
                         <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
-                        <span id="wishlist-counter" class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
+                        <span id="wishlist-counter"
+                            class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
                             {{ auth()->check() ? auth()->user()->wishlist->count() : 0 }}
                         </span>
                     </a>
                 </div>
 
                 @auth
-                <div class="relative" id="user-dropdown-container">
-                    <button class="flex items-center p-2" id="user-dropdown-button">
-                        <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
-                        <span class="ml-2 text-sm">{{ Auth::user()->full_name }}</span>
-                        <ion-icon class="h-4 w-4 ml-1" name="chevron-down-outline"></ion-icon>
-                    </button>
-                    <div class="absolute right-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg py-2 z-50 hidden dropdown-menu"
-                        id="user-dropdown-menu">
-                        <a href="{{ route('customer.profile') }}"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            Tài khoản của tôi
-                        </a>
-                        <a href="{{ route('customer.profile.edit') }}"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            Chỉnh sửa hồ sơ
-                        </a>
-                        <a href="{{ route('customer.profile.setting') }}"
-                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            Cài đặt
-                        </a>
-                        <form action="{{ route('customer.logout') }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                Đăng xuất
-                            </button>
-                        </form>
+                    <div class="relative" id="user-dropdown-container">
+                        <button class="flex items-center p-2" id="user-dropdown-button">
+                            <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                            <span class="ml-2 text-sm">{{ Auth::user()->full_name }}</span>
+                            <ion-icon class="h-4 w-4 ml-1" name="chevron-down-outline"></ion-icon>
+                        </button>
+                        <div class="absolute right-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg py-2 z-50 hidden dropdown-menu"
+                            id="user-dropdown-menu">
+                            <a href="{{ route('customer.profile') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Tài khoản của tôi
+                            </a>
+                            <a href="{{ route('customer.profile.edit') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Chỉnh sửa hồ sơ
+                            </a>
+                            <a href="{{ route('customer.profile.setting') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Cài đặt
+                            </a>
+                            <form action="{{ route('customer.logout') }}" method="POST">
+                                @csrf
+                                <button type="submit"
+                                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
                 @else
-                <a href="{{ route('customer.login') }}" class="p-2 flex items-center">
-                    <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
-                    <span class="ml-2 text-sm">Đăng nhập</span>
-                </a>
+                    <a href="{{ route('customer.login') }}" class="p-2 flex items-center">
+                        <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                        <span class="ml-2 text-sm">Đăng nhập</span>
+                    </a>
 
                 @endauth
 
@@ -138,7 +139,7 @@
                             <div class="h-px my-1 bg-muted"></div>
                             <div class="space-y-1 flex-1 overflow-y-auto" id="customer-notification-list">
                                 @include('partials.customer._notification_items', [
-                                'customerNotifications' => $customerNotifications ?? collect(),
+                                    'customerNotifications' => $customerNotifications ?? collect(),
                                 ])
                             </div>
                             <div class="h-px my-1 bg-muted"></div>
@@ -542,9 +543,9 @@
     window.Echo = new Echo({
         broadcaster: 'pusher',
         key: '{{ env('
-        PUSHER_APP_KEY ') }}',
+                PUSHER_APP_KEY ') }}',
         cluster: '{{ env('
-        PUSHER_APP_CLUSTER ') }}',
+                PUSHER_APP_CLUSTER ') }}',
         forceTLS: true,
         encrypted: true,
     });

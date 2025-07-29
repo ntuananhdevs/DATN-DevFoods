@@ -112,34 +112,26 @@ class ChatController extends Controller
                 $q->where('name', 'admin');
             })->get();
             foreach ($admins as $admin) {
-                $existing = $admin->notifications()
-                    ->whereNull('read_at')
-                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
-                    ->where('data->conversation_id', $conversation->id)
-                    ->first();
-                if ($existing) {
-                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($admin));
-                    $existing->created_at = now();
-                    $existing->save();
-                }
-                // Không tạo notification mới nếu đã đọc
+                // Always send notification for new message - this triggers real-time updates
+                $admin->notify(new NewChatMessageNotification($message));
+                Log::info('Customer: Sent notification to admin', [
+                    'admin_id' => $admin->id,
+                    'admin_name' => $admin->full_name,
+                    'message_id' => $message->id
+                ]);
             }
 
             // Gửi cho branch (nếu có)
             if ($conversation->branch_id) {
                 $branch = Branch::find($conversation->branch_id);
                 if ($branch) {
-                    $existing = $branch->notifications()
-                        ->whereNull('read_at')
-                        ->where('type', 'App\\Notifications\\NewChatMessageNotification')
-                        ->where('data->conversation_id', $conversation->id)
-                        ->first();
-                    if ($existing) {
-                        $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($branch));
-                        $existing->created_at = now();
-                        $existing->save();
-                    }
-                    // Không tạo notification mới nếu đã đọc
+                    // Always send notification for new message - this triggers real-time updates
+                    $branch->notify(new NewChatMessageNotification($message));
+                    Log::info('Customer: Sent notification to branch', [
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'message_id' => $message->id
+                    ]);
                 }
             }
 

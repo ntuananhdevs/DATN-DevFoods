@@ -424,31 +424,29 @@ class FastFoodSeeder extends Seeder
             // Tạo các giá trị size riêng biệt cho từng sản phẩm
             $sizeValues = $this->getProductSizeValues($product);
             foreach ($sizeValues as $valueData) {
-                // Tạo VariantValue riêng biệt cho mỗi sản phẩm bằng cách thêm product_id vào value
-                $uniqueValue = $valueData['name'] . ' - ' . $product->name;
+                // Tạo VariantValue với tên ngắn gọn, chỉ giữ tên thuộc tính
                 $variantValue = VariantValue::create([
                     'variant_attribute_id' => $sizeAttribute->id,
-                    'value' => $uniqueValue,
+                    'value' => $valueData['name'], // Chỉ sử dụng tên thuộc tính, không ghép tên sản phẩm
                     'price_adjustment' => $valueData['price_adjustment']
                 ]);
                 
                 $this->globalVariantValues[$product->id]['size'][] = $variantValue->id;
-                echo "Created Size Value: {$uniqueValue} (ID: {$variantValue->id}) for {$product->name}\n";
+                echo "Created Size Value: {$valueData['name']} (ID: {$variantValue->id}) for {$product->name}\n";
             }
             
             // Tạo các giá trị vị riêng biệt cho từng sản phẩm
             $flavorValues = $this->getProductFlavorValues($product);
             foreach ($flavorValues as $valueData) {
-                // Tạo VariantValue riêng biệt cho mỗi sản phẩm bằng cách thêm product_id vào value
-                $uniqueValue = $valueData['name'] . ' - ' . $product->name;
+                // Tạo VariantValue với tên ngắn gọn, chỉ giữ tên thuộc tính
                 $variantValue = VariantValue::create([
                     'variant_attribute_id' => $flavorAttribute->id,
-                    'value' => $uniqueValue,
+                    'value' => $valueData['name'], // Chỉ sử dụng tên thuộc tính, không ghép tên sản phẩm
                     'price_adjustment' => $valueData['price_adjustment']
                 ]);
                 
                 $this->globalVariantValues[$product->id]['flavor'][] = $variantValue->id;
-                echo "Created Flavor Value: {$uniqueValue} (ID: {$variantValue->id}) for {$product->name}\n";
+                echo "Created Flavor Value: {$valueData['name']} (ID: {$variantValue->id}) for {$product->name}\n";
             }
         }
     }
@@ -460,15 +458,15 @@ class FastFoodSeeder extends Seeder
         switch ($categoryName) {
             case 'Burger':
                 return [
-                    ['name' => 'Size S', 'price_adjustment' => 0],
-                    ['name' => 'Size M', 'price_adjustment' => 10000],
-                    ['name' => 'Size L', 'price_adjustment' => 20000],
+                    ['name' => 'S', 'price_adjustment' => 0],
+                    ['name' => 'M', 'price_adjustment' => 10000],
+                    ['name' => 'L', 'price_adjustment' => 20000],
                 ];
             case 'Pizza':
                 return [
-                    ['name' => '6 inch', 'price_adjustment' => 0],
-                    ['name' => '9 inch', 'price_adjustment' => 25000],
-                    ['name' => '12 inch', 'price_adjustment' => 50000],
+                    ['name' => '6in', 'price_adjustment' => 0],
+                    ['name' => '9in', 'price_adjustment' => 25000],
+                    ['name' => '12in', 'price_adjustment' => 50000],
                 ];
             case 'Gà Rán':
                 return [
@@ -490,9 +488,9 @@ class FastFoodSeeder extends Seeder
                 ];
             case 'Đồ Uống':
                 return [
-                    ['name' => 'Size S', 'price_adjustment' => 0],
-                    ['name' => 'Size M', 'price_adjustment' => 5000],
-                    ['name' => 'Size L', 'price_adjustment' => 10000],
+                    ['name' => 'S', 'price_adjustment' => 0],
+                    ['name' => 'M', 'price_adjustment' => 5000],
+                    ['name' => 'L', 'price_adjustment' => 10000],
                 ];
             default:
                 return [

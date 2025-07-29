@@ -23,6 +23,7 @@ use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Customer\Auth\RegisterController;
 use App\Http\Controllers\Customer\NotificationController;
+use Illuminate\Support\Str;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Customer\AddressController as CustomerAddressController;

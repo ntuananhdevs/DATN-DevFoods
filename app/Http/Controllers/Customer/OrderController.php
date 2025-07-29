@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Events\OrderCancelledByCustomer; // Ensure this event is correctly imported.
-use App\Events\OrderStatusUpdated;
+use App\Events\Order\OrderCancelledByCustomer; // Ensure this event is correctly imported.
+use App\Events\Order\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -162,9 +162,9 @@ class OrderController extends Controller
                 'order_code' => 'required|string|max:20',
                 'cf-turnstile-response' => ['required', new \App\Rules\TurnstileRule()],
             ]);
-            
+
             $order_code = $validated['order_code'];
-            
+
             // Redirect to GET route với order_code
             return redirect()->route('customer.order.track', ['order_code' => $order_code]);
         }
@@ -177,9 +177,9 @@ class OrderController extends Controller
 
         // Rút gọn tên khách hàng để bảo mật
         if ($order->customer_id && $order->customer) {
-             $order->customer_name_short = \Illuminate\Support\Str::limit($order->customer->name, 3, '***');
+            $order->customer_name_short = \Illuminate\Support\Str::limit($order->customer->name, 3, '***');
         } else {
-             $order->customer_name_short = \Illuminate\Support\Str::limit($order->guest_name, 3, '***');
+            $order->customer_name_short = \Illuminate\Support\Str::limit($order->guest_name, 3, '***');
         }
 
         // Rút gọn địa chỉ để bảo mật
@@ -217,7 +217,7 @@ class OrderController extends Controller
 
         // Thêm các trạng thái từ lịch sử
         foreach ($order->orderStatusHistories->sortBy('changed_at') as $history) {
-             $timeline->push([
+            $timeline->push([
                 'status' => $this->translateStatus($history->new_status),
                 'time' => $history->changed_at,
                 'is_current' => false,
@@ -234,7 +234,7 @@ class OrderController extends Controller
                 $timeline->push($lastStatus);
             }
         }
-        
+
         return $timeline;
     }
 

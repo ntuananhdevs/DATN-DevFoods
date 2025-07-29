@@ -80,34 +80,39 @@
     @stack('scripts')
     @include('components.modal')
     <script>
-// Giữ lại các hàm cũ để tương thích ngược
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
-function updateCsrfToken(newToken) {
-    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-    if (window.jQuery) {
-        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
-    }
-    if (window.axios) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-    }
-}
-</script>
+        // Giữ lại các hàm cũ để tương thích ngược
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
 
-{{-- Thêm component CSRF Auto-Refresh --}}
-@include('partials.csrf-refresh')
+        function updateCsrfToken(newToken) {
+            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+            if (window.jQuery) {
+                $.ajaxSetup({
+                    headers: {
+                        'X-CSRF-TOKEN': newToken
+                    }
+                });
+            }
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            }
+        }
+    </script>
 
-<!-- Pusher for realtime -->
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    {{-- Thêm component CSRF Auto-Refresh --}}
+    @include('partials.csrf-refresh')
 
-<!-- Order notifications for all admin pages -->
-<script>
-    // Pusher configuration
-    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
-    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
-</script>
-<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+    <!-- Pusher for realtime -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+    <!-- Order notifications for all admin pages -->
+    <script>
+        // Pusher configuration
+        window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+        window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+    </script>
+    <script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
 
 </body>
 

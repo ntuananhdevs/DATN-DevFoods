@@ -313,4 +313,24 @@ class ChatController extends Controller
         broadcast(new \App\Events\Chat\UserTyping($conversationId, $user->id, $user->full_name, $isTyping))->toOthers();
         return response()->json(['success' => true]);
     }
+
+    public function getUnreadChatCount()
+    {
+        try {
+            $admin = Auth::user();
+            if (!$admin instanceof \App\Models\User) {
+                return response()->json(['count' => 0]);
+            }
+
+            // Count unread chat messages (NewChatMessageNotification)
+            $unreadChatCount = $admin->notifications()
+                ->whereNull('read_at')
+                ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                ->count();
+
+            return response()->json(['count' => $unreadChatCount]);
+        } catch (\Exception $e) {
+            return response()->json(['count' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 };

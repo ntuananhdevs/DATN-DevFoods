@@ -196,17 +196,36 @@
                 </a>
                 <!-- Chat -->
                 <a href="{{ route('admin.chat.index') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                    class="sidebar-menu-item flex items-center justify-between rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Chat">
-                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" class="lucide lucide-message-circle">
-                            <path
-                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                        </svg>
-                    </span>
-                    <span class="sidebar-text">Chat</span>
+                    <div class="flex items-center">
+                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle">
+                                <path
+                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Chat</span>
+                    </div>
+
+                    <!-- Notification Bell - Right Side -->
+                    <div class="chat-notification-bell relative" id="admin-chat-bell" style="display: none;">
+                        <div class="relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="bell-icon text-red-500 hover:text-red-600 transition-colors duration-200">
+                                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+                            </svg>
+                            <span
+                                class="chat-message-count absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[14px] h-3.5 flex items-center justify-center font-bold shadow-sm border border-white/20">
+                                <span id="admin-chat-count">0</span>
+                            </span>
+                        </div>
+                    </div>
                 </a>
 
                 <!-- Orders -->
@@ -583,6 +602,95 @@
     .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background-color: #6b7280;
     }
+
+    /* Bell animation styles */
+    .bell-shake {
+        animation: bellShake 0.6s ease-in-out 2, bellGlow 0.6s ease-in-out 2;
+        transform-origin: top center;
+    }
+
+    @keyframes bellShake {
+
+        0%,
+        100% {
+            transform: rotate(0deg) scale(1);
+        }
+
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+            transform: rotate(-8deg) scale(1.1);
+        }
+
+        20%,
+        40%,
+        60%,
+        80% {
+            transform: rotate(8deg) scale(1.1);
+        }
+    }
+
+    @keyframes bellGlow {
+
+        0%,
+        100% {
+            filter: drop-shadow(0 0 0px currentColor);
+        }
+
+        50% {
+            filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 10px rgba(239, 68, 68, 0.2));
+        }
+    }
+
+    .chat-notification-bell {
+        transition: all 0.3s ease;
+    }
+
+    .chat-notification-bell .bell-icon {
+        transition: all 0.3s ease;
+    }
+
+    .chat-message-count {
+        animation: fadeIn 0.4s ease-in-out;
+        transition: all 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.3);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .count-update {
+        animation: countPulse 0.6s ease-in-out;
+    }
+
+    @keyframes countPulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.3);
+            background-color: #dc2626;
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .chat-notification-bell:hover .bell-icon {
+        transform: scale(1.1);
+    }
 </style>
 
 <script>
@@ -617,5 +725,158 @@
                 }
             });
         });
+
+        // Global function to update chat notification bell
+        window.updateAdminChatBell = function(messageCount, shouldShake = false) {
+            const bell = document.getElementById('admin-chat-bell');
+            const countBadge = document.querySelector('#admin-chat-bell .chat-message-count');
+            const countSpan = document.getElementById('admin-chat-count');
+
+            if (bell && countBadge && countSpan) {
+                if (messageCount > 0) {
+                    // Show bell immediately
+                    bell.style.display = 'block';
+                    countBadge.style.display = 'flex';
+                    countBadge.classList.remove('hidden');
+
+                    // Add pulse effect for count update
+                    const oldCount = countSpan.textContent;
+                    const newCount = messageCount > 99 ? '99+' : messageCount.toString();
+
+                    if (oldCount !== newCount) {
+                        countSpan.classList.add('count-update');
+                        setTimeout(() => {
+                            countSpan.classList.remove('count-update');
+                        }, 600);
+                    }
+
+                    countSpan.textContent = newCount;
+
+                    // Enhanced shake animation
+                    if (shouldShake) {
+                        // Force remove any existing animation classes
+                        bell.classList.remove('bell-shake');
+
+                        // Force reflow to ensure class removal is processed
+                        bell.offsetHeight;
+
+                        // Add shake class
+                        bell.classList.add('bell-shake');
+
+                        // Remove shake class after animation
+                        setTimeout(() => {
+                            bell.classList.remove('bell-shake');
+                        }, 1600);
+                    }
+                } else {
+                    bell.style.display = 'none';
+                    countBadge.classList.add('hidden');
+                }
+            } else {
+                console.error('❌ Admin: Bell elements not found');
+            }
+        };
+
+        // Function to get chat message count from server
+        window.fetchAdminChatMessages = function() {
+            fetch('/admin/chat/unread-count', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    window.updateAdminChatBell(data.count || 0);
+                })
+                .catch(error => console.error('Error fetching chat count:', error));
+        };
+
+        // Initialize chat message count
+        window.fetchAdminChatMessages();
+
+        // Listen for real-time chat notifications (if Pusher is available)
+        if (typeof Pusher !== 'undefined') {
+            try {
+                const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                    cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                    encrypted: true,
+                    authEndpoint: '/admin/broadcasting/auth',
+                    auth: {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content')
+                        }
+                    }
+                });
+
+                // Connection status logging
+                pusher.connection.bind('connected', function() {
+                    // Connected successfully
+                });
+
+                pusher.connection.bind('error', function(err) {
+                    console.error('❌ Admin: Pusher connection error:', err);
+                });
+
+                // Subscribe to admin's private notification channel
+                const channel = pusher.subscribe('private-App.Models.User.{{ Auth::id() }}');
+
+                channel.bind('pusher:subscription_succeeded', function() {
+                    // Successfully subscribed
+                });
+
+                channel.bind('pusher:subscription_error', function(error) {
+                    console.error('❌ Admin: Subscription error:', error);
+                });
+
+                channel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(data) {
+                    // Check if it's a chat message notification
+                    if (data.type === 'App\\Notifications\\NewChatMessageNotification') {
+                        // Immediately increment count for instant feedback
+                        const currentBell = document.getElementById('admin-chat-bell');
+                        const currentCountElement = document.getElementById('admin-chat-count');
+
+                        if (currentCountElement) {
+                            const currentCount = parseInt(currentCountElement.textContent) || 0;
+                            const newCount = currentCount + 1;
+                            window.updateAdminChatBell(newCount,
+                                true); // Force shake with immediate update
+                        }
+
+                        // Also fetch from server for accuracy (after a small delay)
+                        setTimeout(() => {
+                            fetch('/admin/chat/unread-count', {
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'X-CSRF-TOKEN': document.querySelector(
+                                            'meta[name="csrf-token"]').getAttribute(
+                                            'content')
+                                    }
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    // Only update if different from current (no shake this time)
+                                    const verifyCountElement = document.getElementById(
+                                        'admin-chat-count');
+                                    if (verifyCountElement && parseInt(verifyCountElement
+                                            .textContent) !== data.count) {
+                                        window.updateAdminChatBell(data.count || 0, false);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error(
+                                        '❌ Admin sidebar: Error fetching server count:',
+                                        error);
+                                });
+                        }, 500);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Admin sidebar: Pusher setup error:', error);
+            }
+        }
     });
 </script>
