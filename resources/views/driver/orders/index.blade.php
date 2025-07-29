@@ -39,7 +39,7 @@
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-2">
                                     {{-- Badge trạng thái sử dụng accessor --}}
-                                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-white"
+                                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
                                         style="background-color: {{ $order->status_color }};">
                                         <i class="{{ $order->status_icon }} w-3 h-3 mr-1"></i> {{-- Font Awesome Icon --}}
                                         {{ $order->status_text }}
