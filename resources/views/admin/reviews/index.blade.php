@@ -2,7 +2,7 @@
 @section('title', 'Quản lý bình luận sản phẩm')
 @section('content')
 <div class="min-h-screen bg-gradient-to-br">
-    <div class="fade-in flex flex-col gap-4 pb-4 animate-slideInUp delay-200 duration-700 ease-in-out">
+    <div class="flex flex-col gap-4 pb-4">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -14,7 +14,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-2xl animate-slideInUp delay-200 duration-700 ease-in-out">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-2xl">
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-800">Danh sách bình luận</h2>
             </div>

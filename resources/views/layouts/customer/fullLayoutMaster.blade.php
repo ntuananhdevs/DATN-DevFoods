@@ -412,7 +412,7 @@
                 
                 // Chỉ cập nhật cart count nếu không phải từ buy now
                 if (!fromBuyNow) {
-                    window.updateCartCount(window.cartCountFromServer);
+                window.updateCartCount(window.cartCountFromServer);
                 }
             }
 
@@ -432,7 +432,7 @@
                 cartChannel.bind('cart-updated', function(data) {
                     // Chỉ cập nhật cart count nếu action là 'add_to_cart', không phải 'buy_now'
                     if (data.action === 'add_to_cart' || data.action === undefined) {
-                        window.updateCartCount(data.count);
+                    window.updateCartCount(data.count);
                     }
                 });
             }
@@ -559,16 +559,16 @@
 
 
 
-                        // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                        if (typeof fetchNotifications === 'function') {
-                            fetchNotifications();
-                        }
+                    // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
+                    if (typeof fetchNotifications === 'function') {
+                        fetchNotifications();
+                    }
 
-                        // Gọi hiệu ứng rung chuông (nếu có)
-                        if (typeof triggerBellShake === 'function') {
-                            triggerBellShake();
-                        }
-                    });
+                    // Gọi hiệu ứng rung chuông (nếu có)
+                    if (typeof triggerBellShake === 'function') {
+                        triggerBellShake();
+                    }
+                });
 
                 notificationChannel.bind('pusher:subscription_succeeded', () => {
                     console.log(
@@ -608,42 +608,42 @@
     @include('components.modal')
 
     @if (isset($cartItems) && !request()->has('from_buy_now'))
-        <script>
-            window.cartCountFromServer = {{ count($cartItems) }};
-        </script>
+    <script>
+        window.cartCountFromServer = {{ count($cartItems) }};
+    </script>
     @endif
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
-            if (!{{ auth()->check() ? 'true' : 'false' }}) {
-                window.updateWishlistCount(0);
-                localStorage.removeItem('wishlist_count');
-            }
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
+    if (!{{ auth()->check() ? 'true' : 'false' }}) {
+        window.updateWishlistCount(0);
+        localStorage.removeItem('wishlist_count');
+    }
+});
 
-        // Giữ lại các hàm cũ để tương thích ngược
-        function getCsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        }
+// Giữ lại các hàm cũ để tương thích ngược
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
 
-        function updateCsrfToken(newToken) {
-            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-            if (window.jQuery) {
+function updateCsrfToken(newToken) {
+    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+    if (window.jQuery) {
                 $.ajaxSetup({
                     headers: {
                         'X-CSRF-TOKEN': newToken
                     }
                 });
-            }
-            if (window.axios) {
-                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-            }
-        }
-    </script>
+    }
+    if (window.axios) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+    }
+}
+</script>
 
-    {{-- Thêm component CSRF Auto-Refresh --}}
-    @include('partials.csrf-refresh')
+{{-- Thêm component CSRF Auto-Refresh --}}
+@include('partials.csrf-refresh')
 </body>
 
 </html>
