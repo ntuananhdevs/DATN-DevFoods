@@ -3,8 +3,13 @@
 @section('title', 'Lịch sử đơn hàng')
 
 @section('content')
+<style>
+    .container-ft {
+        max-width: 1240px;
+    }
+</style>
     <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
-        <div class="container mx-auto px-4">
+        <div class="container-ft mx-auto px-4">
             <div class="flex items-center">
                 <a href="{{ route('customer.profile') }}" class="text-white hover:text-white/80 mr-2">
                     <i class="fas fa-arrow-left"></i>
@@ -13,7 +18,7 @@
             </div>
         </div>
     </div>
-    <div class="container mx-auto px-4 py-8">
+    <div class="container-ft mx-auto ">
         <div class="flex flex-col gap-8">
             <section class="mb-10">
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
