@@ -340,6 +340,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
         Route::post('/typing', [ChatController::class, 'typingIndicator'])->name('typing');
+        Route::get('/unread-count', [ChatController::class, 'getUnreadChatCount'])->name('unread-count');
     });
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -372,5 +373,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 // Add public broadcast routes for discount updates
 Route::post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
-})->middleware('web');
+})->middleware(['web', 'auth:admin']);
+
+// Add admin broadcasting auth route
+Route::post('/admin/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+})->middleware(['web', 'auth:admin']);
 // Thêm vào group combos:

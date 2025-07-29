@@ -32,6 +32,15 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
+// Branch notifications channel
+Broadcast::channel('App.Models.Branch.{id}', function ($user, $id) {
+    // Check if user belongs to this branch
+    if ($user->branch && $user->branch->id === (int) $id) {
+        return ['id' => $user->id, 'name' => $user->full_name];
+    }
+    return false;
+});
+
 // Chat conversation channel
 Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     $conversation = Conversation::find($conversationId);

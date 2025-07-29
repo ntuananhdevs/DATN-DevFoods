@@ -200,8 +200,8 @@
                 </div>
             </div>
             <div class="p-4">
-                <a href="#" style="background-color: #111827" class="btn w-full text-white">Xem lịch sử đơn
-                    hàng</a>
+                <a href="{{ route('admin.orders.index') }}" style="background-color: #111827"
+                    class="btn w-full text-white hover:bg-gray-800 transition-colors duration-200">Xem lịch sử đơn hàng</a>
             </div>
         </div>
     </div>
