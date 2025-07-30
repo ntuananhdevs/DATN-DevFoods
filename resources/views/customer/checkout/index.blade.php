@@ -102,6 +102,9 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
+            @foreach(request('cart_item_ids', []) as $cartItemId)
+                <input type="hidden" name="cart_item_ids[]" value="{{ $cartItemId }}">
+            @endforeach
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                 <!-- ========= CỘT BÊN TRÁI ========= -->

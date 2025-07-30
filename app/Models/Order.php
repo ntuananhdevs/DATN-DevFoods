@@ -237,6 +237,12 @@ class Order extends Model
             'text_color' => '#78350f',
             'icon' => 'fas fa-hourglass-half'
         ],
+        'confirmed' => [
+            'text' => 'Đang tìm tài xế',
+            'bg' => '#dbeafe', // Xanh dương nhạt
+            'text_color' => '#1e40af',
+            'icon' => 'fas fa-search'
+        ],
         'awaiting_driver' => [
             'text' => 'Chờ tài xế',
             'bg' => '#fcd5ce', // Cam nhạt hồng pastel

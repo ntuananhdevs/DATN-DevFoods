@@ -351,9 +351,14 @@ class CheckoutController extends Controller
                     throw new \Exception('Không tìm thấy giỏ hàng.');
                 }
                 
-                $cartItems = CartItem::with(['variant', 'combo', 'toppings.topping'])
-                    ->where('cart_id', $cart->id)
-                    ->get();
+                // Lấy danh sách id sản phẩm được chọn từ request
+                $selectedIds = $request->cart_item_ids;
+                $cartItemsQuery = CartItem::with(['variant', 'combo', 'toppings.topping'])
+                    ->where('cart_id', $cart->id);
+                if ($selectedIds && is_array($selectedIds)) {
+                    $cartItemsQuery->whereIn('id', $selectedIds);
+                }
+                $cartItems = $cartItemsQuery->get();
                 
                 if ($cartItems->isEmpty()) {
                     throw new \Exception('Giỏ hàng của bạn đang trống.');

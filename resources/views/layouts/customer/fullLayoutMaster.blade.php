@@ -203,7 +203,35 @@
     <script>
         // Function to show notifications programmatically
         function showToast(message, type = 'info', duration = 5000) {
+            console.log('🔔 showToast called:', { message, type, duration });
+            
             const container = document.getElementById('notificationContainer');
+            if (!container) {
+                console.error('❌ notificationContainer not found');
+                // Fallback: create a simple toast
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+                    color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    z-index: 9999;
+                    max-width: 300px;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, duration);
+                return;
+            }
+            
             const notificationId = 'notification_' + Date.now();
 
             const colors = {
@@ -426,7 +454,7 @@
                 });
 
                 // Subscribe to cart channel
-                const cartChannel = pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
+                const cartChannel = window.pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
 
                 // Listen for cart updates - chỉ cập nhật khi thực sự thêm vào giỏ hàng
                 cartChannel.bind('cart-updated', function(data) {
@@ -506,7 +534,7 @@
             if (typeof Pusher !== 'undefined' && {{ auth()->check() ? 'true' : 'false' }}) {
                 // This Pusher instance is for layout elements.
                 // Page-specific scripts might have their own or should share this one.
-                const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                window.pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
                     cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
                     encrypted: true,
                     authEndpoint: '/broadcasting/auth',
@@ -519,21 +547,21 @@
                 });
 
                 // Add Pusher debugging
-                pusher.connection.bind('connected', function() {
+                window.pusher.connection.bind('connected', function() {
                     console.log('✅ Pusher connected successfully');
                 });
 
-                pusher.connection.bind('error', function(err) {
+                window.pusher.connection.bind('error', function(err) {
                     console.error('❌ Pusher connection error:', err);
                 });
 
-                pusher.connection.bind('disconnected', function() {
+                window.pusher.connection.bind('disconnected', function() {
                     console.log('⚠️ Pusher disconnected');
                 });
 
                 // Subscribe to the correct private wishlist channel
                 const channelName = 'private-user-wishlist-channel.{{ auth()->id() }}';
-                const wishlistChannel = pusher.subscribe(channelName);
+                const wishlistChannel = window.pusher.subscribe(channelName);
 
                 // Listen for wishlist updates
                 wishlistChannel.bind('favorite-updated', function(data) {
@@ -550,7 +578,7 @@
                 });
 
                 // Subscribe to user's private notification channel (Laravel style)
-                const notificationChannel = pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
+                const notificationChannel = window.pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
 
                 // Listen for Laravel's notification broadcast event
                 notificationChannel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
@@ -559,10 +587,10 @@
 
 
 
-                    // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                    if (typeof fetchNotifications === 'function') {
-                        fetchNotifications();
-                    }
+                        // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
+                        if (typeof fetchNotifications === 'function') {
+                            fetchNotifications();
+                        }
 
                     // Gọi hiệu ứng rung chuông (nếu có)
                     if (typeof triggerBellShake === 'function') {
@@ -580,7 +608,7 @@
                 });
 
                 // Subscribe to custom notification channel (used by custom events)
-                const customNotificationChannel = pusher.subscribe('customer.{{ auth()->id() }}.notifications');
+                const customNotificationChannel = window.pusher.subscribe('customer.{{ auth()->id() }}.notifications');
 
                 customNotificationChannel.bind('new-message', function(data) {
 
@@ -602,6 +630,54 @@
                 customNotificationChannel.bind('pusher:subscription_error', (error) => {
                     console.error('❌ Failed to subscribe to custom notifications channel:', error);
                 });
+
+                // Subscribe to order status updates for all customer orders
+                const orderChannel = window.pusher.subscribe('private-customer.{{ auth()->id() }}.orders');
+
+                orderChannel.bind('OrderStatusUpdated', function(data) {
+                    console.log('🛍️ Order status updated:', data);
+                    console.log('🔍 Debug - data.order exists:', !!data.order);
+                    console.log('🔍 Debug - showToast function exists:', typeof window.showToast);
+                    
+                    // Show notification using the global showToast function
+                    if (typeof window.showToast === 'function') {
+                        let orderId, orderData;
+                        
+                        // Check if data has order property or if data itself is the order
+                        if (data.order) {
+                            orderId = data.order.id;
+                            orderData = {
+                                status: data.order.status,
+                                status_text: data.status_text || getStatusText(data.order.status)
+                            };
+                        } else if (data.id && data.status) {
+                            // Data itself might be the order object
+                            orderId = data.id;
+                            orderData = {
+                                status: data.status,
+                                status_text: data.status_text || getStatusText(data.status)
+                            };
+                        } else {
+                            console.error('❌ Invalid order data structure:', data);
+                            return;
+                        }
+                        
+                        console.log('📋 Calling showOrderNotification with:', { orderId, orderData });
+                        
+                        // Use the same notification logic as in orders.blade.php
+                        showOrderNotification(orderId, orderData);
+                    } else {
+                        console.error('❌ showToast function not available');
+                    }
+                });
+
+                orderChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('✅ Subscribed to order updates channel for customer {{ auth()->id() }}');
+                });
+
+                orderChannel.bind('pusher:subscription_error', (error) => {
+                    console.error('❌ Failed to subscribe to order updates channel:', error);
+                });
             }
         });
     </script>
@@ -614,13 +690,13 @@
     @endif
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
-    if (!{{ auth()->check() ? 'true' : 'false' }}) {
-        window.updateWishlistCount(0);
-        localStorage.removeItem('wishlist_count');
-    }
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nếu không đăng nhập thì reset số tim về 0 và xóa localStorage
+            if (!{{ auth()->check() ? 'true' : 'false' }}) {
+                window.updateWishlistCount(0);
+                localStorage.removeItem('wishlist_count');
+            }
+        });
 
 // Giữ lại các hàm cũ để tương thích ngược
 function getCsrfToken() {
