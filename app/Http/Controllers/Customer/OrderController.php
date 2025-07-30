@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Events\Order\OrderCancelledByCustomer; // Ensure this event is correctly imported.
 use App\Events\Order\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -96,8 +95,12 @@ class OrderController extends Controller
                 'points_deducted' => 0,
             ]);
             
-            // Dispatch event for driver about customer cancellation
-            event(new OrderCancelledByCustomer($order->id, $order->driver_id ?? null)); //
+            // Lấy dữ liệu mới nhất từ cơ sở dữ liệu bao gồm thông tin hủy đơn
+            $freshOrder = $order->fresh(['cancellation']);
+            
+            // Sử dụng OrderStatusUpdated với tham số isCancelledByCustomer = true
+            // thay thế cho cả OrderCancelledByCustomer và OrderCancelledByCustomerForBranch
+            event(new OrderStatusUpdated($freshOrder, true));
         }
         // Khách hàng xác nhận đã nhận hàng (chỉ khi đơn đã được giao)
         elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
@@ -130,9 +133,10 @@ class OrderController extends Controller
         // Lấy dữ liệu mới nhất từ cơ sở dữ liệu
         $freshOrder = $order->fresh();
 
-        // 5. Broadcast sự kiện cập nhật trạng thái đơn hàng
-        // broadcast(new OrderStatusUpdated($freshOrder))->toOthers(); // Remove .toOthers() if not needed or if it causes issues
-        event(new OrderStatusUpdated($freshOrder)); //
+        // 5. Broadcast sự kiện cập nhật trạng thái đơn hàng (nếu không phải hủy đơn)
+        if ($newStatus !== 'cancelled') {
+            event(new OrderStatusUpdated($freshOrder));
+        }
 
         // Trả về kết quả thành công và dữ liệu đơn hàng đã được cập nhật
         return response()->json([

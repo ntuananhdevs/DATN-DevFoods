@@ -219,3 +219,13 @@ Broadcast::channel('branch-orders-channel', function ($user = null) {
     // Allow all authenticated users to listen to general order updates
     return true;
 });
+
+// Customer orders channel for order status updates
+Broadcast::channel('customer.{customerId}.orders', function ($user, $customerId) {
+    // Only the authenticated customer with the matching ID can listen to their order updates
+    return $user instanceof User && (int) $user->id === (int) $customerId ? [
+        'id' => $user->id,
+        'name' => $user->full_name ?? $user->name ?? 'Customer',
+        'role' => $user->role ?? 'customer',
+    ] : false;
+});

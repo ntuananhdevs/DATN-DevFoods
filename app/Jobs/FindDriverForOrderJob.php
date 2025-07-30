@@ -167,7 +167,7 @@ class FindDriverForOrderJob implements ShouldQueue
         ]);
 
         // Broadcast event để cập nhật realtime
-        event(new OrderStatusUpdated($order, 'confirmed', 'awaiting_driver'));
+        event(new OrderStatusUpdated($order));
     }
 
     /**
@@ -209,4 +209,4 @@ class FindDriverForOrderJob implements ShouldQueue
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return round($earthRadius * $c, 2);
     }
-} 
+}

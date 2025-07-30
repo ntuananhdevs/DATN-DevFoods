@@ -397,12 +397,12 @@
                                     <div class="flex items-start gap-3 flex-1">
                                         {{-- Hình ảnh sản phẩm --}}
                                         <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
-                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}"
+                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->primaryImage)
+                                                <img src="{{ $item->productVariant->product->primaryImage->url }}"
                                                     alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}"
                                                     class="w-full h-full object-cover">
-                                            @elseif ($item->combo && $item->combo->image)
-                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}"
+                                            @elseif ($item->combo && $item->combo->url)
+                                                <img src="{{ $item->combo->url }}"
                                                     alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}"
                                                     class="w-full h-full object-cover">
                                             @else
@@ -645,6 +645,44 @@
                 <div class="mt-2 px-7 py-3">
                     <p id="action-modal-message" class="text-sm text-gray-500">Bạn có chắc chắn thực hiện thao tác này
                         không?</p>
+                    
+                    <!-- Phần chọn lý do hủy đơn -->
+                    <div id="cancel-reason-section" class="mt-4 text-left hidden">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
+                        <div class="space-y-2">
+                            <div>
+                                <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
+                                <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
+                                <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
+                                <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
+                                <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
+                                <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
+                                <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                                <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                            </div>
+                            <div id="other-reason-container" class="hidden mt-2">
+                                <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Vui lòng nhập lý do khác..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="items-center px-4 py-3 flex gap-3">
                     <button id="action-abort-btn"
@@ -666,161 +704,225 @@
 @push('scripts')
     {{-- Script xử lý modal và real-time giữ nguyên --}}
     <script>
-        // Định nghĩa hàm showToast để hiển thị thông báo
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast-message');
-            toast.textContent = message;
-            toast.classList.remove('bg-green-600', 'bg-red-600', 'hidden');
-            if (type === 'success') {
-                toast.classList.add('bg-green-600');
-            } else if (type === 'error') {
-                toast.classList.add('bg-red-600');
-            }
-            toast.classList.add('animate-slideIn'); // Thêm animation nếu có
-            toast.classList.remove('hidden');
-
-            setTimeout(() => {
-                toast.classList.add('hidden');
-                toast.classList.remove('animate-slideIn');
-            }, 3000); // Ẩn sau 3 giây
-        }
-
-        // Định nghĩa hàm openActionModal
-        function openActionModal(form, actionType) {
-            const modal = document.getElementById('action-confirmation-modal');
-            const title = document.getElementById('action-modal-title');
-            const message = document.getElementById('action-modal-message');
-            const confirmBtn = document.getElementById('action-confirm-btn');
-            const abortBtn = document.getElementById('action-abort-btn');
-            const modalIconContainer = document.getElementById('modal-icon-container');
-            const modalIcon = document.getElementById('modal-icon');
-
-            // Reset icon và màu nền của icon
-            modalIcon.className = ''; // Xóa tất cả các class
-            modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full';
-
-            if (actionType === 'receive') {
-                title.textContent = 'Xác nhận đã nhận hàng';
-                message.textContent =
-                    'Bạn có chắc chắn muốn xác nhận đã nhận đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Xác nhận';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-green-100');
-                modalIcon.classList.add('fas', 'fa-check-circle', 'text-green-600', 'text-xl');
-            } else if (actionType === 'cancel') {
-                title.textContent = 'Xác nhận hủy đơn hàng';
-                message.textContent = 'Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Hủy đơn';
-                confirmBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-                confirmBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                modalIconContainer.classList.add('bg-red-100');
-                modalIcon.classList.add('fas', 'fa-times-circle', 'text-red-600', 'text-xl');
-            } else {
-                title.textContent = 'Xác nhận hành động';
-                message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
-                confirmBtn.textContent = 'Đồng ý';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-gray-100');
-                modalIcon.classList.add('fas', 'fa-question-circle', 'text-gray-600', 'text-xl');
-            }
-
-            modal.classList.remove('hidden'); // Hiển thị modal
-
-            // Xử lý khi nhấn nút "Đồng ý"
-            confirmBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal ngay lập tức
-
-                // Lấy dữ liệu form
-                const formData = new FormData(form);
-
-                // Gửi yêu cầu AJAX
-                fetch(form.action, {
-                        method: form.method,
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest', // Để backend biết đây là AJAX request
-                            'Accept': 'application/json' // Yêu cầu phản hồi JSON
-                        }
-                    })
-                    .then(response => response.json()) // Chuyển phản hồi sang JSON
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message, 'success');
-                            // Cập nhật UI của trạng thái đơn hàng
-                            const statusElement = document.getElementById(
-                                'order-status-display'); // Thêm ID này vào span hiển thị trạng thái
-                            if (statusElement && data.order) {
-                                statusElement.textContent = data.order.status_text;
-                                statusElement.style.backgroundColor = data.order.status_color;
-                                statusElement.style.color = data.order.status_text_color;
-                                const statusIcon = statusElement.querySelector('i');
-                                if (statusIcon) {
-                                    statusIcon.className = ''; // Xóa class cũ
-                                    statusIcon.classList.add(...data.order.status_icon.split(
-                                        ' ')); // Thêm class mới
-                                }
-
-                                // Vô hiệu hóa hoặc ẩn form "Đã nhận hàng" hoặc "Hủy đơn hàng"
-                                if (actionType === 'receive') {
-                                    form.remove(); // Xóa form "Đã nhận hàng" sau khi xác nhận
-                                    // Hoặc: form.style.display = 'none';
-                                } else if (actionType === 'cancel') {
-                                    form.remove(); // Xóa form "Hủy đơn hàng"
-                                }
-
-                                // Nếu có timeline trạng thái, bạn có thể cân nhắc cập nhật nó qua AJAX cũng
-                                // Tuy nhiên, việc này phức tạp hơn và có thể yêu cầu partial reload hoặc logic render lại phức tạp.
-                                // Tạm thời, chúng ta chỉ cập nhật phần trạng thái chính.
-                            }
-                        } else {
-                            showToast(data.message, 'error');
-                        }
-                    })
-                    .then(() => {
-                        // Tự động tải lại trang sau khi hoàn thành
-                        location.reload(); // Nếu bạn muốn tải lại toàn bộ trang
-                    })
-                    .catch(error => {
-                        console.error('Lỗi khi gửi yêu cầu:', error);
-                        showToast('Đã xảy ra lỗi khi thực hiện thao tác.', 'error');
-                    });
-            };
-
-            // Xử lý khi nhấn nút "Không" hoặc click bên ngoài modal
-            abortBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal
-            };
-
-            // Ẩn modal khi nhấn phím Esc
-            document.onkeydown = function(event) {
-                if (event.key === 'Escape') {
-                    modal.classList.add('hidden');
+            // Định nghĩa hàm showToast để hiển thị thông báo
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast-message');
+                toast.textContent = message;
+                toast.classList.remove('bg-green-600', 'bg-red-600', 'hidden');
+                if (type === 'success') {
+                    toast.classList.add('bg-green-600');
+                } else if (type === 'error') {
+                    toast.classList.add('bg-red-600');
                 }
-            };
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý nút "Đã nhận hàng"
-            const receiveOrderButton = document.querySelector('.receive-order-form button[type="submit"]');
-            if (receiveOrderButton) {
-                receiveOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'receive');
-                });
+                toast.classList.add('animate-slideIn'); // Thêm animation nếu có
+                toast.classList.remove('hidden');
+            
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('animate-slideIn');
+                }, 3000); // Ẩn sau 3 giây
             }
-
-            // Xử lý nút "Hủy đơn hàng" (nếu có)
-            const cancelOrderButton = document.querySelector('.cancel-order-form button[type="submit"]');
-            if (cancelOrderButton) {
-                cancelOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'cancel');
-                });
+        
+            // Biến toàn cục để lưu form và loại hành động
+            let formToSubmit = null;
+            let modalAction = null;
+        
+            // Định nghĩa hàm openActionModal
+            function openActionModal(form, actionType) {
+                const modal = document.getElementById('action-confirmation-modal');
+                const title = document.getElementById('action-modal-title');
+                const message = document.getElementById('action-modal-message');
+                const confirmBtn = document.getElementById('action-confirm-btn');
+                const abortBtn = document.getElementById('action-abort-btn');
+                const modalIconContainer = document.getElementById('modal-icon-container');
+                const modalIcon = document.getElementById('modal-icon');
+                const cancelReasonSection = document.getElementById('cancel-reason-section');
+                const otherReasonContainer = document.getElementById('other-reason-container');
+                const otherReasonText = document.getElementById('other-reason-text');
+                
+                formToSubmit = form;
+                modalAction = actionType;
+                
+                // Reset icon và màu nền của icon
+                modalIcon.className = ''; // Xóa tất cả các class
+                modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full';
+            
+                if (actionType === 'receive') {
+                    title.textContent = 'Xác nhận đã nhận hàng';
+                    message.textContent = 'Bạn xác nhận đã nhận được hàng? Vui lòng kiểm tra kỹ trước khi xác nhận.';
+                    confirmBtn.textContent = 'Đã nhận';
+                    confirmBtn.className = 'w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700';
+                    modalIconContainer.classList.add('bg-green-100');
+                    modalIcon.className = 'fas fa-check text-green-600 text-xl';
+                    cancelReasonSection.classList.add('hidden');
+                } else if (actionType === 'cancel') {
+                    title.textContent = 'Xác nhận hủy đơn hàng';
+                    message.textContent = 'Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.';
+                    confirmBtn.textContent = 'Đồng ý hủy';
+                    confirmBtn.className = 'w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700';
+                    modalIconContainer.classList.add('bg-red-100');
+                    modalIcon.className = 'fas fa-times text-red-600 text-xl';
+                    cancelReasonSection.classList.remove('hidden');
+                    
+                    // Reset radio buttons và textarea
+                    document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                        radio.checked = false;
+                    });
+                    otherReasonContainer.classList.add('hidden');
+                    otherReasonText.value = '';
+                } else {
+                    title.textContent = 'Xác nhận hành động';
+                    message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
+                    confirmBtn.textContent = 'Đồng ý';
+                    confirmBtn.className = 'w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700';
+                    modalIconContainer.classList.add('bg-gray-100');
+                    modalIcon.className = 'fas fa-question-circle text-gray-600 text-xl';
+                    cancelReasonSection.classList.add('hidden');
+                }
+            
+            modal.classList.remove('hidden'); // Hiển thị modal
             }
-        });
-    </script>
+        
+            document.addEventListener('DOMContentLoaded', function() {
+                // Xử lý hiển thị textarea khi chọn lý do "Khác"
+                document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const otherReasonContainer = document.getElementById('other-reason-container');
+                        if (this.value === 'Khác') {
+                            otherReasonContainer.classList.remove('hidden');
+                        } else {
+                            otherReasonContainer.classList.add('hidden');
+                        }
+                    });
+                });
+        
+                const modal = document.getElementById('action-confirmation-modal');
+                const confirmBtn = document.getElementById('action-confirm-btn');
+                const abortBtn = document.getElementById('action-abort-btn');
+                const otherReasonContainer = document.getElementById('other-reason-container');
+                const otherReasonText = document.getElementById('other-reason-text');
+        
+                // Xử lý khi nhấn nút "Đồng ý"
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', function() {
+                        if (formToSubmit) {
+                            const form = formToSubmit;
+                            
+                            // Xử lý khi hủy đơn hàng
+                            if (modalAction === 'cancel') {
+                                const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+                                if (!selectedReason) {
+                                    showToast('Vui lòng chọn lý do hủy đơn hàng', 'error');
+                                    return;
+                                }
+                                
+                                let reason = selectedReason.value;
+                                if (reason === 'Khác') {
+                                    const otherReasonValue = otherReasonText.value.trim();
+                                    if (!otherReasonValue) {
+                                        showToast('Vui lòng nhập lý do hủy đơn hàng', 'error');
+                                        return;
+                                    }
+                                    reason = otherReasonValue;
+                                }
+                                
+                                // Thêm lý do vào form data
+                                const formData = new FormData(form);
+                                formData.append('reason', reason);
+                                
+                                // Gửi yêu cầu AJAX
+                                fetch(form.action, {
+                                        method: form.method,
+                                        body: formData,
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        modal.classList.add('hidden'); // Ẩn modal
+                                        if (data.success) {
+                                            showToast(data.message || 'Hủy đơn hàng thành công!', 'success');
+                                            // Tự động tải lại trang sau khi hoàn thành
+                                            setTimeout(() => {
+                                                location.reload();
+                                            }, 1300);
+                                        } else {
+                                            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        modal.classList.add('hidden');
+                                        showToast('Có lỗi khi kết nối!', 'error');
+                                        console.error('Lỗi khi gửi yêu cầu:', error);
+                                    });
+                            } else {
+                                // Xử lý các action khác (như receive)
+                                const formData = new FormData(form);
+                                
+                                fetch(form.action, {
+                                        method: form.method,
+                                        body: formData,
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        modal.classList.add('hidden');
+                                        if (data.success) {
+                                            showToast(data.message || 'Đã nhận hàng thành công!', 'success');
+                                            setTimeout(() => {
+                                                location.reload();
+                                            }, 1300);
+                                        } else {
+                                            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        modal.classList.add('hidden');
+                                        showToast('Có lỗi khi kết nối!', 'error');
+                                        console.error('Lỗi khi gửi yêu cầu:', error);
+                                    });
+                            }
+                        }
+                    });
+                }
+        
+                // Xử lý khi nhấn nút "Không" hoặc click bên ngoài modal
+                if (abortBtn) {
+                    abortBtn.addEventListener('click', function() {
+                        modal.classList.add('hidden');
+                        // Reset radio buttons
+                        document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                            radio.checked = false;
+                        });
+                        otherReasonContainer.classList.add('hidden');
+                        otherReasonText.value = '';
+                    });
+                }
+        
+                // Xử lý nút "Đã nhận hàng"
+                const receiveOrderButton = document.querySelector('.receive-order-form button[type="submit"]');
+                if (receiveOrderButton) {
+                    receiveOrderButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'receive');
+                    });
+                }
+        
+                // Xử lý nút "Hủy đơn hàng" (nếu có)
+                const cancelOrderButton = document.querySelector('.cancel-order-form button[type="submit"]');
+                if (cancelOrderButton) {
+                    cancelOrderButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'cancel');
+                    });
+                }
+            });
+        </script>
 @endpush

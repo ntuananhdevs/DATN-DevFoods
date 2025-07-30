@@ -12,22 +12,19 @@ class NotificationController extends Controller
      */
     public function index()
     {
-
         $user = Auth::user();
 
-
-        $customerNotifications = $user
-            ? $user->notifications()->latest()->limit(10)->get()
-            : collect();
-        $customerUnreadCount = $user
-            ? $user->unreadNotifications()->count()
-            : 0;
-
-
-        // Yêu cầu AJAX: trả về HTML + số lượng chưa đọc
+        // Yêu cầu AJAX: trả về HTML + số lượng chưa đọc (chỉ 10 thông báo mới nhất)
         if (request()->ajax()) {
+            $customerNotifications = $user
+                ? $user->notifications()->latest()->limit(10)->get()
+                : collect();
+            $customerUnreadCount = $user
+                ? $user->unreadNotifications()->count()
+                : 0;
+
             $html = view('partials.customer._notification_items', [
-                'customerNotifications' => $customerNotifications // Đúng tên biến blade!
+                'customerNotifications' => $customerNotifications
             ])->render();
 
             return response()->json([
@@ -36,7 +33,14 @@ class NotificationController extends Controller
             ]);
         }
 
-        // Trả về view danh sách
+        // Trả về view danh sách với phân trang (tất cả thông báo)
+        $customerNotifications = $user
+            ? $user->notifications()->latest()->paginate(15)
+            : collect();
+        $customerUnreadCount = $user
+            ? $user->unreadNotifications()->count()
+            : 0;
+
         return view('customer.notifications.index', [
             'customerNotifications' => $customerNotifications,
             'customerUnreadCount' => $customerUnreadCount,

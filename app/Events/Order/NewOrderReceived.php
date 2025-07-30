@@ -13,6 +13,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Notifications\NewOrderNotification;
 use App\Notifications\AdminNewOrderNotification;
+use App\Notifications\CustomerOrderSuccessNotification;
 use App\Models\Branch;
 use App\Models\User;
 
@@ -44,6 +45,11 @@ class NewOrderReceived implements ShouldBroadcastNow
         
         foreach ($admins as $admin) {
             $admin->notify(new AdminNewOrderNotification($order));
+        }
+        
+        // Gửi notification cho khách hàng
+        if ($order->customer) {
+            $order->customer->notify(new CustomerOrderSuccessNotification($order));
         }
         
         Log::info('NewOrderReceived event constructed', [
@@ -176,4 +182,4 @@ class NewOrderReceived implements ShouldBroadcastNow
 
         return $earthRadius * $c;
     }
-} 
+}
