@@ -78,12 +78,13 @@
                     {{ number_format($totalEarnedToday, 0, ',', '.') }} đ</div>
                 <div class="text-sm text-gray-500">{{ $deliveredOrdersCountToday }} đơn đã giao</div>
                 <div class="text-xs text-gray-400 mt-1">
-                    Trung bình: {{ $deliveredOrdersCountToday > 0 ? number_format($totalEarnedToday / $deliveredOrdersCountToday, 0, ',', '.') : '0' }} đ/đơn
+                    Trung bình:
+                    {{ $deliveredOrdersCountToday > 0 ? number_format($totalEarnedToday / $deliveredOrdersCountToday, 0, ',', '.') : '0' }}
+                    đ/đơn
                 </div>
             </div>
         </div>
 
-        {{-- Card Đơn hàng đang xử lý --}}
         {{-- Card Đơn hàng đang xử lý --}}
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
@@ -95,9 +96,9 @@
                     <a href="{{ route('driver.orders.show', $order->id) }}"
                         class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                            style="background-color: {{ $order->status_color }};">
-                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                            style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                            <i class="{{ $order->status_icon }}"></i>
                         </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
@@ -105,10 +106,10 @@
                             <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
                         </div>
                         {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0"
-                            style="background-color: {{ $order->status_color }}; color: white;"> {{-- Màu chữ trắng để tương phản với màu nền trạng thái --}}
+                        <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
+                            style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
                             {{ $order->status_text }}
-                        </span>
+                        </div>
                     </a>
                 @empty
                     <p class="text-center text-sm text-gray-500 py-3">Không có đơn hàng nào đang xử lý.</p>
@@ -126,9 +127,9 @@
                     {{-- Thêm data-order-id để dễ dàng quản lý bằng JS --}}
                     <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" data-order-id="{{ $order->id }}">
                         {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                            style="background-color: {{ $order->status_color }};">
-                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                            style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                            <i class="{{ $order->status_icon }}"></i>
                         </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
@@ -302,8 +303,9 @@
 
                         const newOrderHtml = `
                 <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-pulse-fade-in" data-order-id="${order.id}">
-                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-box text-white text-lg"></i>
+                    <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                        style="background-color: #fcd5ce; color: #7c2d12;">
+                        <i class="fas fa-user-clock"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="font-medium text-gray-800">Đơn #${order.order_code}</div>
