@@ -656,16 +656,26 @@ class CheckoutController extends Controller
                 // Clear buy now session
                 session()->forget('buy_now_checkout');
             } else {
-                // Clear regular cart
-                if ($cart) {
-                    $cart->status = 'completed';
-                    $cart->save();
+                // Clear only the selected cart items, not the whole cart
+                if ($cart && isset($selectedIds) && is_array($selectedIds)) {
+                    // Xóa các CartItem đã được thanh toán
+                    \App\Models\CartItem::where('cart_id', $cart->id)
+                        ->whereIn('id', $selectedIds)
+                        ->delete();
+                    // Cập nhật lại cart_count trong session ngay lập tức
+                    $cartCount = $cart->items()->count();
+                    session(['cart_count' => $cartCount]);
+                    // Nếu giỏ hàng không còn sản phẩm nào thì mới chuyển trạng thái completed
+                    if ($cart->items()->count() == 0) {
+                        $cart->status = 'completed';
+                        $cart->save();
+                        session()->forget(['coupon_discount_amount', 'discount']);
+                    }
                 }
             }
             
             // Clear discount after order is placed
             session()->forget('coupon_discount_amount');
-            session()->forget('cart_count');
             
             DB::commit();
             
@@ -800,7 +810,7 @@ class CheckoutController extends Controller
                     if ($cart) {
                         $cart->status = 'completed';
                         $cart->save();
-                        session()->forget(['coupon_discount_amount', 'cart_count', 'discount']);
+                        session()->forget(['coupon_discount_amount', 'discount']);
                     }
                 }
                 

@@ -335,7 +335,7 @@
                             <ul class="space-y-2">
                                 @foreach ($items as $item)
                                     <li class="flex items-center space-x-2 text-gray-700">
-                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full topping-indicator" style="display: none"></span>
                                         <button type="button"
                                             class="flex-1 text-left hover:text-orange-600 font-semibold product-ingredient-btn"
                                             data-ingredients='@json($item['product_ingredients'])'
@@ -859,5 +859,18 @@
         // Pusher configuration
         window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
         window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+        // Topping indicator logic
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.product-ingredient-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    // Ẩn tất cả ô tròn
+                    document.querySelectorAll('.topping-indicator').forEach(function(ind) {
+                        ind.style.display = 'none';
+                    });
+                    // Hiện ô tròn của topping được chọn
+                    this.parentElement.querySelector('.topping-indicator').style.display = 'inline-block';
+                });
+            });
+        });
     </script>
 @endsection

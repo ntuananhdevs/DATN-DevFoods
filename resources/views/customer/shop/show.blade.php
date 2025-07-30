@@ -862,14 +862,14 @@
                                 @endif
                                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
                                 <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
-                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 checked-indicator transition-transform duration-200"></div>
                                 </div>
                                 @if($selectedBranchId)
                                     @php
                                         $toppingStock = $topping->toppingStocks->first();
                                         $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
                                     @endphp
-                                    @if($stockQuantity < 5)
+                                    @if($stockQuantity <= 10)
                                         <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display">
                                             Còn {{ $stockQuantity }}
                                         </div>
@@ -980,7 +980,7 @@
                             <ul class="space-y-2">
                                 @foreach($product->ingredients as $ingredient)
                                     <li class="flex items-center space-x-2 text-gray-700">
-                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        {{-- <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span> --}} <!-- Ẩn ô tròn màu cam -->
                                         <span class="flex-1">{{ $ingredient }}</span>
                                     </li>
                                 @endforeach
@@ -1602,5 +1602,24 @@
         });
     });
 })();
+</script>
+<script>
+    // Chỉ hiện ô tròn màu cam khi topping được chọn
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.topping-input').forEach(function(checkbox) {
+            function updateIndicator() {
+                const indicator = checkbox.closest('label').querySelector('.checked-indicator');
+                if (checkbox.checked) {
+                    indicator.classList.remove('scale-0');
+                    indicator.classList.add('scale-100');
+                } else {
+                    indicator.classList.remove('scale-100');
+                    indicator.classList.add('scale-0');
+                }
+            }
+            checkbox.addEventListener('change', updateIndicator);
+            updateIndicator(); // init
+        });
+    });
 </script>
 @endsection
