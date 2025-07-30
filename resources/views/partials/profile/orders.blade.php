@@ -439,6 +439,7 @@ class CustomerOrderRealtime {
         form.action = `/customer/orders/${orderId}/status`;
         form.method = 'POST';
         
+        
         // Create CSRF token input
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
