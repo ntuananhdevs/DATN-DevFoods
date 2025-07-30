@@ -73,11 +73,19 @@ class OrderStatusUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // This makes the channel private, ensuring only the order owner can listen.
-        // Make sure you have authentication for your broadcast channels configured.
-        return [
+        $channels = [
+            // Original channel for specific order page
             new PrivateChannel('order.' . $this->order->id),
+            // Branch channel for real-time updates
+            new Channel('branch-orders-channel'),
         ];
+        
+        // Add customer-specific channel for global notifications
+        if ($this->order->customer_id) {
+            $channels[] = new PrivateChannel('customer.' . $this->order->customer_id . '.orders');
+        }
+        
+        return $channels;
     }
 
     /**
@@ -85,7 +93,7 @@ class OrderStatusUpdated implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'OrderStatusUpdated'; // Explicitly name the event for the listener
+        return 'order-status-updated'; // Explicitly name the event for the listener
     }
 
     /**
@@ -97,6 +105,13 @@ class OrderStatusUpdated implements ShouldBroadcast
     {
         // We send only the necessary data to the frontend.
         return [
+            'order' => [
+                'id' => $this->order->id,
+                'status' => $this->order->status,
+                'customer_id' => $this->order->customer_id,
+                'branch_id' => $this->order->branch_id,
+            ],
+            'branch_id' => $this->order->branch_id,
             'status' => $this->order->status,
             'status_text' => $this->order->status_text,
             'status_color' => $this->order->status_color, // Gửi cả object/mảng màu sắc

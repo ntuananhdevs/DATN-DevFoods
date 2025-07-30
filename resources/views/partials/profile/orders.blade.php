@@ -7,7 +7,7 @@
         </div>
 
         @forelse($recentOrders as $order)
-            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm mb-4">
+            <div class="border border-gray-200 rounded-lg p-4 transition-shadow hover:shadow-sm mb-4" data-order-id="{{ $order->id }}">
                 {{-- Header --}}
                 <div class="flex justify-between items-start mb-1">
                     <div class="flex items-center gap-4">
@@ -37,9 +37,13 @@
                             {{ optional($order->estimated_delivery_time)->format('H:i') ?? 'N/A' }}
                         </p> --}}
 
-                        <span class="text-xs font-medium px-2 py-1 rounded-full"
+                        <span class="text-xs font-medium px-2 py-1 rounded-full status-badge"
                             style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color }};">
-                            {{ $order->status_text }}
+                            @if($order->status == 'confirmed')
+                                Đang tìm tài xế
+                            @else
+                                {{ $order->status_text }}
+                            @endif
                         </span>
                     </div>
                 </div>
@@ -245,7 +249,7 @@
                         <span class="text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }} đ</span>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 order-actions">
                         <a href="{{ route('customer.orders.show', $order) }}"
                             class="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300">
                             Chi tiết
@@ -261,6 +265,8 @@
                                     Hủy đơn
                                 </button>
                             </form>
+                        @elseif ($order->status == 'confirmed')
+                           
                         @elseif ($order->status == 'delivered')
                             <form action="{{ route('customer.orders.updateStatus', $order) }}" method="POST"
                                 class="receive-order-form flex gap-2">
@@ -303,20 +309,12 @@ class CustomerOrderRealtime {
     }
 
     initializePusher() {
-        console.log('🚀 initializePusher() được gọi');
-        alert('Debug: initializePusher được chạy');
-        
         try {
             // Use Laravel config with proper syntax
             const pusherKey = @json(config('broadcasting.connections.pusher.key'));
             const pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
             
-            console.log('🔑 Pusher Key:', pusherKey);
-            console.log('🌐 Pusher Cluster:', pusherCluster);
-            console.log('📋 Full config:', { key: pusherKey, cluster: pusherCluster });
-            
             if (!pusherKey || !pusherCluster) {
-                console.error('Pusher configuration missing');
                 this.setupPollingFallback();
                 return;
             }
@@ -332,20 +330,11 @@ class CustomerOrderRealtime {
                 }
             });
 
-            this.pusher.connection.bind('connected', () => {
-                console.log('✅ Connected to Pusher successfully');
-            });
-
             this.pusher.connection.bind('error', (err) => {
-                console.error('❌ Pusher connection error:', err);
                 this.setupPollingFallback();
             });
 
-            this.pusher.connection.bind('disconnected', () => {
-                console.log('⚠️ Pusher disconnected');
-            });
         } catch (error) {
-            console.error('Failed to initialize Pusher:', error);
             this.setupPollingFallback();
         }
     }
@@ -355,6 +344,9 @@ class CustomerOrderRealtime {
         @foreach($recentOrders as $order)
             this.subscribeToOrderChannel({{ $order->id }});
         @endforeach
+        
+        // Subscribe to branch orders channel for general updates
+        this.subscribeToBranchOrdersChannel();
     }
 
     subscribeToOrderChannel(orderId) {
@@ -364,47 +356,64 @@ class CustomerOrderRealtime {
             const channel = this.pusher.subscribe(channelName);
             this.channels.set(orderId, channel);
 
-            channel.bind('pusher:subscription_succeeded', () => {
-                console.log(`Subscribed to order ${orderId} channel`);
-            });
-
-            channel.bind('pusher:subscription_error', (status) => {
-                console.error(`Failed to subscribe to order ${orderId} channel:`, status);
-            });
-
-            channel.bind('OrderStatusUpdated', (data) => {
+            channel.bind('order-status-updated', (data) => {
                 this.handleOrderStatusUpdate(orderId, data);
             });
         } catch (error) {
-            console.error(`Error subscribing to order ${orderId} channel:`, error);
+            // Fallback to polling if subscription fails
+        }
+    }
+
+    subscribeToBranchOrdersChannel() {
+        try {
+            const branchChannel = this.pusher.subscribe('branch-orders-channel');
+            this.channels.set('branch-orders', branchChannel);
+
+            branchChannel.bind('order-status-updated', (data) => {
+                if (data.order_id) {
+                    this.handleOrderStatusUpdate(data.order_id, data);
+                }
+            });
+        } catch (error) {
+            // Fallback to polling if subscription fails
         }
     }
 
     handleOrderStatusUpdate(orderId, data) {
-        console.log('Order status updated:', orderId, data);
-        
         // Find the order element
         const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
         if (!orderElement) {
-            console.warn(`Order element not found for order ${orderId}`);
             return;
         }
 
         // Update status badge
         const statusBadge = orderElement.querySelector('.status-badge');
         if (statusBadge && data.status_text) {
-            statusBadge.textContent = data.status_text;
+            // Handle special case for 'confirmed' status
+            if (data.status === 'confirmed') {
+                statusBadge.textContent = 'Đang tìm tài xế';
+            } else {
+                statusBadge.textContent = data.status_text;
+            }
+            
+            // Use colors from event data if available
             if (data.status_color) {
                 statusBadge.style.backgroundColor = data.status_color;
+            }
+            if (data.status_text_color) {
+                statusBadge.style.color = data.status_text_color;
+            }
+            
+            // Add status icon if provided
+            if (data.status_icon) {
+                const iconHtml = `<i class="${data.status_icon} mr-1"></i>`;
+                statusBadge.innerHTML = iconHtml + statusBadge.textContent;
             }
         }
 
         // Update delivery time if provided
         if (data.actual_delivery_time) {
-            const deliveryTimeElement = orderElement.querySelector('.delivery-time');
-            if (deliveryTimeElement) {
-                deliveryTimeElement.textContent = data.actual_delivery_time;
-            }
+            this.updateDeliveryTime(orderElement, data.actual_delivery_time);
         }
 
         // Show notification
@@ -412,6 +421,25 @@ class CustomerOrderRealtime {
 
         // Update action buttons based on new status
         this.updateActionButtons(orderElement, data.status);
+    }
+
+    updateDeliveryTime(orderElement, actualDeliveryTime) {
+        // Find delivery time elements in the order card
+        const deliveryTimeElements = orderElement.querySelectorAll('.delivery-time, .font-semibold.text-blue-600');
+        
+        deliveryTimeElements.forEach(element => {
+            if (element.textContent.includes('phút') || element.textContent.includes('Đang xử lý')) {
+                // Update to show actual delivery time
+                element.textContent = 'Thực tế giao';
+                element.className = 'font-semibold text-green-600';
+                
+                // Add the actual time next to it
+                const timeSpan = document.createElement('span');
+                timeSpan.textContent = ` ${actualDeliveryTime}`;
+                timeSpan.className = 'ml-1';
+                element.appendChild(timeSpan);
+            }
+        });
     }
 
     updateActionButtons(orderElement, newStatus) {
@@ -429,7 +457,11 @@ class CustomerOrderRealtime {
         }
 
         // Add appropriate buttons based on new status
-        if (newStatus === 'delivered') {
+        if (newStatus === 'confirmed') {
+            // Add "Đang tìm tài xế" status indicator
+            const statusIndicator = this.createStatusIndicator('Đang tìm tài xế');
+            actionContainer.appendChild(statusIndicator);
+        } else if (newStatus === 'delivered') {
             // Add "Xác nhận đã nhận hàng" button
             const receiveForm = this.createReceiveOrderForm(orderElement.dataset.orderId);
             actionContainer.appendChild(receiveForm);
@@ -484,54 +516,48 @@ class CustomerOrderRealtime {
         return button;
     }
 
-    showNotification(orderId, data) {
-        // Create a simple notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
-        notification.innerHTML = `
-            <div class="flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div>
-                    <div class="font-medium">Cập nhật đơn hàng</div>
-                    <div class="text-sm opacity-90">Đơn hàng #${orderId} đã chuyển sang ${data.status_text}</div>
-                </div>
-            </div>
+    createStatusIndicator(statusText) {
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-blue-100 text-blue-600 border border-blue-300';
+        statusDiv.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            ${statusText}
         `;
         
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 5000);
+        return statusDiv;
+    }
+
+    showNotification(orderId, data) {
+        // Use the global showOrderNotification function from fullLayoutMaster.blade.php
+        if (typeof window.showOrderNotification === 'function') {
+            window.showOrderNotification(orderId, data);
+        } else {
+            console.log(`Order #${orderId} status updated to ${data.status_text} - notification function not available`);
+        }
     }
 
     setupPollingFallback() {
-        console.log('Setting up polling fallback for order updates');
         // Poll for order status updates every 30 seconds as fallback
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
         }
         
         this.pollingInterval = setInterval(() => {
-            // You can implement a simple AJAX call to check for order updates
-            // For now, just log that polling is active
-            console.log('Polling for order updates...');
+            // Simple polling implementation - could be enhanced with AJAX calls
+            // to check for order updates from server
         }, 30000);
     }
 
     destroy() {
         // Unsubscribe from all channels
-        this.channels.forEach((channel, orderId) => {
-            this.pusher.unsubscribe(`private-order.${orderId}`);
+        this.channels.forEach((channel, channelKey) => {
+            if (channelKey === 'branch-orders') {
+                this.pusher.unsubscribe('branch-orders-channel');
+            } else {
+                this.pusher.unsubscribe(`private-order.${channelKey}`);
+            }
         });
         this.channels.clear();
         
@@ -550,16 +576,9 @@ class CustomerOrderRealtime {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 DOM Content Loaded');
-    console.log('📦 Pusher available:', typeof Pusher !== 'undefined');
-    console.log('🔍 Order elements found:', document.querySelectorAll('[data-order-id]').length);
-    
-    // Test Pusher initialization (tạm thời bỏ điều kiện kiểm tra orders)
-    if (typeof Pusher !== 'undefined') {
-        console.log('✅ Khởi tạo CustomerOrderRealtime');
+    // Initialize realtime order updates if Pusher is available and there are orders
+    if (typeof Pusher !== 'undefined' && document.querySelectorAll('[data-order-id]').length > 0) {
         window.customerOrderRealtime = new CustomerOrderRealtime();
-    } else {
-        console.log('❌ Không thể khởi tạo CustomerOrderRealtime - Pusher không có sẵn');
     }
 });
 
