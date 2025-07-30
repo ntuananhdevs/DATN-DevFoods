@@ -3,8 +3,16 @@
 @section('title', 'Lịch sử đơn hàng')
 
 @section('content')
+<style>
+    .container-ft {
+        max-width: 1240px;
+    }
+    #action-confirmation-modal {
+        z-index: 9999;
+    }
+</style>
     <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
-        <div class="container mx-auto px-4">
+        <div class="container-ft mx-auto px-4">
             <div class="flex items-center">
                 <a href="{{ route('customer.profile') }}" class="text-white hover:text-white/80 mr-2">
                     <i class="fas fa-arrow-left"></i>
@@ -13,7 +21,7 @@
             </div>
         </div>
     </div>
-    <div class="container mx-auto px-4 py-8">
+    <div class="container-ft mx-auto ">
         <div class="flex flex-col gap-8">
             <section class="mb-10">
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -71,7 +79,7 @@
     </div>
     <!-- Modal xác nhận hành động -->
     <div id="action-confirmation-modal"
-        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
                 <div id="modal-icon-container"
@@ -83,6 +91,44 @@
                     <p id="action-modal-message" class="text-sm text-gray-500">
                         Bạn có chắc chắn thực hiện thao tác này không?
                     </p>
+                    
+                    <!-- Phần chọn lý do hủy đơn -->
+                    <div id="cancel-reason-section" class="mt-4 text-left hidden">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
+                        <div class="space-y-2">
+                            <div>
+                                <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
+                                <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
+                                <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
+                                <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
+                                <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
+                                <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
+                                <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                                <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                            </div>
+                            <div id="other-reason-container" class="hidden mt-2">
+                                <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Vui lòng nhập lý do khác..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="items-center px-4 py-3 flex gap-3">
                     <button id="action-abort-btn"
@@ -134,6 +180,20 @@
             const modalMessage = document.getElementById('action-modal-message');
             const confirmBtn = document.getElementById('action-confirm-btn');
             const abortBtn = document.getElementById('action-abort-btn');
+            const cancelReasonSection = document.getElementById('cancel-reason-section');
+            const otherReasonContainer = document.getElementById('other-reason-container');
+            const otherReasonText = document.getElementById('other-reason-text');
+
+            // Xử lý hiển thị textarea khi chọn lý do "Khác"
+            document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'Khác') {
+                        otherReasonContainer.classList.remove('hidden');
+                    } else {
+                        otherReasonContainer.classList.add('hidden');
+                    }
+                });
+            });
 
             function openActionModal(form, actionType) {
                 formToSubmit = form;
@@ -147,6 +207,7 @@
                         "Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.";
                     confirmBtn.className = "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700";
                     confirmBtn.textContent = "Đồng ý hủy";
+                    cancelReasonSection.classList.remove('hidden');
                 } else if (actionType === 'receive') {
                     modalIcon.className = "fas fa-check text-green-600 text-xl";
                     modalIconContainer.className =
@@ -156,6 +217,7 @@
                         "Bạn xác nhận đã nhận được hàng? Vui lòng kiểm tra kỹ trước khi xác nhận.";
                     confirmBtn.className = "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700";
                     confirmBtn.textContent = "Đã nhận";
+                    cancelReasonSection.classList.add('hidden');
                 }
                 modal.classList.remove('hidden');
             }
@@ -163,7 +225,14 @@
             function closeActionModal() {
                 formToSubmit = null;
                 modal.classList.add('hidden');
+                // Reset radio buttons
+                document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                otherReasonContainer.classList.add('hidden');
+                otherReasonText.value = '';
             }
+            
             if (confirmBtn) {
                 confirmBtn.addEventListener('click', function() {
                     if (formToSubmit) {
@@ -177,6 +246,28 @@
                         formData.append('_token', csrf);
                         formData.append('status', status);
                         if (methodInput) formData.append('_method', method);
+                        
+                        // Thêm lý do hủy đơn nếu đang hủy đơn hàng
+                        if (modalAction === 'cancel') {
+                            const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+                            if (!selectedReason) {
+                                showToast('Vui lòng chọn lý do hủy đơn hàng', "bg-red-600");
+                                return;
+                            }
+                            
+                            let reason = selectedReason.value;
+                            if (reason === 'Khác') {
+                                const otherReasonValue = otherReasonText.value.trim();
+                                if (!otherReasonValue) {
+                                    showToast('Vui lòng nhập lý do hủy đơn hàng', "bg-red-600");
+                                    return;
+                                }
+                                reason = otherReasonValue;
+                            }
+                            
+                            formData.append('reason', reason);
+                        }
+                        
                         fetch(action, {
                                 method: 'POST',
                                 headers: {

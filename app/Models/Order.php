@@ -159,9 +159,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderStatusHistory::class);
     }
-
+    
     /**
-     * Get the cancellation information for the order.
+     * Get the cancellation record for this order.
      */
     public function cancellation()
     {

@@ -366,12 +366,8 @@ if (window.ordersRealtimeInitialized) {
                         } else {
                             alert(successMsg);
                         }
-                        // Cập nhật lại số lượng trên tab status
-                        if (typeof updateOrderCounts === 'function') {
-                            updateOrderCounts();
-                        } else if (window.fetchOrderCounts) {
-                            window.fetchOrderCounts();
-                        }
+                        // Cập nhật số lượng trên status tabs
+                        this.updateStatusCountAfterConfirm();
                     } else {
                         if (typeof dtmodalShowToast === 'function') {
                             dtmodalShowToast('error', {title: 'Lỗi', message: data.message || 'Xác nhận đơn hàng lỗi'});
@@ -394,6 +390,34 @@ if (window.ordersRealtimeInitialized) {
                     console.error('Xác nhận đơn hàng lỗi:', error);
                 });
             }
+
+            updateStatusCountAfterConfirm() {
+                // Giảm số lượng tab "Chờ xác nhận"
+                const awaitingTab = document.querySelector('[data-status="awaiting_confirmation"]');
+                if (awaitingTab) {
+                    const currentText = awaitingTab.textContent;
+                    const match = currentText.match(/Chờ xác nhận \((\d+)\)/);
+                    if (match) {
+                        const currentCount = parseInt(match[1]) || 0;
+                        const newCount = Math.max(0, currentCount - 1);
+                        awaitingTab.textContent = `Chờ xác nhận (${newCount})`;
+                    }
+                }
+                
+                // Tăng số lượng tab "Chờ tài xế"
+                const driverTab = document.querySelector('[data-status="awaiting_driver"]');
+                if (driverTab) {
+                    const currentText = driverTab.textContent;
+                    const match = currentText.match(/Chờ tài xế \((\d+)\)/);
+                    if (match) {
+                        const currentCount = parseInt(match[1]) || 0;
+                        const newCount = currentCount + 1;
+                        driverTab.textContent = `Chờ tài xế (${newCount})`;
+                    }
+                }
+                
+                // Tab "Tất cả" không thay đổi vì tổng số đơn hàng không đổi
+            }
         }
         window.SimpleBranchOrdersRealtime = SimpleBranchOrdersRealtime;
     }
@@ -402,4 +426,4 @@ if (window.ordersRealtimeInitialized) {
     document.addEventListener('DOMContentLoaded', function() {
         window.simpleBranchOrdersRealtime = new SimpleBranchOrdersRealtime();
     }); 
-} 
+}

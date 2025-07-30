@@ -6,6 +6,7 @@ use App\Events\Order\OrderCancelledByCustomer; // Ensure this event is correctly
 use App\Events\Order\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderCancellation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -81,8 +82,22 @@ class OrderController extends Controller
         if ($newStatus === 'cancelled' && $order->status === 'awaiting_confirmation') {
             $canUpdate = true;
             $message = 'Đơn hàng của bạn đã được hủy thành công.';
+            
+            // Lưu thông tin hủy đơn hàng
+            OrderCancellation::create([
+                'order_id' => $order->id,
+                'cancelled_by' => Auth::id(),
+                'cancellation_type' => 'customer_cancel',
+                'cancellation_date' => now(),
+                'reason' => $request->reason,
+                'cancellation_stage' => 'before_processing',
+                'penalty_applied' => false,
+                'penalty_amount' => 0,
+                'points_deducted' => 0,
+            ]);
+            
             // Dispatch event for driver about customer cancellation
-            event(new OrderCancelledByCustomer($order->id)); //
+            event(new OrderCancelledByCustomer($order->id, $order->driver_id ?? null)); //
         }
         // Khách hàng xác nhận đã nhận hàng (chỉ khi đơn đã được giao)
         elseif ($newStatus === 'item_received' && $order->status === 'delivered') {

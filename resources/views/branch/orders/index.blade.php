@@ -75,6 +75,11 @@
 .status-tab:hover {
     color: #3b82f6;
 }
+
+/* Đảm bảo modal hiển thị đúng */
+#cancel-order-modal {
+    z-index: 9999;
+}
 </style>
 @endsection
 
@@ -208,6 +213,61 @@
 
 </div>
 
+<!-- Modal xác nhận hủy đơn hàng -->
+<div id="cancel-order-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-9999">
+    <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-times text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Xác nhận hủy đơn hàng</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.
+                </p>
+                
+                <!-- Phần chọn lý do hủy đơn -->
+                <div id="cancel-reason-section" class="mt-4 text-left">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Vui lòng cho biết lý do hủy đơn hàng này.</p>
+                    <div class="space-y-2">
+                        <div>
+                            <input type="radio" id="reason-out-of-stock" name="cancel_reason" value="Hết hàng" class="mr-2">
+                            <label for="reason-out-of-stock" class="text-sm text-gray-600">Hết hàng</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-too-busy" name="cancel_reason" value="Quá tải đơn hàng" class="mr-2">
+                            <label for="reason-too-busy" class="text-sm text-gray-600">Quá tải đơn hàng</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-closing" name="cancel_reason" value="Cửa hàng sắp đóng cửa" class="mr-2">
+                            <label for="reason-closing" class="text-sm text-gray-600">Cửa hàng sắp đóng cửa</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-customer-request" name="cancel_reason" value="Theo yêu cầu của khách hàng" class="mr-2">
+                            <label for="reason-customer-request" class="text-sm text-gray-600">Theo yêu cầu của khách hàng</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                            <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                        </div>
+                        <div id="other-reason-container" class="hidden mt-2">
+                            <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Vui lòng nhập lý do khác..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="items-center px-4 py-3 flex gap-3">
+                <button id="cancel-abort-btn" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                    Không
+                </button>
+                <button id="cancel-confirm-btn" class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Đồng ý hủy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('vendor-script')
@@ -286,6 +346,126 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toast thông báo thành công hoặc lỗi
+    function showToast(message, color = "bg-green-600") {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-20 right-4 ${color} text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+        }, 10);
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    // Xử lý modal hủy đơn hàng
+    const cancelModal = document.getElementById('cancel-order-modal');
+    const cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
+    const cancelAbortBtn = document.getElementById('cancel-abort-btn');
+    const otherReasonContainer = document.getElementById('other-reason-container');
+    const otherReasonText = document.getElementById('other-reason-text');
+    let currentOrderId = null;
+
+    // Xử lý hiển thị textarea khi chọn lý do "Khác"
+    document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'Khác') {
+                otherReasonContainer.classList.remove('hidden');
+            } else {
+                otherReasonContainer.classList.add('hidden');
+            }
+        });
+    });
+
+    // Mở modal khi bấm nút hủy đơn
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.dataset.quickAction === 'cancel') {
+            e.preventDefault();
+            currentOrderId = e.target.dataset.orderId;
+            cancelModal.classList.remove('hidden');
+        }
+    });
+
+    // Đóng modal khi bấm nút không
+    cancelAbortBtn.addEventListener('click', function() {
+        closeModal();
+    });
+
+    // Xử lý khi bấm nút xác nhận hủy
+    cancelConfirmBtn.addEventListener('click', function() {
+        if (!currentOrderId) {
+            closeModal();
+            return;
+        }
+
+        const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+        if (!selectedReason) {
+            showToast('Vui lòng chọn lý do hủy đơn hàng', "bg-red-600");
+            return;
+        }
+
+        let reason = selectedReason.value;
+        if (reason === 'Khác') {
+            const otherReasonValue = otherReasonText.value.trim();
+            if (!otherReasonValue) {
+                showToast('Vui lòng nhập lý do hủy đơn hàng', "bg-red-600");
+                return;
+            }
+            reason = otherReasonValue;
+        }
+
+        // Gửi request hủy đơn hàng
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        formData.append('reason', reason);
+
+        fetch(`{{ route('branch.orders.cancel', ['id' => '__id__']) }}`.replace('__id__', currentOrderId), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            closeModal();
+            if (data.success) {
+                showToast('Hủy đơn hàng thành công!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1300);
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra!', "bg-red-600");
+            }
+        })
+        .catch(() => {
+            closeModal();
+            showToast('Có lỗi khi kết nối!', "bg-red-600");
+        });
+    });
+
+    function closeModal() {
+        cancelModal.classList.add('hidden');
+        currentOrderId = null;
+        // Reset radio buttons
+        document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+            radio.checked = false;
+        });
+        otherReasonContainer.classList.add('hidden');
+        otherReasonText.value = '';
+    }
+});
+</script>
+
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="{{ asset('js/branch/orders-realtime-simple.js') }}" defer></script>
 <script src="{{ asset('js/modal.js') }}" defer></script>
