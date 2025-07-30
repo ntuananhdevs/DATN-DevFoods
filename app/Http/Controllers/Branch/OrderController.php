@@ -460,7 +460,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast event để cập nhật realtime
-            event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
+            event(new OrderStatusUpdated($order));
 
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));

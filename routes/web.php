@@ -37,3 +37,24 @@ Route::get('/refresh-csrf', function () {
 });
 
 Route::get('/customer/profile/branches-map', [ProfileController::class, 'getBranchesForMap']);
+
+Route::get('/test-notification-debug', function () {
+    return view('test-notification-debug');
+})->middleware('auth');
+
+Route::post('/api/test-notification', function () {
+    $order = \App\Models\Order::where('customer_id', auth()->id())->latest()->first();
+    if (!$order) {
+        return response()->json(['error' => 'No order found'], 404);
+    }
+    
+    // Trigger the event
+    event(new \App\Events\Order\OrderStatusUpdated($order));
+    
+    return response()->json([
+        'success' => true,
+        'order_id' => $order->id,
+        'status' => $order->status,
+        'customer_id' => $order->customer_id
+    ]);
+})->middleware('auth');
