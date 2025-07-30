@@ -571,44 +571,7 @@
         const bellBtn = document.querySelector('.notification-bell-btn ion-icon');
         if (bellBtn) {
             bellBtn.classList.add('bell-shake');
-            setTimeout(() => bellBtn.classList.remove('bell-shake'), 700);
-        }
-    }
-
-    function fetchNotifications() {
-        fetch("{{ route('notifications.index') }}?ajax=1", {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-
-                document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
-                });
-                let container = document.getElementById('customer-notification-list');
-                if (container && data.html) {
-                    let tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = data.html;
-                    let newNotis = tempDiv.querySelectorAll('[id^="notification-item-"]');
-                    let newIds = new Set();
-                    newNotis.forEach(newNoti => {
-                        let id = newNoti.id;
-                        newIds.add(id);
-                        let oldNoti = document.getElementById(id);
-                        if (oldNoti) {
-                            oldNoti.outerHTML = newNoti.outerHTML;
-                        } else {
-                            container.prepend(newNoti);
-                        }
-                    });
-                    // Xóa notification cũ không còn trong danh sách mới
-                    container.querySelectorAll('[id^="notification-item-"]').forEach(oldNoti => {
-                        if (!newIds.has(oldNoti.id)) {
-                            oldNoti.remove();
-                        }
-                    });
+            setTimeout(() => bellBtn.classLi        });
                 }
                 // Gọi hiệu ứng rung chuông khi badge tăng
                 if (data.unreadCount > lastUnreadCount) {

@@ -292,6 +292,12 @@ class BranchOrdersRealtime {
                     title: 'Thành công',
                     message: result.message
                 });
+                
+                // Cập nhật status counts trước khi di chuyển card
+                if (action === 'confirm') {
+                    this.updateStatusCountAfterConfirm();
+                }
+                
                 this.moveOrderCardToNewStatus(orderId, newStatus);
             } else {
                 dtmodalShowToast('error', {
@@ -416,6 +422,13 @@ class BranchOrdersRealtime {
         });
     }
 
+    updateStatusCountAfterConfirm() {
+        // Giảm số lượng tab "Chờ xác nhận"
+        this.updateStatusCount('awaiting_confirmation', -1);
+        // Tăng số lượng tab "Chờ tài xế"
+        this.updateStatusCount('awaiting_driver', 1);
+    }
+
     moveOrderCardToNewStatus(orderId, newStatus) {
         const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
         if (!orderCard) return;
@@ -442,12 +455,6 @@ class BranchOrdersRealtime {
         
         // Xóa thẻ khỏi tab hiện tại
         orderCard.remove();
-        
-        // Cập nhật số đếm tab
-        if (oldStatus && oldStatus !== newStatus) {
-            this.updateStatusCount(oldStatus, -1);
-        }
-        this.updateStatusCount(newStatus, 1);
         
         // Cập nhật URL nếu đang ở tab cụ thể và không còn đơn hàng nào
         const currentTab = document.querySelector('.status-tab.active');
@@ -771,4 +778,4 @@ document.addEventListener('DOMContentLoaded', function() {
             window.branchOrdersRealtime.destroy();
         }
     });
-}); 
+});

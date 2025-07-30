@@ -85,9 +85,9 @@
     <!-- Filter Card -->
     <div class="card border rounded-lg overflow-hidden">
         <div class="p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <form method="GET" class="flex items-center gap-2 w-full md:w-auto">
-                <input type="text" name="order_code" value="{{ request('order_code') }}" placeholder="Tìm kiếm mã đơn hàng..." class="border rounded-md px-3 py-2 bg-background text-sm w-full md:w-64" />
-                <select name="branch_id" class="rounded-xl border border-gray-200 px-4 py-2 min-w-[180px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none">
+            <form id="filter-form" method="GET" class="flex items-center gap-2 w-full md:w-auto">
+                <input type="text" id="order_code" name="order_code" value="{{ request('order_code') }}" placeholder="Tìm kiếm mã đơn hàng..." class="border rounded-md px-3 py-2 bg-background text-sm w-full md:w-64" />
+                <select id="branch_id" name="branch_id" class="rounded-xl border border-gray-200 px-4 py-2 min-w-[180px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none">
                     <option value="">Tất cả chi nhánh</option>
                     @foreach($branches as $branch)
                         <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
@@ -95,7 +95,7 @@
                         </option>
                     @endforeach
                 </select>
-                <input type="text" name="date" value="{{ request('date') }}" placeholder="dd/mm/yyyy" class="border border-gray-200 rounded-xl px-4 py-2 min-w-[140px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" />
+                <input type="text" id="date" name="date" value="{{ request('date') }}" placeholder="dd/mm/yyyy" class="border border-gray-200 rounded-xl px-4 py-2 min-w-[140px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" />
                 <button type="submit" class="btn btn-outline">Lọc</button>
             </form>
         </div>
@@ -117,9 +117,9 @@
                     ];
                 @endphp
                 @foreach($tabs as $tab)
-                    <a href="{{ route('admin.orders.index', array_merge(request()->except('page'), ['status' => $tab['key']])) }}"
+                    <a href="#" data-status="{{ $tab['key'] }}"
                        class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ (request('status') == $tab['key'] || (!request('status') && $tab['key'] === '')) ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                        {{ $tab['label'] }} ({{ $tab['count'] }})
+                        {{ $tab['label'] }} (<span class="tab-count">{{ $tab['count'] }}</span>)
                     </a>
                 @endforeach
             </nav>
@@ -134,8 +134,11 @@
         </div>
 
         <!-- Table -->
-        <div class="overflow-x-auto">
-            <table class="w-full">
+        <div class="overflow-x-auto" id="orders-table-container">
+            <div id="loading-spinner" class="hidden flex justify-center items-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+            <table class="w-full" id="orders-table">
                 <thead>
                     <tr class="border-b bg-muted/50">
                         <th class="py-3 px-4 text-left font-medium">Mã đơn hàng</th>
@@ -148,12 +151,12 @@
                         <th class="py-3 px-4 text-center font-medium">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="orders-tbody">
                     @forelse($orders as $order)
                         @include('admin.order._order_row', ['order' => $order])
                     @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-8">
+                    <tr id="empty-state">
+                        <td colspan="8" class="text-center py-8">
                             <div class="flex flex-col items-center justify-center text-muted-foreground">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
                                     <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -192,4 +195,149 @@
 
 @section('scripts')
 <script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+<script>
+// AJAX Tab Switching
+document.addEventListener('DOMContentLoaded', function() {
+    const statusTabs = document.querySelectorAll('.status-tab');
+    const ordersTableContainer = document.getElementById('orders-table-container');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const ordersTable = document.getElementById('orders-table');
+    const ordersTbody = document.getElementById('orders-tbody');
+    const paginationContainer = document.querySelector('.pagination-container');
+    
+    // Current filters
+    let currentFilters = {
+        order_code: '{{ request("order_code") }}',
+        branch_id: '{{ request("branch_id") }}',
+        date: '{{ request("date") }}'
+    };
+    
+    // Filter form handling
+    const filterForm = document.getElementById('filter-form');
+    const orderCodeInput = document.getElementById('order_code');
+    const branchIdSelect = document.getElementById('branch_id');
+    const dateInput = document.getElementById('date');
+    
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Update current filters
+        currentFilters.order_code = orderCodeInput.value;
+        currentFilters.branch_id = branchIdSelect.value;
+        currentFilters.date = dateInput.value;
+        
+        // Get current active tab
+        const activeTab = document.querySelector('.status-tab.active');
+        const currentStatus = activeTab ? activeTab.getAttribute('data-status') : '';
+        
+        // Load orders with new filters
+        loadOrders(currentStatus, 1);
+    });
+    
+    statusTabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const status = this.getAttribute('data-status');
+            
+            // Update active tab
+            statusTabs.forEach(t => {
+                t.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            this.classList.add('active', 'border-blue-500', 'text-blue-600');
+            this.classList.remove('border-transparent', 'text-gray-500');
+            
+            // Load orders via AJAX
+            loadOrders(status, 1);
+        });
+    });
+    
+    function loadOrders(status = '', page = 1) {
+        // Show loading
+        loadingSpinner.classList.remove('hidden');
+        ordersTable.style.opacity = '0.5';
+        
+        // Build URL with filters
+        const params = new URLSearchParams();
+        if (status) params.append('status', status);
+        if (currentFilters.order_code) params.append('order_code', currentFilters.order_code);
+        if (currentFilters.branch_id) params.append('branch_id', currentFilters.branch_id);
+        if (currentFilters.date) params.append('date', currentFilters.date);
+        if (page > 1) params.append('page', page);
+        params.append('ajax', '1');
+        
+        const url = '{{ route("admin.orders.index") }}?' + params.toString();
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update table content
+            ordersTbody.innerHTML = data.html;
+            
+            // Update pagination
+            if (paginationContainer) {
+                const paginationStart = document.getElementById('paginationStart');
+                const paginationEnd = document.getElementById('paginationEnd');
+                const paginationTotal = document.getElementById('paginationTotal');
+                const paginationControls = document.getElementById('paginationControls');
+                
+                if (paginationStart) paginationStart.textContent = data.pagination.from || 0;
+                if (paginationEnd) paginationEnd.textContent = data.pagination.to || 0;
+                if (paginationTotal) paginationTotal.textContent = data.pagination.total || 0;
+                if (paginationControls) paginationControls.innerHTML = data.pagination.links || '';
+            }
+            
+            // Update tab counts
+            if (data.counts) {
+                statusTabs.forEach(tab => {
+                    const tabStatus = tab.getAttribute('data-status');
+                    const countSpan = tab.querySelector('.tab-count');
+                    if (countSpan) {
+                        if (tabStatus === '') {
+                            countSpan.textContent = data.counts.all || 0;
+                        } else {
+                            countSpan.textContent = data.counts[tabStatus] || 0;
+                        }
+                    }
+                });
+            }
+            
+            // Update URL without page reload
+            const newUrl = '{{ route("admin.orders.index") }}' + (params.toString().replace('&ajax=1', '').replace('ajax=1&', '').replace('ajax=1', '') ? '?' + params.toString().replace('&ajax=1', '').replace('ajax=1&', '').replace('ajax=1', '') : '');
+            window.history.pushState({}, '', newUrl);
+        })
+        .catch(error => {
+            console.error('Error loading orders:', error);
+            // Show error message
+            ordersTbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-red-500">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.</td></tr>';
+        })
+        .finally(() => {
+            // Hide loading
+            loadingSpinner.classList.add('hidden');
+            ordersTable.style.opacity = '1';
+        });
+    }
+    
+    // Handle pagination clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.pagination a')) {
+            e.preventDefault();
+            const link = e.target.closest('.pagination a');
+            const url = new URL(link.href);
+            const page = url.searchParams.get('page') || 1;
+            const currentStatus = document.querySelector('.status-tab.active')?.getAttribute('data-status') || '';
+            
+            loadOrders(currentStatus, page);
+        }
+    });
+});
+</script>
 @endsection
