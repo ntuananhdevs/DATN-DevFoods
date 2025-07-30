@@ -289,3 +289,285 @@
         @endforelse
     </div>
 </section>
+
+@push('scripts')
+<script>
+// Real-time order status updates
+class CustomerOrderRealtime {
+    constructor() {
+        this.pusher = null;
+        this.channels = new Map();
+        this.pollingInterval = null;
+        this.initializePusher();
+        this.subscribeToOrderChannels();
+    }
+
+    initializePusher() {
+        console.log('🚀 initializePusher() được gọi');
+        alert('Debug: initializePusher được chạy');
+        
+        try {
+            // Use Laravel config with proper syntax
+            const pusherKey = @json(config('broadcasting.connections.pusher.key'));
+            const pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
+            
+            console.log('🔑 Pusher Key:', pusherKey);
+            console.log('🌐 Pusher Cluster:', pusherCluster);
+            console.log('📋 Full config:', { key: pusherKey, cluster: pusherCluster });
+            
+            if (!pusherKey || !pusherCluster) {
+                console.error('Pusher configuration missing');
+                this.setupPollingFallback();
+                return;
+            }
+
+            this.pusher = new Pusher(pusherKey, {
+                cluster: pusherCluster,
+                encrypted: true,
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }
+            });
+
+            this.pusher.connection.bind('connected', () => {
+                console.log('✅ Connected to Pusher successfully');
+            });
+
+            this.pusher.connection.bind('error', (err) => {
+                console.error('❌ Pusher connection error:', err);
+                this.setupPollingFallback();
+            });
+
+            this.pusher.connection.bind('disconnected', () => {
+                console.log('⚠️ Pusher disconnected');
+            });
+        } catch (error) {
+            console.error('Failed to initialize Pusher:', error);
+            this.setupPollingFallback();
+        }
+    }
+
+    subscribeToOrderChannels() {
+        // Subscribe to each order's private channel
+        @foreach($recentOrders as $order)
+            this.subscribeToOrderChannel({{ $order->id }});
+        @endforeach
+    }
+
+    subscribeToOrderChannel(orderId) {
+        const channelName = `private-order.${orderId}`;
+        
+        try {
+            const channel = this.pusher.subscribe(channelName);
+            this.channels.set(orderId, channel);
+
+            channel.bind('pusher:subscription_succeeded', () => {
+                console.log(`Subscribed to order ${orderId} channel`);
+            });
+
+            channel.bind('pusher:subscription_error', (status) => {
+                console.error(`Failed to subscribe to order ${orderId} channel:`, status);
+            });
+
+            channel.bind('OrderStatusUpdated', (data) => {
+                this.handleOrderStatusUpdate(orderId, data);
+            });
+        } catch (error) {
+            console.error(`Error subscribing to order ${orderId} channel:`, error);
+        }
+    }
+
+    handleOrderStatusUpdate(orderId, data) {
+        console.log('Order status updated:', orderId, data);
+        
+        // Find the order element
+        const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+        if (!orderElement) {
+            console.warn(`Order element not found for order ${orderId}`);
+            return;
+        }
+
+        // Update status badge
+        const statusBadge = orderElement.querySelector('.status-badge');
+        if (statusBadge && data.status_text) {
+            statusBadge.textContent = data.status_text;
+            if (data.status_color) {
+                statusBadge.style.backgroundColor = data.status_color;
+            }
+        }
+
+        // Update delivery time if provided
+        if (data.actual_delivery_time) {
+            const deliveryTimeElement = orderElement.querySelector('.delivery-time');
+            if (deliveryTimeElement) {
+                deliveryTimeElement.textContent = data.actual_delivery_time;
+            }
+        }
+
+        // Show notification
+        this.showNotification(orderId, data);
+
+        // Update action buttons based on new status
+        this.updateActionButtons(orderElement, data.status);
+    }
+
+    updateActionButtons(orderElement, newStatus) {
+        const actionContainer = orderElement.querySelector('.order-actions');
+        if (!actionContainer) return;
+
+        // Remove existing action buttons except detail button
+        const existingForms = actionContainer.querySelectorAll('form');
+        existingForms.forEach(form => form.remove());
+        
+        // Remove existing review button if any
+        const existingReviewBtn = actionContainer.querySelector('a[href="#"]');
+        if (existingReviewBtn && existingReviewBtn.textContent.includes('Đánh giá')) {
+            existingReviewBtn.remove();
+        }
+
+        // Add appropriate buttons based on new status
+        if (newStatus === 'delivered') {
+            // Add "Xác nhận đã nhận hàng" button
+            const receiveForm = this.createReceiveOrderForm(orderElement.dataset.orderId);
+            actionContainer.appendChild(receiveForm);
+        } else if (newStatus === 'item_received') {
+            // Add "Đánh giá" button
+            const reviewButton = this.createReviewButton();
+            actionContainer.appendChild(reviewButton);
+        }
+    }
+
+    createReceiveOrderForm(orderId) {
+        const form = document.createElement('form');
+        form.className = 'receive-order-form flex gap-2';
+        form.action = `/customer/orders/${orderId}/status`;
+        form.method = 'POST';
+        
+        // Create CSRF token input
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Create status input
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = 'item_received';
+        
+        // Create button
+        const button = document.createElement('button');
+        button.type = 'submit';
+        button.className = 'inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-orange-500 hover:bg-orange-600';
+        button.textContent = 'Xác nhận đã nhận hàng';
+        
+        form.appendChild(csrfInput);
+        form.appendChild(statusInput);
+        form.appendChild(button);
+        
+        return form;
+    }
+
+    createReviewButton() {
+        const button = document.createElement('a');
+        button.href = '#';
+        button.className = 'inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600';
+        button.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+            </svg> Đánh giá
+        `;
+        
+        return button;
+    }
+
+    showNotification(orderId, data) {
+        // Create a simple notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <div class="font-medium">Cập nhật đơn hàng</div>
+                    <div class="text-sm opacity-90">Đơn hàng #${orderId} đã chuyển sang ${data.status_text}</div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    setupPollingFallback() {
+        console.log('Setting up polling fallback for order updates');
+        // Poll for order status updates every 30 seconds as fallback
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+        
+        this.pollingInterval = setInterval(() => {
+            // You can implement a simple AJAX call to check for order updates
+            // For now, just log that polling is active
+            console.log('Polling for order updates...');
+        }, 30000);
+    }
+
+    destroy() {
+        // Unsubscribe from all channels
+        this.channels.forEach((channel, orderId) => {
+            this.pusher.unsubscribe(`private-order.${orderId}`);
+        });
+        this.channels.clear();
+        
+        // Disconnect Pusher
+        if (this.pusher) {
+            this.pusher.disconnect();
+            this.pusher = null;
+        }
+        
+        // Clear polling interval
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 DOM Content Loaded');
+    console.log('📦 Pusher available:', typeof Pusher !== 'undefined');
+    console.log('🔍 Order elements found:', document.querySelectorAll('[data-order-id]').length);
+    
+    // Test Pusher initialization (tạm thời bỏ điều kiện kiểm tra orders)
+    if (typeof Pusher !== 'undefined') {
+        console.log('✅ Khởi tạo CustomerOrderRealtime');
+        window.customerOrderRealtime = new CustomerOrderRealtime();
+    } else {
+        console.log('❌ Không thể khởi tạo CustomerOrderRealtime - Pusher không có sẵn');
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (window.customerOrderRealtime) {
+        window.customerOrderRealtime.destroy();
+    }
+});
+</script>
+@endpush
