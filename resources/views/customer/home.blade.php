@@ -413,15 +413,17 @@
             let slideInterval;
 
             function showSlide(index) {
-                // Hide all slides
-                slides.forEach(slide => {
+                // Hide all slides and reset z-index
+                slides.forEach((slide, i) => {
                     slide.classList.remove('opacity-100');
                     slide.classList.add('opacity-0');
+                    slide.style.zIndex = '1';
                 });
 
-                // Show the selected slide
+                // Show the selected slide and set higher z-index
                 slides[index].classList.remove('opacity-0');
                 slides[index].classList.add('opacity-100');
+                slides[index].style.zIndex = '10';
 
                 // Update dots
                 dots.forEach((dot, i) => {
@@ -435,6 +437,9 @@
                 });
 
                 currentSlide = index;
+                
+                // Debug log
+                console.log('Showing slide:', index, 'Banner ID:', slides[index].dataset.bannerId, 'Link:', slides[index].dataset.bannerLink);
             }
 
             function nextSlide() {

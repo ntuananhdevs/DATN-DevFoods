@@ -84,6 +84,7 @@ class ReviewReplyController extends Controller
             return response()->json(['message' => 'Bạn không có quyền xóa phản hồi này!'], 403);
         }
         $reply->delete();
+        // ĐÃ DÙNG OBSERVER để broadcast event realtime, KHÔNG cần gọi event ở đây nữa
         \Log::info('XOÁ REPLY THÀNH CÔNG', ['reply_id' => $id, 'user_id' => $user->id]);
         return response()->json(['message' => 'Xóa phản hồi thành công!']);
     }

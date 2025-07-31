@@ -2,7 +2,7 @@
 @section('title', 'Danh sách báo cáo vi phạm bình luận')
 @section('content')
 <div class="min-h-screen bg-gradient-to-br">
-    <div class="fade-in flex flex-col gap-4 pb-4 animate-slideInUp delay-200 duration-700 ease-in-out">
+    <div class=" flex flex-col gap-4 pb-4 delay-200 duration-700 ease-in-out">
         <div class="flex items-center gap-3 mb-4">
             <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-pink-600 text-white">
                 <i class="fas fa-flag text-xl"></i>
