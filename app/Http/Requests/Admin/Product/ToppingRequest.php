@@ -27,7 +27,7 @@ class ToppingRequest extends FormRequest
             'name' => 'required|string|max:255|unique:toppings,name,' . $toppingId,
             'price' => 'required|numeric|min:0|max:999999999',
             'description' => 'nullable|string|max:1000',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
             'status' => 'required|in:active,inactive,discontinued'
         ];
     }
@@ -55,7 +55,6 @@ class ToppingRequest extends FormRequest
             
             'image.image' => 'File phải là hình ảnh.',
             'image.mimes' => 'Hình ảnh phải có định dạng: jpeg, png, jpg, gif, webp.',
-            'image.max' => 'Kích thước hình ảnh không được vượt quá 2MB.',
             
             'status.required' => 'Trạng thái là bắt buộc.',
             'status.in' => 'Trạng thái phải là một trong các giá trị: đang bán, tạm ngưng, chưa bán nữa.'
