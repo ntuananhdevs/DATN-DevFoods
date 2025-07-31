@@ -26,6 +26,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ComboBranchStock;
 
 class FastFoodSeeder extends Seeder
 {
@@ -774,6 +775,25 @@ class FastFoodSeeder extends Seeder
             }
         }
         echo "Created {$branchStocksCreated} branch stock entries\n";
+        
+        // Tạo combo branch stocks
+        $comboBranchStocksCreated = 0;
+        $combos = Combo::all();
+        foreach ($this->branches as $branch) {
+            foreach ($combos as $combo) {
+                ComboBranchStock::updateOrCreate(
+                    [
+                        'branch_id' => $branch->id,
+                        'combo_id' => $combo->id
+                    ],
+                    [
+                        'quantity' => rand(20, 100)
+                    ]
+                );
+                $comboBranchStocksCreated++;
+            }
+        }
+        echo "Created {$comboBranchStocksCreated} combo branch stock entries\n";
     }
 
     private function createProductToppings()
