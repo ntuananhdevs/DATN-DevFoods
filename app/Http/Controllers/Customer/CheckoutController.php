@@ -311,6 +311,7 @@ class CheckoutController extends Controller
             $buyNow = session('buy_now_checkout');
             $cartItems = collect();
             $cart = null;
+            $selectedIds = null; // Khởi tạo biến selectedIds
             
             if ($buyNow) {
                 // Xử lý "buy now" - tạo cart items từ session
@@ -533,40 +534,9 @@ class CheckoutController extends Controller
             // Cập nhật lại txn_ref của payment để dùng chung order_code cho dễ tra cứu
             $payment->txn_ref = $order->order_code;
             
-            // Xử lý theo phương thức thanh toán
-            if ($request->payment_method === 'vnpay') {
-                $order->status = 'pending_payment'; 
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-
-                // Logic tạo URL VNPAY sẽ ở đây
-                $vnp_Url = $this->createVnpayUrl($order, $request); // createVnpayUrl vẫn dùng order
-
-                DB::commit();
-
-                // Redirect to VNPAY
-                return redirect()->away($vnp_Url);
-
-            } else if ($request->payment_method === 'balance') {
-                // Xử lý thanh toán bằng số dư
-                $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-                
-                // Trừ tiền từ tài khoản user
-                $user = Auth::user();
-                $user->balance -= $total;
-                $user->save();
-                
-            } else { // COD
-                $order->status = 'awaiting_confirmation';
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-            }
-
-            if ($order->status === 'awaiting_confirmation') {
-                NewOrderReceived::dispatch($order);
-            }
+            // Lưu order trước để có ID cho orderItems
+            $order->save();
+            $payment->save();
             
             // Create order items - Hỗ trợ cả buy now và giỏ hàng thông thường
             foreach ($cartItems as $cartItem) {
@@ -666,13 +636,50 @@ class CheckoutController extends Controller
             // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến
             OrderSnapshotService::snapshotOrder($order);
             
+            // Xử lý theo phương thức thanh toán
+            if ($request->payment_method === 'vnpay') {
+                $order->status = 'pending_payment'; // Sử dụng trạng thái pending_payment cho đơn hàng chưa thanh toán
+                $order->save();
+
+                // Logic tạo URL VNPAY sẽ ở đây
+                $vnp_Url = $this->createVnpayUrl($order, $request); // createVnpayUrl vẫn dùng order
+
+                DB::commit();
+
+                // Redirect to VNPAY
+                return redirect()->away($vnp_Url);
+
+            } else if ($request->payment_method === 'balance') {
+                // Xử lý thanh toán bằng số dư
+                $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
+                $order->save();
+                
+                // Trừ tiền từ tài khoản user
+                $user = Auth::user();
+                $user->balance -= $total;
+                $user->save();
+                
+            } else { // COD
+                $order->status = 'awaiting_confirmation';
+                $order->save();
+            }
+
+            if ($order->status === 'awaiting_confirmation') {
+                NewOrderReceived::dispatch($order);
+                
+                // Send confirmation email asynchronously only for confirmed orders
+                dispatch(function() use ($order) {
+                    EmailFactory::sendOrderConfirmation($order);
+                });
+            }
+            
             // Clear cart or buy now session after order is placed
             if ($buyNow) {
                 // Clear buy now session
                 session()->forget('buy_now_checkout');
             } else {
-                // Clear only the selected cart items, not the whole cart
-                if ($cart && isset($selectedIds) && is_array($selectedIds)) {
+                // Chỉ xóa cart items khi đơn hàng đã được xác nhận (không phải pending_payment)
+                if ($order->status === 'awaiting_confirmation' && $cart && isset($selectedIds) && is_array($selectedIds)) {
                     // Xóa các CartItem đã được thanh toán
                     \App\Models\CartItem::where('cart_id', $cart->id)
                         ->whereIn('id', $selectedIds)
@@ -693,11 +700,6 @@ class CheckoutController extends Controller
             session()->forget('coupon_discount_amount');
             
             DB::commit();
-            
-            // Send confirmation email asynchronously
-            dispatch(function() use ($order) {
-                EmailFactory::sendOrderConfirmation($order);
-            });
             
             // Redirect to success page
             return redirect()->route('checkout.success', ['order_code' => $order->order_code])
@@ -822,14 +824,56 @@ class CheckoutController extends Controller
                         EmailFactory::sendOrderConfirmation($order);
                     });
 
-                    // Clear cart
-                    $cart = Cart::where('user_id', $order->customer_id)
-                                ->orWhere('session_id', session()->getId())
-                                ->where('status', 'active')->first();
+                    // Clear cart items that were ordered
+                    if ($order->customer_id) {
+                        // For authenticated users
+                        $cart = Cart::where('user_id', $order->customer_id)
+                                    ->where('status', 'active')->first();
+                    } else {
+                        // For guest users (though VNPAY typically requires authentication)
+                        $cart = Cart::where('session_id', session()->getId())
+                                    ->where('status', 'active')->first();
+                    }
+                    
                     if ($cart) {
-                        $cart->status = 'completed';
-                        $cart->save();
-                        session()->forget(['coupon_discount_amount', 'discount']);
+                        // Get cart item IDs from order snapshot data to know which items to remove
+                        $orderItems = $order->orderItems;
+                        $cartItemIdsToDelete = [];
+                        
+                        foreach ($orderItems as $orderItem) {
+                            // Try to find matching cart items based on variant/combo and remove them
+                            if ($orderItem->product_variant_id) {
+                                $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                    ->where('product_variant_id', $orderItem->product_variant_id)
+                                    ->get();
+                                foreach ($cartItems as $cartItem) {
+                                    $cartItemIdsToDelete[] = $cartItem->id;
+                                }
+                            } elseif ($orderItem->combo_id) {
+                                $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                    ->where('combo_id', $orderItem->combo_id)
+                                    ->get();
+                                foreach ($cartItems as $cartItem) {
+                                    $cartItemIdsToDelete[] = $cartItem->id;
+                                }
+                            }
+                        }
+                        
+                        // Remove the cart items
+                        if (!empty($cartItemIdsToDelete)) {
+                            \App\Models\CartItem::whereIn('id', array_unique($cartItemIdsToDelete))->delete();
+                        }
+                        
+                        // Update cart count in session
+                        $cartCount = $cart->items()->count();
+                        session(['cart_count' => $cartCount]);
+                        
+                        // If cart is empty, mark as completed
+                        if ($cart->items()->count() == 0) {
+                            $cart->status = 'completed';
+                            $cart->save();
+                            session()->forget(['coupon_discount_amount', 'discount']);
+                        }
                     }
                 }
                 
@@ -889,6 +933,53 @@ class CheckoutController extends Controller
                             if ($inputData['vnp_ResponseCode'] == '00' && $inputData['vnp_TransactionStatus'] == '00') {
                                 $order->status = 'awaiting_confirmation'; // hoặc 'processing' tùy vào logic của bạn
                                 $order->payment->payment_status = 'completed';
+                                
+                                // Clear cart items that were ordered
+                                if ($order->customer_id) {
+                                    // For authenticated users
+                                    $cart = \App\Models\Cart::where('user_id', $order->customer_id)
+                                                ->where('status', 'active')->first();
+                                } else {
+                                    // For guest users (though VNPAY typically requires authentication)
+                                    $cart = \App\Models\Cart::where('session_id', session()->getId())
+                                                ->where('status', 'active')->first();
+                                }
+                                
+                                if ($cart) {
+                                    // Get cart item IDs from order snapshot data to know which items to remove
+                                    $orderItems = $order->orderItems;
+                                    $cartItemIdsToDelete = [];
+                                    
+                                    foreach ($orderItems as $orderItem) {
+                                        // Try to find matching cart items based on variant/combo and remove them
+                                        if ($orderItem->product_variant_id) {
+                                            $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                                ->where('product_variant_id', $orderItem->product_variant_id)
+                                                ->get();
+                                            foreach ($cartItems as $cartItem) {
+                                                $cartItemIdsToDelete[] = $cartItem->id;
+                                            }
+                                        } elseif ($orderItem->combo_id) {
+                                            $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                                ->where('combo_id', $orderItem->combo_id)
+                                                ->get();
+                                            foreach ($cartItems as $cartItem) {
+                                                $cartItemIdsToDelete[] = $cartItem->id;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Remove the cart items
+                                    if (!empty($cartItemIdsToDelete)) {
+                                        \App\Models\CartItem::whereIn('id', array_unique($cartItemIdsToDelete))->delete();
+                                    }
+                                    
+                                    // If cart is empty, mark as completed
+                                    if ($cart->items()->count() == 0) {
+                                        $cart->status = 'completed';
+                                        $cart->save();
+                                    }
+                                }
                             } else {
                                 $order->status = 'payment_failed';
                                 $order->payment->payment_status = 'failed';
@@ -1347,5 +1438,160 @@ class CheckoutController extends Controller
         }
         
         return $subtotal;
+    }
+
+    /**
+     * Tiếp tục thanh toán cho đơn hàng chưa thanh toán
+     */
+    public function continuePayment(Order $order)
+    {
+        // Kiểm tra quyền truy cập
+        if (Auth::check()) {
+            if ($order->customer_id !== Auth::id()) {
+                abort(403, 'Bạn không có quyền truy cập đơn hàng này.');
+            }
+        } else {
+            // Nếu là guest, kiểm tra session hoặc redirect về trang đăng nhập
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập để tiếp tục thanh toán.');
+        }
+
+        // Kiểm tra trạng thái đơn hàng
+        if ($order->status !== 'pending_payment') {
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Đơn hàng này không thể tiếp tục thanh toán.');
+        }
+
+        // Kiểm tra payment method
+        if (!$order->payment || $order->payment->payment_method !== 'vnpay') {
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Đơn hàng này không sử dụng phương thức thanh toán VNPay.');
+        }
+
+        try {
+            // Log thông tin debug
+            \Illuminate\Support\Facades\Log::info('Creating VNPay URL for existing order', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'total_amount' => $order->total_amount,
+                'vnpay_config' => [
+                    'tmn_code' => config('vnpay.tmn_code'),
+                    'url' => config('vnpay.url'),
+                    'hash_secret_exists' => !empty(config('vnpay.hash_secret'))
+                ]
+            ]);
+            
+            // Tạo lại URL VNPay cho đơn hàng
+            $vnp_Url = $this->createVnpayUrlForExistingOrder($order);
+            
+            \Illuminate\Support\Facades\Log::info('VNPay URL created successfully', [
+                'order_id' => $order->id,
+                'vnp_url_length' => strlen($vnp_Url)
+            ]);
+            
+            return redirect()->away($vnp_Url);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating VNPay URL for existing order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Có lỗi xảy ra khi tạo liên kết thanh toán. Vui lòng thử lại.');
+        }
+    }
+
+    /**
+     * Tạo URL VNPay cho đơn hàng đã tồn tại
+     */
+    private function createVnpayUrlForExistingOrder(Order $order)
+    {
+        $vnp_TmnCode = config('vnpay.tmn_code');
+        $vnp_HashSecret = config('vnpay.hash_secret');
+        $vnp_Url = config('vnpay.url');
+        $vnp_ReturnUrl = route('checkout.vnpay_return');
+        
+        // Validate config values
+        if (empty($vnp_TmnCode)) {
+            throw new \Exception('VNPAY TMN Code is not configured');
+        }
+        if (empty($vnp_HashSecret)) {
+            throw new \Exception('VNPAY Hash Secret is not configured');
+        }
+        if (empty($vnp_Url)) {
+            throw new \Exception('VNPAY URL is not configured');
+        }
+
+        $vnp_TxnRef = $order->order_code; // Sử dụng order_code làm txn_ref
+        $vnp_OrderInfo = 'Thanh toán đơn hàng ' . $order->order_code;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = $order->total_amount * 100; // VNPay yêu cầu số tiền tính bằng đồng
+        $vnp_Locale = 'vn';
+        $vnp_BankCode = '';
+        $vnp_IpAddr = request()->ip() ?: '127.0.0.1'; // Fallback to localhost if IP not available
+        
+        // Validate required fields
+        if (empty($vnp_TxnRef)) {
+            throw new \Exception('Order code is required');
+        }
+        if ($vnp_Amount <= 0) {
+            throw new \Exception('Order amount must be greater than 0');
+        }
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_ReturnUrl,
+            "vnp_TxnRef" => $vnp_TxnRef,
+        );
+
+        if (isset($vnp_BankCode) && $vnp_BankCode != "") {
+            $inputData['vnp_BankCode'] = $vnp_BankCode;
+        }
+
+        ksort($inputData);
+        
+        \Illuminate\Support\Facades\Log::info('VNPay input data', [
+            'input_data' => $inputData
+        ]);
+        
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
+        }
+
+        \Illuminate\Support\Facades\Log::info('VNPay hash data', [
+            'hashdata' => $hashdata,
+            'query' => $query
+        ]);
+
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+            
+            \Illuminate\Support\Facades\Log::info('VNPay secure hash created', [
+                'secure_hash' => $vnpSecureHash,
+                'final_url_length' => strlen($vnp_Url)
+            ]);
+        }
+
+        return $vnp_Url;
     }
 }

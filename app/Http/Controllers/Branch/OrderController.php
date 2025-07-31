@@ -31,11 +31,13 @@ class OrderController extends Controller
 
             if ($lastOrderTime) {
                 $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('status', '!=', 'pending_payment')
                     ->where('created_at', '>', $lastOrderTime)
                     ->exists();
             } else {
                 // If no last_order_time provided, check if there are any orders created in the last 5 minutes
                 $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('status', '!=', 'pending_payment')
                     ->where('created_at', '>', now()->subMinutes(5))
                     ->exists();
             }
@@ -61,7 +63,8 @@ class OrderController extends Controller
             'cancellation.cancelledBy',
             'payment',
             'address' // Đảm bảo load address
-        ])->where('branch_id', $branch->id);
+        ])->where('branch_id', $branch->id)
+          ->where('status', '!=', 'pending_payment'); // Ẩn đơn hàng chưa thanh toán
 
         // Search filter
         if ($request->filled('search')) {
@@ -124,11 +127,12 @@ class OrderController extends Controller
             }
         }
 
-        // Get status counts
+        // Get status counts (excluding pending_payment orders)
         $statusCounts = [
-            'all' => Order::where('branch_id', $branch->id)->count(),
+            'all' => Order::where('branch_id', $branch->id)->where('status', '!=', 'pending_payment')->count(),
             'awaiting_confirmation' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_confirmation')->count(),
             'awaiting_driver' => Order::where('branch_id', $branch->id)
+                ->where('status', '!=', 'pending_payment')
                 ->whereIn('status', [
                     'confirmed',
                     'awaiting_driver',
@@ -342,6 +346,7 @@ class OrderController extends Controller
     private function getStatusText($status)
     {
         $statusTexts = [
+            'pending_payment' => 'Chưa thanh toán',
             'awaiting_confirmation' => 'Chờ xác nhận',
             'awaiting_driver' => 'Chờ tài xế',
             'in_transit' => 'Đang giao',

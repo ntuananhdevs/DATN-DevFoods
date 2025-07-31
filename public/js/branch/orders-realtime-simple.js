@@ -368,7 +368,8 @@ if (window.ordersRealtimeInitialized) {
                     'refunded': 'Đã hoàn tiền',
                     'payment_failed': 'Thanh toán thất bại',
                     'payment_received': 'Đã nhận thanh toán',
-                    'order_failed': 'Đơn thất bại'
+                    'order_failed': 'Đơn thất bại',
+                    'unpaid': 'Chưa thanh toán'
                 };
 
                 const statusColors = {
@@ -386,7 +387,8 @@ if (window.ordersRealtimeInitialized) {
                     'refunded': 'bg-pink-500 text-white',
                     'payment_failed': 'bg-red-500 text-white',
                     'payment_received': 'bg-green-700 text-white',
-                    'order_failed': 'bg-red-600 text-white'
+                    'order_failed': 'bg-red-600 text-white',
+                    'unpaid': 'bg-orange-400 text-white'
                 };
 
                 const statusText = statusTexts[newStatus] || newStatus;
