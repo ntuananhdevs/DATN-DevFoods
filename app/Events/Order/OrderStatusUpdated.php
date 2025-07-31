@@ -135,6 +135,11 @@ class OrderStatusUpdated implements ShouldBroadcast
             return $this->driverId ? 'order-cancelled-event' : 'order-cancelled-by-customer';
         }
         
+        // Đối với kênh order.{id} và kênh customer.{id}.orders, sử dụng tên 'OrderStatusUpdated' để khớp với client
+        if (request()->is('branch/*') || strpos(request()->path(), 'customer') !== false) {
+            return 'OrderStatusUpdated';
+        }
+        
         return 'order-status-updated'; // Explicitly name the event for the listener
     }
 
@@ -200,12 +205,40 @@ class OrderStatusUpdated implements ShouldBroadcast
         }
         
         // Default broadcast data for regular status updates
+        // Load relationships for order
+        $this->order->load(['payment', 'orderItems', 'address', 'branch']);
+        
+        // Calculate total items count
+        $itemsCount = $this->order->orderItems->sum('quantity');
+        
         return [
             'order' => [
                 'id' => $this->order->id,
+                'code' => $this->order->order_code,
+                'order_code' => $this->order->order_code,
                 'status' => $this->order->status,
+                'status_text' => $this->order->statusText,
+                'status_color' => $this->order->statusColor,
                 'customer_id' => $this->order->customer_id,
                 'branch_id' => $this->order->branch_id,
+                'customer_name' => $this->order->customerName,
+                'customer_phone' => $this->order->customerPhone,
+                'total_amount' => $this->order->total_amount,
+                'order_date' => $this->order->order_date,
+                'items_count' => $itemsCount,
+                'estimated_delivery_time' => $this->order->estimated_delivery_time,
+                'actual_delivery_time' => $this->order->actual_delivery_time,
+                'payment' => $this->order->payment ? [
+                    'id' => $this->order->payment->id,
+                    'method' => $this->order->payment->payment_method,
+                    'payment_method' => $this->order->payment->payment_method,
+                    'payment_status' => $this->order->payment->payment_status,
+                    'payment_amount' => $this->order->payment->payment_amount,
+                ] : null,
+                'branch' => $this->order->branch ? [
+                    'id' => $this->order->branch->id,
+                    'name' => $this->order->branch->name,
+                ] : null,
             ],
             'branch_id' => $this->order->branch_id,
             'status' => $this->order->status,

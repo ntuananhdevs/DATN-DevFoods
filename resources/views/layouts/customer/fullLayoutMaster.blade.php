@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'FastFood')</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('/images/logo.png') }}">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
@@ -199,6 +202,7 @@
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
     <script src="{{ asset('js/modal.js') }}"></script>
+    <script src="{{ asset('js/Customer/order-realtime-simple.js') }}"></script>
 
     <script>
         // Function to show notifications programmatically
@@ -403,6 +407,10 @@
         @else
             window.currentUserId = null;
         @endif
+        
+        // Set Pusher configuration for order-realtime-simple.js
+        window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+        window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
 
         // Global function to update the cart counter
         window.updateCartCount = function(count) {
@@ -578,12 +586,16 @@
                         // Toast sẽ được xử lý bởi OrderStatusUpdated event để tránh trùng lặp
                         
                         // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                        if (typeof fetchNotifications === 'function') {
+                        if (typeof window.fetchNotifications === 'function') {
+                            window.fetchNotifications();
+                        } else if (typeof fetchNotifications === 'function') {
                             fetchNotifications();
                         }
 
                         // Gọi hiệu ứng rung chuông (nếu có)
-                        if (typeof triggerBellShake === 'function') {
+                        if (typeof window.triggerBellShake === 'function') {
+                            window.triggerBellShake();
+                        } else if (typeof triggerBellShake === 'function') {
                             triggerBellShake();
                         }
                     });
@@ -603,11 +615,15 @@
                 customNotificationChannel.bind('new-message', function(data) {
 
 
-                    if (typeof fetchNotifications === 'function') {
+                    if (typeof window.fetchNotifications === 'function') {
+                        window.fetchNotifications();
+                    } else if (typeof fetchNotifications === 'function') {
                         fetchNotifications();
                     }
 
-                    if (typeof triggerBellShake === 'function') {
+                    if (typeof window.triggerBellShake === 'function') {
+                        window.triggerBellShake();
+                    } else if (typeof triggerBellShake === 'function') {
                         triggerBellShake();
                     }
                 });
@@ -621,53 +637,7 @@
                     console.error('❌ Failed to subscribe to custom notifications channel:', error);
                 });
 
-                // Subscribe to order status updates for all customer orders
-                const orderChannel = window.pusher.subscribe('private-customer.{{ auth()->id() }}.orders');
-
-                orderChannel.bind('OrderStatusUpdated', function(data) {
-                    console.log('🛍️ Order status updated:', data);
-                    console.log('🔍 Debug - data.order exists:', !!data.order);
-                    console.log('🔍 Debug - showToast function exists:', typeof window.showToast);
-                    
-                    // Show notification using the global showToast function
-                    if (typeof window.showToast === 'function') {
-                        let orderId, orderData;
-                        
-                        // Check if data has order property or if data itself is the order
-                        if (data.order) {
-                            orderId = data.order.id;
-                            orderData = {
-                                status: data.order.status,
-                                status_text: data.status_text || getStatusText(data.order.status)
-                            };
-                        } else if (data.id && data.status) {
-                            // Data itself might be the order object
-                            orderId = data.id;
-                            orderData = {
-                                status: data.status,
-                                status_text: data.status_text || getStatusText(data.status)
-                            };
-                        } else {
-                            console.error('❌ Invalid order data structure:', data);
-                            return;
-                        }
-                        
-                        console.log('📋 Calling showOrderNotification with:', { orderId, orderData });
-                        
-                        // Use the same notification logic as in orders.blade.php
-                        showOrderNotification(orderId, orderData);
-                    } else {
-                        console.error('❌ showToast function not available');
-                    }
-                });
-
-                orderChannel.bind('pusher:subscription_succeeded', () => {
-                    console.log('✅ Subscribed to order updates channel for customer {{ auth()->id() }}');
-                });
-
-                orderChannel.bind('pusher:subscription_error', (error) => {
-                    console.error('❌ Failed to subscribe to order updates channel:', error);
-                });
+                // Order status updates are now handled by order-realtime-simple.js
             }
         });
     </script>
@@ -688,75 +658,7 @@
             }
         });
 
-        // Global function to show order notifications across all pages
-        function showOrderNotification(orderId, data) {
-            // Use the global showToast function from fullLayoutMaster.blade.php
-            if (typeof window.showToast === 'function') {
-                // Handle special case for 'confirmed' status - show 2 notifications
-                if (data.status === 'confirmed') {
-                    // First notification: Order confirmed by restaurant
-                    const message1 = `Đơn hàng đã được xác nhận`;
-                    window.showToast(message1, 'success', 5000);
-                    
-                    // Second notification: Looking for driver (delayed by 2 seconds)
-                    setTimeout(() => {
-                        const message2 = `Đang tìm tài xế cho đơn hàng của bạn`;
-                        window.showToast(message2, 'info', 5000);
-                    }, 2000);
-                } else if (data.status === 'awaiting_driver') {
-                    // Special notification for driver found
-                    const message = `Đã tìm được tài xế cho đơn hàng của bạn`;
-                    window.showToast(message, 'success', 5000);
-                } else {
-                    // Regular single notification for other statuses
-                    const message = `Đơn hàng #${orderId} đã chuyển sang ${data.status_text}`;
-                    
-                    // Determine notification type based on status
-                    let notificationType = 'Thông báo';
-                    if (data.status === 'delivered' || data.status === 'item_received') {
-                        notificationType = 'success';
-                    } else if (data.status === 'cancelled' || data.status === 'failed') {
-                        notificationType = 'error';
-                    } else if (data.status === 'preparing' || data.status === 'shipping') {
-                        notificationType = 'warning';
-                    }
-                    
-                    window.showToast(message, notificationType, 5000);
-                }
-            } else {
-                // Fallback to console if showToast is not available
-                if (data.status === 'confirmed') {
-                    console.log(`Cập nhật đơn hàng: Đơn hàng đã được xác nhận`);
-                    console.log(`Cập nhật đơn hàng: Đang tìm tài xế cho đơn hàng của bạn`);
-                } else if (data.status === 'awaiting_driver') {
-                    console.log(`Cập nhật đơn hàng: Đã tìm được tài xế cho đơn hàng của bạn`);
-                } else {
-                    console.log(`Cập nhật đơn hàng: Đơn hàng #${orderId} đã chuyển sang ${data.status_text}`);
-                }
-            }
-        }
-
-        // Helper function to get status text in Vietnamese
-        function getStatusText(status) {
-            const statusTexts = {
-                'pending': 'Chờ xác nhận',
-                'confirmed': 'Đã xác nhận',
-                'awaiting_driver': 'Chờ tài xế',
-                'driver_found': 'Đã tìm được tài xế',
-                'preparing': 'Đang chuẩn bị',
-                'ready': 'Sẵn sàng giao',
-                'shipping': 'Đang giao hàng',
-                'delivered': 'Đã giao hàng',
-                'item_received': 'Đã nhận hàng',
-                'cancelled': 'Đã hủy',
-                'failed': 'Thất bại'
-            };
-            return statusTexts[status] || status;
-        }
-
-        // Make functions globally available
-        window.showOrderNotification = showOrderNotification;
-        window.getStatusText = getStatusText;
+        // Order notification functions are now handled by order-realtime-simple.js
 
         // Giữ lại các hàm cũ để tương thích ngược
         function getCsrfToken() {
@@ -780,6 +682,9 @@
 
     {{-- Thêm component CSRF Auto-Refresh --}}
     @include('partials.csrf-refresh')
+    
+    {{-- Thêm script xử lý thông báo realtime --}}
+    <script src="{{ asset('js/Customer/notification-handler.js') }}"></script>
 </body>
 
 </html>

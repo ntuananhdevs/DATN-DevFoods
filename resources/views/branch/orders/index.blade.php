@@ -468,5 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="{{ asset('js/branch/orders-realtime-simple.js') }}" defer></script>
+<script src="{{ asset('js/branch/order-card-realtime.js') }}" defer></script>
 <script src="{{ asset('js/modal.js') }}" defer></script>
 @endsection
