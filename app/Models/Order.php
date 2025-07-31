@@ -232,6 +232,12 @@ class Order extends Model
 
     // Định nghĩa tĩnh các thuộc tính trạng thái
     private static array $statusAttributes = [
+        'pending_payment' => [
+            'text' => 'Chưa thanh toán',
+            'bg' => '#fef3c7', // Vàng nhạt hơn
+            'text_color' => '#92400e',
+            'icon' => 'fas fa-credit-card'
+        ],
         'awaiting_confirmation' => [
             'text' => 'Chờ xác nhận',
             'bg' => '#fde68a', // Vàng nhạt

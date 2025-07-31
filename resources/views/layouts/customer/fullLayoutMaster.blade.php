@@ -688,16 +688,13 @@
 }
 </script>
 
-<<<<<<< HEAD
     {{-- Thêm component CSRF Auto-Refresh --}}
     @include('partials.csrf-refresh')
     
     {{-- Thêm script xử lý thông báo realtime --}}
     <script src="{{ asset('js/Customer/notification-handler.js') }}"></script>
-=======
 {{-- Thêm component CSRF Auto-Refresh --}}
 @include('partials.csrf-refresh')
->>>>>>> f024f03fa6c63eb97ec942a496bf114b0635e3f6
 </body>
 
 </html>

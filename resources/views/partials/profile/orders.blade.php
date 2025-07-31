@@ -255,7 +255,26 @@
                             Chi tiết
                         </a>
 
-                        @if ($order->status == 'awaiting_confirmation')
+                        @if ($order->status == 'pending_payment')
+                            <a href="{{ route('checkout.continuePayment', $order) }}"
+                                class="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-orange-500 text-white hover:bg-orange-600">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3 3v8a3 3 0 003 3z">
+                                    </path>
+                                </svg>
+                                Tiếp tục thanh toán
+                            </a>
+                            <form action="{{ route('customer.orders.updateStatus', $order) }}" method="POST"
+                                class="cancel-order-form">
+                                @csrf
+                                <input type="hidden" name="status" value="cancelled">
+                                <button type="submit"
+                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 border border-red-500 text-red-600 hover:bg-red-50">
+                                    Hủy đơn
+                                </button>
+                            </form>
+                        @elseif ($order->status == 'awaiting_confirmation')
                             <form action="{{ route('customer.orders.updateStatus', $order) }}" method="POST"
                                 class="cancel-order-form">
                                 @csrf

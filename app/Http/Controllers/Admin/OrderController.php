@@ -14,7 +14,8 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'branch', 'payment']);
+        $query = Order::with(['customer', 'branch', 'payment'])
+            ->where('status', '!=', 'pending_payment'); // Ẩn đơn hàng chưa thanh toán
 
         // Lọc theo trạng thái nếu có
         if ($request->filled('status')) {
@@ -114,7 +115,7 @@ class OrderController extends Controller
         $branches = Branch::all();
 
         // Đếm số lượng đơn theo từng trạng thái (áp dụng các bộ lọc hiện tại)
-        $baseQuery = Order::query();
+        $baseQuery = Order::query()->where('status', '!=', 'pending_payment');
         
         // Áp dụng các bộ lọc (trừ status) để đếm chính xác
         if ($request->filled('order_code')) {
@@ -296,7 +297,7 @@ class OrderController extends Controller
         $order = Order::findOrFail($orderId);
         
         $request->validate([
-            'status' => 'required|string|in:awaiting_confirmation,confirmed,awaiting_driver,driver_confirmed,waiting_driver_pick_up,driver_picked_up,in_transit,delivered,item_received,cancelled,refunded,payment_failed,payment_received,order_failed'
+            'status' => 'required|string|in:pending_payment,awaiting_confirmation,confirmed,awaiting_driver,driver_confirmed,waiting_driver_pick_up,driver_picked_up,in_transit,delivered,item_received,cancelled,refunded,payment_failed,payment_received,order_failed'
         ]);
         
         $newStatus = $request->status;
@@ -304,6 +305,7 @@ class OrderController extends Controller
         
         // Validate status transition
         $allowedTransitions = [
+            'pending_payment' => ['awaiting_confirmation', 'cancelled'],
             'awaiting_confirmation' => ['confirmed', 'cancelled'],
             'confirmed' => ['awaiting_driver', 'cancelled'],
             'awaiting_driver' => ['driver_confirmed', 'cancelled'],
@@ -358,6 +360,7 @@ class OrderController extends Controller
     private function getStatusText($status)
     {
         $statusMap = [
+            'pending_payment' => 'Chưa thanh toán',
             'awaiting_confirmation' => 'Chờ xác nhận',
             'confirmed' => 'Đã xác nhận',
             'awaiting_driver' => 'Chờ tài xế',
@@ -539,6 +542,7 @@ class OrderController extends Controller
         // Get available transitions
         $currentStatus = $order->status;
         $allowedTransitions = [
+            'pending_payment' => ['awaiting_confirmation', 'cancelled'],
             'awaiting_confirmation' => ['confirmed', 'cancelled'],
             'confirmed' => ['awaiting_driver', 'cancelled'],
             'awaiting_driver' => ['driver_confirmed', 'cancelled'],

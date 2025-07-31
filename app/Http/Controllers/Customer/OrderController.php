@@ -291,6 +291,7 @@ class OrderController extends Controller
     private function translateStatus($status)
     {
         $translations = [
+            'pending_payment' => 'Chưa thanh toán',
             'awaiting_confirmation' => 'Chờ xác nhận',
             'confirmed' => 'Đã xác nhận',
             'awaiting_driver' => 'Đang tìm tài xế',
