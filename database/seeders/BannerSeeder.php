@@ -19,21 +19,8 @@ class BannerSeeder extends Seeder
         Banner::truncate();
         $this->command->info("✅ Đã xóa tất cả banner cũ.");
         
-        $this->command->info("🚀 Bắt đầu tạo banner mới với slug...");
+        $this->command->info("🚀 Bắt đầu tạo banner mới chỉ hiển thị ảnh...");
         
-        // === LẤY DANH SÁCH SẢN PHẨM CÓ SLUG ===
-        $products = Product::where('status', 'selling')
-                          ->whereNotNull('slug')
-                          ->where('slug', '!=', '')
-                          ->inRandomOrder()
-                          ->take(20)
-                          ->get(['id', 'name', 'slug']);
-
-        if ($products->isEmpty()) {
-            $this->command->error("❌ Không tìm thấy sản phẩm nào có slug để tạo banner.");
-            return;
-        }
-
         // === LẤY DANH SÁCH ẢNH TỪ S3 THƯ MỤC 'banners/' ===
         $imageFiles = Storage::disk('s3')->files('banners');
 
@@ -53,98 +40,71 @@ class BannerSeeder extends Seeder
 
             $imageUrl = Storage::disk('s3')->url($path);
             $filename = basename($path);
-            
-            // Lấy sản phẩm ngẫu nhiên để tạo link
-            $randomProduct = $products->random();
 
             Banner::create([
-                'title' => 'Banner mẫu ' . ($index + 1),
+                'title' => null, // Không có title
                 'position' => 'homepage',
                 'order' => $index,
                 'image_path' => $imageUrl,
-                'link' => '/shop/products/' . $randomProduct->slug,
-                'description' => 'Banner tự động tạo từ ảnh S3: ' . $filename . ' - Link đến: ' . $randomProduct->name,
+                'link' => null, // Không có link
+                'description' => null, // Không có mô tả
                 'start_at' => now(),
                 'end_at' => now()->addDays(30),
                 'is_active' => true
             ]);
 
-            $this->command->info("✅ Đã tạo banner từ S3: {$filename} -> Link: /shop/products/{$randomProduct->slug}");
+            $this->command->info("✅ Đã tạo banner từ S3: {$filename} (chỉ hiển thị ảnh)");
             $index++;
         }
 
-        // === PHẦN VỊ TRÍ KHÁC - SỬ DỤNG SLUG CHO BANNER CÓ LINK SẢN PHẨM ===
+        // === PHẦN VỊ TRÍ KHÁC - CHỈ HIỂN THỊ ẢNH ===
         $extraBanners = [
             [
-                'title' => 'Banner chân trang',
                 'position' => 'footers',
-                'image_path' => 'https://example.com/banners/footer.jpg',
-                'link' => '/footer/info',
-                'description' => 'Banner cho phần chân trang'
+                'image_path' => 'https://example.com/banners/footer.jpg'
             ],
             [
-                'title' => 'Banner khuyến mãi',
                 'position' => 'promotions',
-                'image_path' => 'https://example.com/banners/promotion.jpg',
-                'link' => '/shop/products/' . ($products->isNotEmpty() ? $products->random()->slug : 'san-pham-khuyen-mai'),
-                'description' => 'Banner chương trình khuyến mãi'
+                'image_path' => 'https://example.com/banners/promotion.jpg'
             ],
             [
-                'title' => 'Banner menu',
                 'position' => 'menu',
-                'image_path' => 'https://example.com/banners/menu.jpg',
-                'link' => '/shop/products/' . ($products->isNotEmpty() ? $products->random()->slug : 'mon-an-dac-biet'),
-                'description' => 'Banner cho thanh menu chính'
+                'image_path' => 'https://example.com/banners/menu.jpg'
             ],
             [
-                'title' => 'Banner chi nhánh',
                 'position' => 'branch',
-                'image_path' => 'https://example.com/banners/branch.jpg',
-                'link' => '/branches',
-                'description' => 'Banner giới thiệu chi nhánh'
+                'image_path' => 'https://example.com/banners/branch.jpg'
             ],
             [
-                'title' => 'Banner giới thiệu',
                 'position' => 'abouts',
-                'image_path' => 'https://example.com/banners/about.jpg',
-                'link' => '/about-us',
-                'description' => 'Banner phần giới thiệu'
+                'image_path' => 'https://example.com/banners/about.jpg'
             ],
             [
-                'title' => 'Banner hỗ trợ',
                 'position' => 'supports',
-                'image_path' => 'https://example.com/banners/support.jpg',
-                'link' => '/support',
-                'description' => 'Banner phần hỗ trợ khách hàng'
+                'image_path' => 'https://example.com/banners/support.jpg'
             ],
             [
-                'title' => 'Banner liên hệ',
                 'position' => 'contacts',
-                'image_path' => 'https://example.com/banners/contact.jpg',
-                'link' => '/contact',
-                'description' => 'Banner phần liên hệ'
+                'image_path' => 'https://example.com/banners/contact.jpg'
             ]
         ];
 
         foreach ($extraBanners as $item) {
             Banner::create([
-                'title' => $item['title'],
+                'title' => null, // Không có title
                 'position' => $item['position'],
                 'order' => null,
                 'image_path' => $item['image_path'],
-                'link' => $item['link'],
-                'description' => $item['description'],
+                'link' => null, // Không có link
+                'description' => null, // Không có mô tả
                 'start_at' => now(),
                 'end_at' => now()->addDays(30),
                 'is_active' => true
             ]);
 
-            $linkInfo = str_contains($item['link'], '/shop/products/') ? 
-                        " -> Link: {$item['link']}" : 
-                        " -> Static link: {$item['link']}";
-            $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']}{$linkInfo}");
+            $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']} (chỉ hiển thị ảnh)");
         }
-        $this->command->info("🎉 Seeder hoàn tất: tạo banner từ S3, các vị trí tĩnh");
+        $this->command->info("🎉 Seeder hoàn tất: tạo banner chỉ hiển thị ảnh, không có title, link và mô tả");
     }
 
 }

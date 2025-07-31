@@ -280,10 +280,6 @@ document.addEventListener("DOMContentLoaded", function () {
             .then((response) => response.json())
             .then((data) => {
                 if (data.success) {
-                    dtmodalShowToast("success", {
-                        title: "Thành công",
-                        message: data.message,
-                    });
                     // Cập nhật số lượng giỏ hàng trên header
                     if (window.updateCartCount && data.cart_count !== undefined) {
                         window.updateCartCount(data.cart_count);
@@ -1637,8 +1633,7 @@ function handleVariantCreated(data, container) {
         }
     });
 
-    // Show notification
-    showVariantNotification("Biến thể mới đã được thêm", "success");
+    // Show notification removed
 }
 
 // Handle variant updated
@@ -1674,8 +1669,7 @@ function handleVariantUpdated(data, container) {
         }
     });
 
-    // Show notification
-    showVariantNotification("Biến thể đã được cập nhật", "info");
+    // Show notification removed
 }
 
 // Handle variant deleted
@@ -1732,8 +1726,7 @@ function handleVariantDeleted(data, container) {
             }
         });
 
-        // Show notification
-        showVariantNotification("Biến thể đã được xóa", "warning");
+        // Show notification removed
         return;
     }
 
@@ -1755,8 +1748,7 @@ function handleVariantDeleted(data, container) {
         }
     });
 
-    // Show notification
-    showVariantNotification("Biến thể đã được xóa", "warning");
+    // Show notification removed
 }
 
 // Helper function to find or create attribute container
