@@ -286,10 +286,6 @@
      transition: width 0.3s ease;
  }
 
- /* Animation classes */
- .fade-in {
-     animation: fadeIn 0.3s ease-in-out;
- }
 
  @keyframes fadeIn {
      from {

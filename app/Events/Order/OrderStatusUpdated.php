@@ -77,14 +77,19 @@ class OrderStatusUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        return [
-            // Private channel for the specific order
+        $channels = [
+            // Original channel for specific order page
             new PrivateChannel('order.' . $this->order->id),
-            // Public channel for admin real-time updates
-            new Channel('order-status-updates'),
-            // Branch specific channel
-            new Channel('branch-orders-' . $this->order->branch_id),
+            // Branch channel for real-time updates
+            new Channel('branch-orders-channel'),
         ];
+        
+        // Add customer-specific channel for global notifications
+        if ($this->order->customer_id) {
+            $channels[] = new PrivateChannel('customer.' . $this->order->customer_id . '.orders');
+        }
+        
+        return $channels;
     }
 
     /**
@@ -92,7 +97,7 @@ class OrderStatusUpdated implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'OrderStatusUpdated'; // Explicitly name the event for the listener
+        return 'order-status-updated'; // Explicitly name the event for the listener
     }
 
     /**
@@ -104,14 +109,17 @@ class OrderStatusUpdated implements ShouldBroadcast
     {
         // We send only the necessary data to the frontend.
         return [
-            'order_id' => $this->order->id,
-            'order_code' => $this->order->order_code,
-            'old_status' => $this->oldStatus,
-            'new_status' => $this->newStatus,
-            'status' => $this->newStatus, // For backward compatibility
-            'status_text' => $this->order->statusText,
-            'payment_status' => $this->order->payment_status,
-            'payment_status_text' => $this->order->paymentStatusText,
+            'order' => [
+                'id' => $this->order->id,
+                'status' => $this->order->status,
+                'customer_id' => $this->order->customer_id,
+                'branch_id' => $this->order->branch_id,
+            ],
+            'branch_id' => $this->order->branch_id,
+            'status' => $this->order->status,
+            'status_text' => $this->order->status_text,
+            'status_color' => $this->order->status_color, // Gửi cả object/mảng màu sắc
+            'status_icon' => $this->order->status_icon,   // Gửi cả icon để cập nhật giao diện
             'actual_delivery_time' => optional($this->order->actual_delivery_time)->format('H:i - d/m/Y'),
             'branch_id' => $this->order->branch_id,
             'branch_name' => optional($this->order->branch)->name,

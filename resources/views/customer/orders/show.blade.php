@@ -397,12 +397,12 @@
                                     <div class="flex items-start gap-3 flex-1">
                                         {{-- Hình ảnh sản phẩm --}}
                                         <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
-                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}"
+                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->primaryImage)
+                                                <img src="{{ $item->productVariant->product->primaryImage->url }}"
                                                     alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}"
                                                     class="w-full h-full object-cover">
-                                            @elseif ($item->combo && $item->combo->image)
-                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}"
+                                            @elseif ($item->combo && $item->combo->url)
+                                                <img src="{{ $item->combo->url }}"
                                                     alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}"
                                                     class="w-full h-full object-cover">
                                             @else

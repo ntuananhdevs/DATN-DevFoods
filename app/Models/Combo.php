@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -57,6 +58,19 @@ class Combo extends Model
         });
     }
 
+    protected function url(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                if ($this->image) {
+                    // Sử dụng trực tiếp đường dẫn từ DB vì nó đã bao gồm thư mục con
+                    return Storage::disk('s3')->url($this->image);
+                }
+                return asset('images/default-combo.png');
+            },
+        );
+    }
+
     public function productVariants(): BelongsToMany
     {
         return $this->belongsToMany(ProductVariant::class, 'combo_items', 'combo_id', 'product_variant_id')
@@ -106,7 +120,7 @@ class Combo extends Model
     public function getTotalOriginalPriceAttribute()
     {
         // Tính tổng giá gốc của combo dựa trên các biến thể sản phẩm và số lượng từng biến thể
-        return $this->productVariants()->get()->sum(function($variant) {
+        return $this->productVariants()->get()->sum(function ($variant) {
             $quantity = $variant->pivot->quantity ?? 1;
             return $variant->price * $quantity;
         });

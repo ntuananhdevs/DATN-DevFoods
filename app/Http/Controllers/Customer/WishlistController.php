@@ -33,9 +33,6 @@ class WishlistController extends Controller
                 'product' => function($query) {
                     $query->with(['primaryImage', 'category']);
                 },
-                'combo' => function($query) {
-                    $query->with(['primaryImage']);
-                }
             ])
             ->orderBy('created_at', 'desc')
             ->get();

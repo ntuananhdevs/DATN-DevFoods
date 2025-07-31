@@ -216,7 +216,16 @@ class HomeController extends Controller
         });
 
         $categories = Category::withCount('products')->where('status', 1)->get();
-        $banners = Banner::where('is_active', 1)->get();
+        $banners = Banner::where('is_active', 1)
+                        ->where('position', 'homepage')
+                        ->orderBy('order', 'ASC')
+                        ->orderBy('id', 'ASC')
+                        ->get();
+        
+        // Debug banner data
+        if (config('app.debug')) {
+            \Log::info('Banner data loaded:', $banners->toArray());
+        }
 
         // Pass all necessary data to the view
         return view('customer.home', compact('products', 'featuredProducts', 'topRatedProducts', 'featuredCombos', 'categories', 'banners'));
