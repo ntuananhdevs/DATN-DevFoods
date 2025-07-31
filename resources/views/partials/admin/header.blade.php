@@ -210,7 +210,7 @@
 </header>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<script src="public/js/modal.js"></script>
+<script src="{{ asset('js/modal.js') }}"></script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
     window.currentAdminId = "{{ auth('admin')->id() }}";
@@ -448,7 +448,8 @@
             if (redirectUrl) {
                 window.location.href = redirectUrl;
             } else {
-                location.reload();
+                // Cập nhật UI thay vì reload trang
+                fetchAdminNotifications();
             }
         });
     }

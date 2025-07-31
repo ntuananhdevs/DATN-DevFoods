@@ -208,7 +208,8 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => match ($this->payment_method) {
-                'cod' => 'COD (Thanh toán khi nhận hàng)',
+                'cash' => 'Tiền mặt',
+                'cod' => 'Tiền mặt', // Backward compatibility
                 'vnpay' => 'VNPAY',
                 'balance' => 'Số dư tài khoản',
                 default => 'Không xác định',
