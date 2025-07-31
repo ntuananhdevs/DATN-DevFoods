@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
 use App\Services\OrderSnapshotService;
 use App\Models\GeneralSetting;
+use Carbon\Carbon;
 
 class CheckoutController extends Controller
 {
@@ -105,7 +106,14 @@ class CheckoutController extends Controller
             }
             $currentBranch = $this->branchService->getCurrentBranch();
             
-            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+            // Get delivery time configuration
+            $deliveryConfig = [
+                'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+                'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+                'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+            ];
+            
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
         }
 
         $cartItems = [];
@@ -185,8 +193,15 @@ class CheckoutController extends Controller
 
         // Get current selected branch for distance calculation
         $currentBranch = $this->branchService->getCurrentBranch();
+        
+        // Get delivery time configuration
+        $deliveryConfig = [
+            'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+            'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+            'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+        ];
 
-        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
     }
     
     /**
@@ -351,9 +366,14 @@ class CheckoutController extends Controller
                     throw new \Exception('Không tìm thấy giỏ hàng.');
                 }
                 
-                $cartItems = CartItem::with(['variant', 'combo', 'toppings.topping'])
-                    ->where('cart_id', $cart->id)
-                    ->get();
+                // Lấy danh sách id sản phẩm được chọn từ request
+                $selectedIds = $request->cart_item_ids;
+                $cartItemsQuery = CartItem::with(['variant', 'combo', 'toppings.topping'])
+                    ->where('cart_id', $cart->id);
+                if ($selectedIds && is_array($selectedIds)) {
+                    $cartItemsQuery->whereIn('id', $selectedIds);
+                }
+                $cartItems = $cartItemsQuery->get();
                 
                 if ($cartItems->isEmpty()) {
                     throw new \Exception('Giỏ hàng của bạn đang trống.');
@@ -651,16 +671,26 @@ class CheckoutController extends Controller
                 // Clear buy now session
                 session()->forget('buy_now_checkout');
             } else {
-                // Clear regular cart
-                if ($cart) {
-                    $cart->status = 'completed';
-                    $cart->save();
+                // Clear only the selected cart items, not the whole cart
+                if ($cart && isset($selectedIds) && is_array($selectedIds)) {
+                    // Xóa các CartItem đã được thanh toán
+                    \App\Models\CartItem::where('cart_id', $cart->id)
+                        ->whereIn('id', $selectedIds)
+                        ->delete();
+                    // Cập nhật lại cart_count trong session ngay lập tức
+                    $cartCount = $cart->items()->count();
+                    session(['cart_count' => $cartCount]);
+                    // Nếu giỏ hàng không còn sản phẩm nào thì mới chuyển trạng thái completed
+                    if ($cart->items()->count() == 0) {
+                        $cart->status = 'completed';
+                        $cart->save();
+                        session()->forget(['coupon_discount_amount', 'discount']);
+                    }
                 }
             }
             
             // Clear discount after order is placed
             session()->forget('coupon_discount_amount');
-            session()->forget('cart_count');
             
             DB::commit();
             
@@ -795,7 +825,7 @@ class CheckoutController extends Controller
                     if ($cart) {
                         $cart->status = 'completed';
                         $cart->save();
-                        session()->forget(['coupon_discount_amount', 'cart_count', 'discount']);
+                        session()->forget(['coupon_discount_amount', 'discount']);
                     }
                 }
                 

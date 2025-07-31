@@ -440,8 +440,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Không dùng localStorage cho cart_count nữa
             // Khi reload trang, nếu có biến cartCountFromServer thì cập nhật luôn
+            // NHƯNG không cập nhật nếu đang ở trang checkout từ buy now
             if (typeof window.cartCountFromServer !== 'undefined') {
+                // Kiểm tra xem có phải đang ở trang checkout từ buy now không
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromBuyNow = urlParams.get('from_buy_now');
+                
+                // Chỉ cập nhật cart count nếu không phải từ buy now
+                if (!fromBuyNow) {
                 window.updateCartCount(window.cartCountFromServer);
+                }
             }
 
             // Set up Pusher if the script is loaded
@@ -456,9 +464,12 @@
                 // Subscribe to cart channel
                 const cartChannel = window.pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
 
-                // Listen for cart updates
+                // Listen for cart updates - chỉ cập nhật khi thực sự thêm vào giỏ hàng
                 cartChannel.bind('cart-updated', function(data) {
+                    // Chỉ cập nhật cart count nếu action là 'add_to_cart', không phải 'buy_now'
+                    if (data.action === 'add_to_cart' || data.action === undefined) {
                     window.updateCartCount(data.count);
+                    }
                 });
             }
         });
@@ -582,9 +593,8 @@
                     function(data) {
                         console.log('🔔 Laravel Notification received:', data);
 
-                        // Chỉ xử lý notification list và bell shake, không hiển thị toast
-                        // Toast sẽ được xử lý bởi OrderStatusUpdated event để tránh trùng lặp
-                        
+
+
                         // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
                         if (typeof window.fetchNotifications === 'function') {
                             window.fetchNotifications();
@@ -592,13 +602,11 @@
                             fetchNotifications();
                         }
 
-                        // Gọi hiệu ứng rung chuông (nếu có)
-                        if (typeof window.triggerBellShake === 'function') {
-                            window.triggerBellShake();
-                        } else if (typeof triggerBellShake === 'function') {
-                            triggerBellShake();
-                        }
-                    });
+                    // Gọi hiệu ứng rung chuông (nếu có)
+                    if (typeof triggerBellShake === 'function') {
+                        triggerBellShake();
+                    }
+                });
 
                 notificationChannel.bind('pusher:subscription_succeeded', () => {
                     console.log(
@@ -643,10 +651,10 @@
     </script>
     @include('components.modal')
 
-    @if (isset($cartItems))
-        <script>
-            window.cartCountFromServer = {{ count($cartItems) }};
-        </script>
+    @if (isset($cartItems) && !request()->has('from_buy_now'))
+    <script>
+        window.cartCountFromServer = {{ count($cartItems) }};
+    </script>
     @endif
 
     <script>
@@ -673,12 +681,12 @@
                         'X-CSRF-TOKEN': newToken
                     }
                 });
-            }
-            if (window.axios) {
-                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-            }
-        }
-    </script>
+    }
+    if (window.axios) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+    }
+}
+</script>
 
     {{-- Thêm component CSRF Auto-Refresh --}}
     @include('partials.csrf-refresh')

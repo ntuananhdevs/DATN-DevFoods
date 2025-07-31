@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('user-authenticated');
     }
 
+    // AJAX Search and Filter functionality
+    initializeAjaxFilters();
+
     // Khai báo biến channel
     let productsChannel, favoritesChannel, cartChannel, branchStockChannel, discountsChannel;
     
@@ -233,18 +236,335 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Favorite (heart) button logic
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
+    // Initialize favorite buttons on page load
+    initializeFavoriteButtons();
+
+    // Đóng modal đăng nhập khi bấm nút đóng hoặc click ra ngoài
+    const loginPopup = document.getElementById('login-popup');
+    const closeLoginBtn = document.getElementById('close-login-popup');
+    if (loginPopup && closeLoginBtn) {
+        closeLoginBtn.onclick = function() {
+            loginPopup.classList.add('hidden');
+        };
+        loginPopup.onclick = function(e) {
+            if (e.target === this) this.classList.add('hidden');
+        };
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                loginPopup.classList.add('hidden');
+            }
+        });
+    }
+});
+
+// Force reload when coming back from bfcache (back/forward)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && performance.getEntriesByType('navigation')[0]?.type === 'back_forward')) {
+        window.location.reload();
+    }
+});
+
+// Thêm fallback: reload khi tab được hiển thị lại nếu discount đã bị tắt (dùng localStorage flag)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && window.needDiscountReload) {
+        window.location.reload();
+    }
+});
+
+// Lazy load section by scroll
+function initializeLazyLoading() {
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    let currentSection = 0;
+    let loading = false;
+    
+    function showNextSection() {
+        if (currentSection + 1 < sections.length) {
+            currentSection++;
+            const section = sections[currentSection];
+            // 1. Show skeletons
+            const skeletons = section.querySelector('.skeletons-container');
+            const cardsContainer = section.querySelector('.product-cards-container');
+            if (skeletons && cardsContainer) {
+                skeletons.style.display = 'grid';
+                cardsContainer.style.display = 'none';
+                section.style.display = 'block';
+                // 2. After delay, hide skeletons, show cards with fade-in
+                setTimeout(() => {
+                    skeletons.style.display = 'none';
+                    cardsContainer.style.display = 'grid';
+                    const cards = cardsContainer.querySelectorAll('.product-card');
+                    cards.forEach((card, idx) => {
+                        setTimeout(() => {
+                            card.classList.add('fade-in-card');
+                        }, idx * 60); // staggered
+                    });
+                }, 400);
+            } else {
+                section.style.display = 'block';
+            }
+        }
+    }
+    
+    function onScroll() {
+        if (loading) return;
+        const lastVisible = sections[currentSection];
+        if (!lastVisible) return;
+        const rect = lastVisible.getBoundingClientRect();
+        if (rect.bottom < window.innerHeight + 200) {
+            loading = true;
+            setTimeout(() => {
+                showNextSection();
+                loading = false;
+            }, 100);
+        }
+    }
+    
+    // Remove existing scroll listener
+    window.removeEventListener('scroll', window.lazyScrollHandler);
+    
+    // Add new scroll listener
+    window.lazyScrollHandler = onScroll;
+    window.addEventListener('scroll', window.lazyScrollHandler);
+    
+    // Hiệu ứng fade-in cho section đầu tiên
+    setTimeout(() => {
+        const firstSection = sections[0];
+        if (firstSection) {
+            const cards = firstSection.querySelectorAll('.product-card');
+            cards.forEach((card, idx) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in-card');
+                }, idx * 60);
+            });
+        }
+    }, 200);
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    initializeLazyLoading();
+});
+
+// AJAX Filter Functions
+function initializeAjaxFilters() {
+    let searchTimeout;
+    
+    // Search input handler with debounce
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            
+            // Add loading class to search input
+            searchInput.classList.add('border-orange-500');
+            
+            searchTimeout = setTimeout(() => {
+                performAjaxFilter();
+                searchInput.classList.remove('border-orange-500');
+            }, 500); // 500ms debounce
+        });
+        
+        // Clear search on Escape key
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                performAjaxFilter();
+            }
+        });
+    }
+
+    // Sort select handler
+    const sortSelect = document.querySelector('select[name="sort"]');
+    if (sortSelect) {
+        sortSelect.removeAttribute('onchange'); // Remove inline handler
+        sortSelect.addEventListener('change', function() {
+            performAjaxFilter();
+        });
+    }
+
+    // Category buttons handler
+    document.querySelectorAll('.category-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
+            
+            // Update active state
+            document.querySelectorAll('.category-btn').forEach(b => {
+                b.classList.remove('bg-orange-500', 'text-white');
+                b.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            this.classList.remove('bg-gray-100', 'text-gray-700');
+            this.classList.add('bg-orange-500', 'text-white');
+            
+            // Get category ID from href
+            const url = new URL(this.href);
+            const categoryId = url.searchParams.get('category') || '';
+            
+            performAjaxFilter(categoryId);
+        });
+    });
+}
+
+function performAjaxFilter(categoryId = null) {
+    const searchInput = document.getElementById('search-input');
+    const sortSelect = document.querySelector('select[name="sort"]');
+    const currentUrl = new URL(window.location);
+    
+    // Get current values
+    const searchValue = searchInput ? searchInput.value : '';
+    const sortValue = sortSelect ? sortSelect.value : 'popular';
+    const branchId = currentUrl.searchParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content || '';
+    
+    // Use provided categoryId or get from current URL
+    const category = categoryId !== null ? categoryId : (currentUrl.searchParams.get('category') || '');
+    
+    // Show loading state
+    showLoadingState();
+    
+    // Prepare AJAX data
+    const ajaxData = {
+        search: searchValue,
+        sort: sortValue,
+        category: category,
+        branch_id: branchId,
+        ajax: 1
+    };
+    
+    // Remove empty values
+    Object.keys(ajaxData).forEach(key => {
+        if (ajaxData[key] === '' || ajaxData[key] === null) {
+            delete ajaxData[key];
+        }
+    });
+    
+    // Perform AJAX request
+    fetch(window.location.pathname + '?' + new URLSearchParams(ajaxData), {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateProductGrid(data.html);
+            updateURL(ajaxData);
+        } else {
+            console.error('AJAX filter error:', data.message);
+            hideLoadingState();
+        }
+    })
+    .catch(error => {
+        console.error('AJAX request failed:', error);
+        hideLoadingState();
+    });
+}
+
+function showLoadingState() {
+    const categorySections = document.getElementById('category-sections');
+    if (categorySections) {
+        categorySections.style.opacity = '0.5';
+        categorySections.style.pointerEvents = 'none';
+        
+        // Add loading overlay
+        if (!categorySections.querySelector('.loading-overlay')) {
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+            categorySections.style.position = 'relative';
+            categorySections.appendChild(loadingOverlay);
+        }
+    }
+    
+    // Show skeleton loading
+    const skeletons = document.querySelectorAll('.skeletons-container');
+    const productContainers = document.querySelectorAll('.product-cards-container');
+    
+    skeletons.forEach(skeleton => skeleton.style.display = 'grid');
+    productContainers.forEach(container => container.style.display = 'none');
+}
+
+function hideLoadingState() {
+    const categorySections = document.getElementById('category-sections');
+    if (categorySections) {
+        categorySections.style.opacity = '1';
+        categorySections.style.pointerEvents = 'auto';
+        
+        // Remove loading overlay
+        const loadingOverlay = categorySections.querySelector('.loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.remove();
+        }
+    }
+    
+    // Hide skeleton loading
+    const skeletons = document.querySelectorAll('.skeletons-container');
+    const productContainers = document.querySelectorAll('.product-cards-container');
+    
+    skeletons.forEach(skeleton => skeleton.style.display = 'none');
+    productContainers.forEach(container => container.style.display = 'grid');
+}
+
+function updateProductGrid(html) {
+    const categorySections = document.getElementById('category-sections');
+    if (categorySections) {
+        categorySections.innerHTML = html;
+        
+        // Re-initialize favorite buttons for new content
+        initializeFavoriteButtons();
+        
+        // Re-initialize lazy loading for new content
+        initializeLazyLoading();
+        
+        // Add fade-in animation to new cards
+        setTimeout(() => {
+            const newCards = categorySections.querySelectorAll('.product-card');
+            newCards.forEach((card, idx) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in-card');
+                }, idx * 30);
+            });
+        }, 100);
+    }
+    
+    hideLoadingState();
+}
+
+function updateURL(params) {
+    const url = new URL(window.location);
+    
+    // Clear existing params
+    url.searchParams.delete('search');
+    url.searchParams.delete('sort');
+    url.searchParams.delete('category');
+    
+    // Add new params
+    Object.keys(params).forEach(key => {
+        if (key !== 'ajax' && params[key] !== '') {
+            url.searchParams.set(key, params[key]);
+        }
+    });
+    
+    // Update URL without page reload
+    window.history.pushState({}, '', url.toString());
+}
+
+function initializeFavoriteButtons() {
+    // Re-initialize favorite buttons for dynamically loaded content
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        // Remove existing event listeners by cloning
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             // Nếu là nút login-prompt-btn thì show popup đăng nhập
-            if (btn.classList.contains('login-prompt-btn')) {
+            if (newBtn.classList.contains('login-prompt-btn')) {
                 document.getElementById('login-popup').classList.remove('hidden');
                 return;
             }
             // Đã đăng nhập
-            const productId = btn.getAttribute('data-product-id');
-            const icon = btn.querySelector('i');
+            const productId = newBtn.getAttribute('data-product-id');
+            const icon = newBtn.querySelector('i');
             const isFavorite = icon.classList.contains('fas');
             // Optimistic UI
             if (isFavorite) {
@@ -301,95 +621,4 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
-
-    // Đóng modal đăng nhập khi bấm nút đóng hoặc click ra ngoài
-    const loginPopup = document.getElementById('login-popup');
-    const closeLoginBtn = document.getElementById('close-login-popup');
-    if (loginPopup && closeLoginBtn) {
-        closeLoginBtn.onclick = function() {
-            loginPopup.classList.add('hidden');
-        };
-        loginPopup.onclick = function(e) {
-            if (e.target === this) this.classList.add('hidden');
-        };
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                loginPopup.classList.add('hidden');
-            }
-        });
-    }
-});
-
-// Force reload when coming back from bfcache (back/forward)
-window.addEventListener('pageshow', function(event) {
-    if (event.persisted || (window.performance && performance.getEntriesByType('navigation')[0]?.type === 'back_forward')) {
-        window.location.reload();
-    }
-});
-
-// Thêm fallback: reload khi tab được hiển thị lại nếu discount đã bị tắt (dùng localStorage flag)
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && window.needDiscountReload) {
-        window.location.reload();
-    }
-});
-
-// Lazy load section by scroll
-window.addEventListener('DOMContentLoaded', function() {
-    const sections = Array.from(document.querySelectorAll('.category-section'));
-    let currentSection = 0;
-    let loading = false;
-    function showNextSection() {
-        if (currentSection + 1 < sections.length) {
-            currentSection++;
-            const section = sections[currentSection];
-            // 1. Show skeletons
-            const skeletons = section.querySelector('.skeletons-container');
-            const cardsContainer = section.querySelector('.product-cards-container');
-            if (skeletons && cardsContainer) {
-                skeletons.style.display = 'grid';
-                cardsContainer.style.display = 'none';
-                section.style.display = 'block';
-                // 2. After delay, hide skeletons, show cards with fade-in
-                setTimeout(() => {
-                    skeletons.style.display = 'none';
-                    cardsContainer.style.display = 'grid';
-                    const cards = cardsContainer.querySelectorAll('.product-card');
-                    cards.forEach((card, idx) => {
-                        setTimeout(() => {
-                            card.classList.add('fade-in-card');
-                        }, idx * 60); // staggered
-                    });
-                }, 400);
-            } else {
-                section.style.display = 'block';
-            }
-        }
-    }
-    function onScroll() {
-        if (loading) return;
-        const lastVisible = sections[currentSection];
-        if (!lastVisible) return;
-        const rect = lastVisible.getBoundingClientRect();
-        if (rect.bottom < window.innerHeight + 200) {
-            loading = true;
-            setTimeout(() => {
-                showNextSection();
-                loading = false;
-            }, 100);
-        }
-    }
-    window.addEventListener('scroll', onScroll);
-    // Hiệu ứng fade-in cho section đầu tiên
-    setTimeout(() => {
-        const firstSection = sections[0];
-        if (firstSection) {
-            const cards = firstSection.querySelectorAll('.product-card');
-            cards.forEach((card, idx) => {
-                setTimeout(() => {
-                    card.classList.add('fade-in-card');
-                }, idx * 60);
-            });
-        }
-    }, 200);
-});
+}

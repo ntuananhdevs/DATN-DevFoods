@@ -102,6 +102,9 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
+            @foreach(request('cart_item_ids', []) as $cartItemId)
+                <input type="hidden" name="cart_item_ids[]" value="{{ $cartItemId }}">
+            @endforeach
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                 <!-- ========= CỘT BÊN TRÁI ========= -->
@@ -460,6 +463,14 @@
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Phí giao hàng</span>
                                 <span id="shipping-fee-display" data-value="{{ $shipping }}">Đang tính...</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 flex items-center">
+                                    Thời gian giao hàng dự kiến
+                                    <span id="delivery-time-indicator" class="ml-1 text-xs text-green-500 opacity-0 transition-opacity duration-300">●</span>
+                                </span>
+                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Đang tính...</span>
                             </div>
 
                             <div id="coupon-discount-row" class="flex justify-between text-green-600 font-semibold {{ $discount > 0 ? '' : 'hidden' }}">
@@ -878,9 +889,159 @@ document.addEventListener('DOMContentLoaded', function() {
             maxDeliveryDistance: {{ \App\Models\GeneralSetting::getMaxDeliveryDistance() }}
         };
 
+        // --- DELIVERY TIME CONFIG ---
+        const deliveryConfig = {
+            defaultPreparationTime: {{ $deliveryConfig['defaultPreparationTime'] }},
+            averageSpeedKmh: {{ $deliveryConfig['averageSpeedKmh'] }},
+            bufferTime: {{ $deliveryConfig['bufferTime'] }}
+        };
+        
+        // Cart items preparation times
+        const itemPreparationTimes = [
+            @foreach($cartItems as $item)
+                @if($item->variant && $item->variant->product)
+                    {{ $item->variant->product->preparation_time_minutes ?? 0 }},
+                @elseif($item->combo)
+                    {{ $item->combo->preparation_time_minutes ?? 0 }},
+                @else
+                    0,
+                @endif
+            @endforeach
+        ];
+
         // Debug: Log shipping config values
         console.log('Shipping Config:', shippingConfig);
+        console.log('Delivery Config:', deliveryConfig);
+        
+        // Global variables for delivery time tracking
+        let currentDeliveryDistance = 0;
+        let deliveryTimeInterval = null;
+        
+        // Khởi động timer cập nhật thời gian giao hàng mỗi phút
+        document.addEventListener('DOMContentLoaded', function() {
+            startDeliveryTimeUpdater();
+            console.log('Delivery time updater started - will update every minute');
+        });
+        
+        // Dừng timer khi người dùng rời khỏi trang để tránh memory leak
+        window.addEventListener('beforeunload', function() {
+            stopDeliveryTimeUpdater();
+        });
+        
+        // Dừng timer khi trang bị ẩn (tab switching)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopDeliveryTimeUpdater();
+            } else {
+                startDeliveryTimeUpdater();
+                // Cập nhật ngay lập tức khi quay lại tab
+                if (currentDeliveryDistance > 0) {
+                    updateDeliveryTimeDisplay(currentDeliveryDistance, true); // Show indicator when returning to tab
+                }
+            }
+        });
 
+        /**
+         * Tính thời gian giao hàng dự kiến
+         * @param {number} distance - Khoảng cách tính bằng km
+         * @returns {number} Thời gian dự kiến tính bằng phút
+         */
+        function calculateEstimatedDeliveryTime(distance) {
+            // 1. Tìm thời gian chuẩn bị lâu nhất
+            let maxPreparationTime = Math.max(...itemPreparationTimes);
+            
+            // Nếu không có sản phẩm nào có thời gian, sử dụng giá trị mặc định
+            if (maxPreparationTime === 0 || maxPreparationTime === -Infinity) {
+                maxPreparationTime = deliveryConfig.defaultPreparationTime;
+            }
+            
+            // 2. Tính thời gian di chuyển
+            let travelTime = 0;
+            if (deliveryConfig.averageSpeedKmh > 0 && distance > 0) {
+                travelTime = (distance / deliveryConfig.averageSpeedKmh) * 60; // Đổi sang phút
+            }
+            
+            // 3. Cộng tổng với thời gian dự phòng và làm tròn lên
+            const totalMinutes = maxPreparationTime + travelTime + deliveryConfig.bufferTime;
+            
+            return Math.ceil(totalMinutes);
+        }
+        
+        /**
+         * Cập nhật hiển thị thời gian giao hàng dự kiến
+         * @param {number} distance - Khoảng cách tính bằng km
+         * @param {boolean} showIndicator - Có hiển thị indicator cập nhật không
+         */
+        function updateDeliveryTimeDisplay(distance, showIndicator = false) {
+            const deliveryTimeEl = document.getElementById('delivery-time-display');
+            const indicatorEl = document.getElementById('delivery-time-indicator');
+            
+            if (distance <= 0 || distance > shippingConfig.maxDeliveryDistance) {
+                deliveryTimeEl.textContent = 'Không khả dụng';
+                deliveryTimeEl.classList.remove('text-orange-600');
+                deliveryTimeEl.classList.add('text-red-500');
+                return;
+            }
+            
+            // Tính thời gian giao hàng dự kiến
+            const estimatedMinutes = calculateEstimatedDeliveryTime(distance);
+            const now = new Date();
+            const estimatedTime = new Date(now.getTime() + estimatedMinutes * 60000);
+            
+            // Format thời gian hiển thị
+            const startTime = estimatedTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const endTime = new Date(estimatedTime.getTime() + 15 * 60000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Kiểm tra xem có phải hôm nay không
+            const isToday = now.toDateString() === estimatedTime.toDateString();
+            const dateDisplay = isToday ? 'Hôm nay' : estimatedTime.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            
+            deliveryTimeEl.textContent = `${dateDisplay}, ${startTime} - ${endTime}`;
+            deliveryTimeEl.classList.remove('text-red-500');
+            deliveryTimeEl.classList.add('text-orange-600');
+            
+            // Hiển thị indicator khi cập nhật tự động
+            if (showIndicator && indicatorEl) {
+                indicatorEl.classList.remove('opacity-0');
+                indicatorEl.classList.add('opacity-100');
+                
+                // Ẩn indicator sau 2 giây
+                setTimeout(() => {
+                    indicatorEl.classList.remove('opacity-100');
+                    indicatorEl.classList.add('opacity-0');
+                }, 2000);
+            }
+        }
+        
+        /**
+         * Khởi tạo timer cập nhật thời gian giao hàng mỗi phút
+         */
+        function startDeliveryTimeUpdater() {
+            // Clear existing interval if any
+            if (deliveryTimeInterval) {
+                clearInterval(deliveryTimeInterval);
+            }
+            
+            // Update every minute (60000ms)
+            deliveryTimeInterval = setInterval(() => {
+                if (currentDeliveryDistance > 0 && currentDeliveryDistance <= shippingConfig.maxDeliveryDistance) {
+                    updateDeliveryTimeDisplay(currentDeliveryDistance, true); // Show indicator for auto-update
+                    console.log('Delivery time updated automatically at', new Date().toLocaleTimeString());
+                }
+            }, 60000);
+        }
+        
+        /**
+         * Dừng timer cập nhật thời gian giao hàng
+         */
+        function stopDeliveryTimeUpdater() {
+            if (deliveryTimeInterval) {
+                clearInterval(deliveryTimeInterval);
+                deliveryTimeInterval = null;
+                console.log('Delivery time updater stopped');
+            }
+        }
+        
         /**
          * Tính phí vận chuyển ở phía client.
          * @param {number} distance - Khoảng cách tính bằng km.
@@ -1050,6 +1211,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const subtotal = parseFloat(document.getElementById('subtotal-display').dataset.value || 0);
                 const shippingFee = calculateShippingFee(distance, subtotal);
                 const shippingFeeEl = document.getElementById('shipping-fee-display');
+
+                // Cập nhật biến global và thời gian giao hàng
+                currentDeliveryDistance = distance;
+                updateDeliveryTimeDisplay(distance);
 
                 if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;

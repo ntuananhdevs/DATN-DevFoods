@@ -17,6 +17,7 @@ class DriverController extends Controller
     public function home()
     {
         $driver = Auth::guard('driver')->user();
+        $driverId = $driver->id;
 
         // Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received' hôm nay
         $ordersDeliveredToday = Order::where('driver_id', $driver->id)
@@ -27,7 +28,7 @@ class DriverController extends Controller
         $deliveredOrdersCountToday = $ordersDeliveredToday->count();
 
         // Tính thu nhập trung bình mỗi đơn hôm nay
-        $averageEarningPerOrder = $deliveredOrdersCountToday > 0 ? 
+        $averageEarningPerOrder = $deliveredOrdersCountToday > 0 ?
             $totalEarnedToday / $deliveredOrdersCountToday : 0;
 
         // Lấy các đơn hàng tài xế đang xử lý
@@ -36,9 +37,15 @@ class DriverController extends Controller
             ->latest()->get();
 
         // Lấy các đơn hàng mới đang chờ tài xế
-        $availableOrders = Order::whereNull('driver_id')
+        $availableOrders = Order::where(function ($q) use ($driverId) {
+            $q->whereNull('driver_id')
+                ->orWhere(function ($q2) use ($driverId) {
+                    $q2->where('driver_id', $driverId)
+                        ->where('status', 'awaiting_driver');
+                });
+        })
             ->where('status', 'awaiting_driver')
-            ->latest()->take(5)->get();
+            ->get();
 
         return view('driver.dashboard', compact(
             'driver',
@@ -89,7 +96,7 @@ class DriverController extends Controller
                 break;
             case 'month':
                 $query->whereMonth('actual_delivery_time', Carbon::now()->month)
-                      ->whereYear('actual_delivery_time', Carbon::now()->year);
+                    ->whereYear('actual_delivery_time', Carbon::now()->year);
                 break;
                 // Case 'all' không cần thêm điều kiện ngày
         }
@@ -119,7 +126,7 @@ class DriverController extends Controller
                 break;
             case 'month':
                 $query->whereMonth('actual_delivery_time', Carbon::now()->month)
-                      ->whereYear('actual_delivery_time', Carbon::now()->year);
+                    ->whereYear('actual_delivery_time', Carbon::now()->year);
                 $label = 'tháng này';
                 break;
             default: // today

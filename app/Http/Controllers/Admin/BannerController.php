@@ -50,7 +50,7 @@ class BannerController extends Controller
             $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
@@ -80,7 +80,7 @@ class BannerController extends Controller
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
-                'link.regex' => 'Link sản phẩm không hợp lệ.',
+                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /shop/products/slug (ví dụ: /shop/products/banh-mi-thit-nuong).',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
@@ -226,7 +226,7 @@ class BannerController extends Controller
             $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
@@ -255,7 +255,7 @@ class BannerController extends Controller
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
-                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /products/ID (ví dụ: /products/123).',
+                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /shop/products/slug (ví dụ: /shop/products/banh-mi-thit-nuong).',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
@@ -468,16 +468,21 @@ class BannerController extends Controller
     {
         $query = $request->get('q', '');
         $id = $request->get('id');
+        $slug = $request->get('slug');
         $products = Product::query();
+        
         if ($id) {
             $products->where('id', $id);
+        } elseif ($slug) {
+            $products->where('slug', $slug);
         } elseif ($query) {
             $products->where('name', 'like', '%' . $query . '%');
         } else {
             return response()->json([]);
         }
+        
         return response()->json(
-            $products->select('id', 'name')
+            $products->select('id', 'name', 'slug')
                 ->limit(10)
                 ->get()
         );

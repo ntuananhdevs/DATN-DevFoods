@@ -208,7 +208,7 @@
     }
 </style>
 
-<div class="fade-in flex flex-col gap-4 pb-4">
+<div class="flex flex-col gap-4 pb-4">
     <!-- Main Header -->
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">

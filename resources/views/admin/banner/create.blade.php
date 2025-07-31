@@ -119,7 +119,7 @@
                 </ul>
                 
                 <!-- Input ẩn để lưu link sản phẩm -->
-                <input type="hidden" name="link" :value="selectedProduct ? `/shop/products/${selectedProduct.id}` : ''">
+                <input type="hidden" name="link" :value="selectedProduct ? `/shop/products/${selectedProduct.slug}` : ''">
             </div>
 
             <div>

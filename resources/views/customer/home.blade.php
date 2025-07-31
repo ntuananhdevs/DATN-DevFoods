@@ -3,6 +3,11 @@
 @section('title', 'FastFood - Trang Chủ')
 
 @section('content')
+<!-- Add meta tag for selected branch -->
+@if(isset($selectedBranch))
+<meta name="selected-branch" content="{{ $selectedBranch->id }}">
+@endif
+
 <style>
    /* Example for badges - adjust to your styling system */
     .custom-badge {
@@ -413,15 +418,17 @@
             let slideInterval;
 
             function showSlide(index) {
-                // Hide all slides
-                slides.forEach(slide => {
+                // Hide all slides and reset z-index
+                slides.forEach((slide, i) => {
                     slide.classList.remove('opacity-100');
                     slide.classList.add('opacity-0');
+                    slide.style.zIndex = '1';
                 });
 
-                // Show the selected slide
+                // Show the selected slide and set higher z-index
                 slides[index].classList.remove('opacity-0');
                 slides[index].classList.add('opacity-100');
+                slides[index].style.zIndex = '10';
 
                 // Update dots
                 dots.forEach((dot, i) => {
@@ -435,6 +442,9 @@
                 });
 
                 currentSlide = index;
+                
+                // Debug log
+                console.log('Showing slide:', index, 'Banner ID:', slides[index].dataset.bannerId, 'Link:', slides[index].dataset.bannerLink);
             }
 
             function nextSlide() {
@@ -513,7 +523,9 @@
 <script>
     window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
     window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    window.csrfToken = '{{ csrf_token() }}';
 </script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
+<script src="{{ asset('js/Customer/add-to-cart-direct.js') }}"></script>
 @endsection

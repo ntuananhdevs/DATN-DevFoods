@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Support\Facades\Storage;
 use App\Models\Banner;
+use App\Models\Product;
 use Illuminate\Database\Seeder;
 
 class BannerSeeder extends Seeder
@@ -13,6 +14,13 @@ class BannerSeeder extends Seeder
      */
     public function run(): void
     {
+        // Xóa tất cả banner cũ trước khi tạo mới
+        $this->command->info("🗑️ Xóa tất cả banner cũ...");
+        Banner::truncate();
+        $this->command->info("✅ Đã xóa tất cả banner cũ.");
+        
+        $this->command->info("🚀 Bắt đầu tạo banner mới chỉ hiển thị ảnh...");
+        
         // === LẤY DANH SÁCH ẢNH TỪ S3 THƯ MỤC 'banners/' ===
         $imageFiles = Storage::disk('s3')->files('banners');
 
@@ -34,90 +42,69 @@ class BannerSeeder extends Seeder
             $filename = basename($path);
 
             Banner::create([
-                'title' => 'Banner mẫu ' . ($index + 1),
+                'title' => null, // Không có title
                 'position' => 'homepage',
                 'order' => $index,
                 'image_path' => $imageUrl,
-                'link' => '/shop/products/' . rand(1, 100),
-                'description' => 'Banner tự động tạo từ ảnh S3: ' . $filename,
+                'link' => null, // Không có link
+                'description' => null, // Không có mô tả
                 'start_at' => now(),
-                'end_at' => now()->addDays(7),
+                'end_at' => now()->addDays(30),
                 'is_active' => true
             ]);
 
-            $this->command->info("✅ Đã tạo banner từ S3: {$filename}");
+            $this->command->info("✅ Đã tạo banner từ S3: {$filename} (chỉ hiển thị ảnh)");
             $index++;
         }
 
-        // === PHẦN VỊ TRÍ KHÁC VẪN GIỮ NGUYÊN ===
+        // === PHẦN VỊ TRÍ KHÁC - CHỈ HIỂN THỊ ẢNH ===
         $extraBanners = [
             [
-                'title' => 'Banner chân trang',
                 'position' => 'footers',
-                'image_path' => 'https://example.com/banners/footer.jpg',
-                'link' => '/footer/info',
-                'description' => 'Banner cho phần chân trang'
+                'image_path' => 'https://example.com/banners/footer.jpg'
             ],
             [
-                'title' => 'Banner khuyến mãi',
                 'position' => 'promotions',
-                'image_path' => 'https://example.com/banners/promotion.jpg',
-                'link' => '/promotions',
-                'description' => 'Banner chương trình khuyến mãi'
+                'image_path' => 'https://example.com/banners/promotion.jpg'
             ],
             [
-                'title' => 'Banner menu',
                 'position' => 'menu',
-                'image_path' => 'https://example.com/banners/menu.jpg',
-                'link' => '/menu',
-                'description' => 'Banner cho thanh menu chính'
+                'image_path' => 'https://example.com/banners/menu.jpg'
             ],
             [
-                'title' => 'Banner chi nhánh',
                 'position' => 'branch',
-                'image_path' => 'https://example.com/banners/branch.jpg',
-                'link' => '/branches',
-                'description' => 'Banner giới thiệu chi nhánh'
+                'image_path' => 'https://example.com/banners/branch.jpg'
             ],
             [
-                'title' => 'Banner giới thiệu',
                 'position' => 'abouts',
-                'image_path' => 'https://example.com/banners/about.jpg',
-                'link' => '/about-us',
-                'description' => 'Banner phần giới thiệu'
+                'image_path' => 'https://example.com/banners/about.jpg'
             ],
             [
-                'title' => 'Banner hỗ trợ',
                 'position' => 'supports',
-                'image_path' => 'https://example.com/banners/support.jpg',
-                'link' => '/support',
-                'description' => 'Banner phần hỗ trợ khách hàng'
+                'image_path' => 'https://example.com/banners/support.jpg'
             ],
             [
-                'title' => 'Banner liên hệ',
                 'position' => 'contacts',
-                'image_path' => 'https://example.com/banners/contact.jpg',
-                'link' => '/contact',
-                'description' => 'Banner phần liên hệ'
+                'image_path' => 'https://example.com/banners/contact.jpg'
             ]
         ];
 
         foreach ($extraBanners as $item) {
             Banner::create([
-                'title' => $item['title'],
+                'title' => null, // Không có title
                 'position' => $item['position'],
                 'order' => null,
                 'image_path' => $item['image_path'],
-                'link' => $item['link'],
-                'description' => $item['description'],
+                'link' => null, // Không có link
+                'description' => null, // Không có mô tả
                 'start_at' => now(),
-                'end_at' => now()->addDays(7),
+                'end_at' => now()->addDays(30),
                 'is_active' => true
             ]);
 
-            $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']}");
+            $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']} (chỉ hiển thị ảnh)");
         }
-
-        $this->command->info("🎉 Seeder hoàn tất: tạo banner từ S3 và các vị trí tĩnh.");
+        $this->command->info("🎉 Seeder hoàn tất: tạo banner chỉ hiển thị ảnh, không có title, link và mô tả");
     }
+
 }
