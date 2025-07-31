@@ -679,8 +679,10 @@ class CheckoutController extends Controller
             
             DB::commit();
             
-            // Send confirmation email
-            EmailFactory::sendOrderConfirmation($order);
+            // Send confirmation email asynchronously
+            dispatch(function() use ($order) {
+                EmailFactory::sendOrderConfirmation($order);
+            });
             
             // Redirect to success page
             return redirect()->route('checkout.success', ['order_code' => $order->order_code])
@@ -800,8 +802,10 @@ class CheckoutController extends Controller
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
 
-                    // Send confirmation email
-                    EmailFactory::sendOrderConfirmation($order);
+                    // Send confirmation email asynchronously
+                    dispatch(function() use ($order) {
+                        EmailFactory::sendOrderConfirmation($order);
+                    });
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)
