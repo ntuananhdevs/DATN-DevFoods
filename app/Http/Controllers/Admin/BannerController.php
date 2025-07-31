@@ -299,11 +299,9 @@ class BannerController extends Controller
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
-                // Vẫn yêu cầu ảnh trong update
-                return back()->withErrors([
-                    'image_path' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
-                    'image_link' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
-                ])->withInput();
+                // Không có ảnh mới được chọn, giữ nguyên ảnh cũ
+                unset($validated['image_path']);
+                unset($validated['image_link']);
             }
 
             // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
