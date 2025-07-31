@@ -48,11 +48,87 @@
    }
 
    .cart-item-checkbox, #select-all-cart {
-       width: 20px;
-       height: 20px;
-       accent-color: #F97316;
+       width: 22px;
+       height: 22px;
+       border-radius: 50%;
+       appearance: none;
+       -webkit-appearance: none;
+       -moz-appearance: none;
+       border: 2px solid #e5e7eb;
+       background-color: white;
        cursor: pointer;
+       position: relative;
+       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
    }
+   
+   .cart-item-checkbox:hover, #select-all-cart:hover {
+       border-color: #f59e0b;
+       box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+       transform: scale(1.05);
+       transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+   }
+   
+   .cart-item-checkbox:not(:hover):not(:checked), #select-all-cart:not(:hover):not(:checked) {
+       transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+   }
+   
+   .cart-item-checkbox:checked, #select-all-cart:checked {
+       background: linear-gradient(135deg, #f59e0b, #f97316);
+       border-color: #f59e0b;
+       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+       transform: scale(1.1);
+       transition: all 0.25s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+   }
+   
+   .cart-item-checkbox:checked::after, #select-all-cart:checked::after {
+       content: '';
+       position: absolute;
+       left: 50%;
+       top: 50%;
+       transform: translate(-50%, -50%) scale(0);
+       width: 8px;
+       height: 8px;
+       background-color: white;
+       border-radius: 50%;
+       animation: checkmark 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+   }
+   
+   .cart-item-checkbox:not(:checked)::after, #select-all-cart:not(:checked)::after {
+       animation: uncheckmark 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+   }
+   
+   @keyframes checkmark {
+       0% {
+           transform: translate(-50%, -50%) scale(0);
+           opacity: 0;
+       }
+       60% {
+           transform: translate(-50%, -50%) scale(1.3);
+           opacity: 0.9;
+       }
+       100% {
+           transform: translate(-50%, -50%) scale(1);
+           opacity: 1;
+       }
+   }
+   
+   @keyframes uncheckmark {
+       0% {
+           transform: translate(-50%, -50%) scale(1);
+           opacity: 1;
+       }
+       100% {
+           transform: translate(-50%, -50%) scale(0);
+           opacity: 0;
+       }
+   }
+   
+   .cart-item-checkbox:focus, #select-all-cart:focus {
+       outline: none;
+       box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+   }
+   
    #select-all-cart {
        margin-top: 2px;
    }
