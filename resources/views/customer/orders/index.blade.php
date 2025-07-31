@@ -7,6 +7,9 @@
     .container-ft {
         max-width: 1240px;
     }
+    #action-confirmation-modal {
+        z-index: 9999;
+    }
 </style>
     <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
         <div class="container-ft mx-auto px-4">
@@ -22,9 +25,22 @@
         <div class="flex flex-col gap-8">
             <section class="mb-10">
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <div class="p-6 border-b border-gray-100">
+                    <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-bold">Đơn hàng của bạn</h2>
                     </div>
+                    
+                    <!-- Bộ lọc trạng thái đơn hàng -->
+                    <div class="flex flex-wrap gap-2 mt-4 overflow-x-auto pb-2" id="status-filter">
+                        @foreach($statuses as $statusKey => $statusLabel)
+                            <button type="button" data-status="{{ $statusKey }}" 
+                               class="status-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors 
+                                    {{ request('status', 'all') == $statusKey ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                                {{ $statusLabel }} {{ request('status', 'all') == $statusKey ? '(' . $orders->total() . ')' : '' }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
                     <div class="p-6">
                         <div id="order-list-container">
                             @include('customer.orders.partials.list', ['orders' => $orders])
@@ -76,7 +92,7 @@
     </div>
     <!-- Modal xác nhận hành động -->
     <div id="action-confirmation-modal"
-        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
         <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
                 <div id="modal-icon-container"
@@ -88,6 +104,44 @@
                     <p id="action-modal-message" class="text-sm text-gray-500">
                         Bạn có chắc chắn thực hiện thao tác này không?
                     </p>
+                    
+                    <!-- Phần chọn lý do hủy đơn -->
+                    <div id="cancel-reason-section" class="mt-4 text-left hidden">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
+                        <div class="space-y-2">
+                            <div>
+                                <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
+                                <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
+                                <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
+                                <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
+                                <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
+                                <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
+                                <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                                <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                            </div>
+                            <div id="other-reason-container" class="hidden mt-2">
+                                <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Vui lòng nhập lý do khác..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="items-center px-4 py-3 flex gap-3">
                     <button id="action-abort-btn"
@@ -111,6 +165,182 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Xử lý lọc đơn hàng theo trạng thái bằng AJAX
+            const statusFilterButtons = document.querySelectorAll('.status-filter-btn');
+            const orderListContainer = document.getElementById('order-list-container');
+            const paginationContainer = document.querySelector('.pagination-container');
+            
+            // Hàm hiển thị loading
+            function showLoading() {
+                orderListContainer.innerHTML = '<div class="flex justify-center items-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div></div>';
+            }
+            
+            // Hàm cập nhật URL mà không reload trang
+            function updateUrlParam(key, value) {
+                const url = new URL(window.location.href);
+                if (value === 'all') {
+                    url.searchParams.delete(key);
+                } else {
+                    url.searchParams.set(key, value);
+                }
+                window.history.pushState({}, '', url);
+                return url;
+            }
+            
+            // Hàm cập nhật trạng thái active của các nút lọc
+            function updateFilterButtonsState(activeStatus) {
+                statusFilterButtons.forEach(button => {
+                    const status = button.dataset.status;
+                    if (status === activeStatus) {
+                        button.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+                        button.classList.add('bg-orange-500', 'text-white');
+                    } else {
+                        button.classList.remove('bg-orange-500', 'text-white');
+                        button.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+                    }
+                });
+            }
+            
+            // Hàm để gắn lại các event listener cho các nút hành động
+            function reattachActionButtonListeners() {
+                document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'cancel');
+                    });
+                });
+                
+                document.querySelectorAll('.receive-order-form button[type="submit"]').forEach(button => {
+                    button.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'receive');
+                    });
+                });
+            }
+            
+            // Hàm tải danh sách đơn hàng theo trạng thái
+            function loadOrdersByStatus(status) {
+                showLoading();
+                const url = updateUrlParam('status', status);
+                
+                // Sử dụng URL tuyệt đối thay vì route helper để đảm bảo đúng đường dẫn
+                const listPartialUrl = "{{ url('/customer/orders/list') }}";
+                const indexUrl = "{{ url('/customer/orders') }}";
+                
+                fetch(`${listPartialUrl}?${url.searchParams.toString()}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        orderListContainer.innerHTML = html;
+                        
+                        // Cập nhật lại các event listener cho các nút trong danh sách đơn hàng
+                        reattachActionButtonListeners();
+                        
+                        // Cập nhật lại danh sách orderIds cho Pusher
+                        orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
+                            .map(el => parseInt(el.dataset.orderId))
+                            .filter(id => !isNaN(id));
+                            
+                        // Cập nhật phân trang
+                        return fetch(`${indexUrl}?${url.searchParams.toString()}`);
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newPagination = doc.querySelector('.pagination-container');
+                        
+                        if (newPagination && paginationContainer) {
+                            paginationContainer.innerHTML = newPagination.innerHTML;
+                            
+                            // Cập nhật event listener cho các nút phân trang
+                            document.querySelectorAll('.pagination-item').forEach(item => {
+                                if (!item.classList.contains('disabled') && !item.classList.contains('active')) {
+                                    item.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        const pageUrl = new URL(this.href);
+                                        const pageParams = pageUrl.searchParams.toString();
+                                        
+                                        loadOrdersByPage(pageParams);
+                                    });
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading orders:', error);
+                        orderListContainer.innerHTML = '<div class="text-center text-red-500 py-12">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</div>';
+                    });
+            }
+            
+            // Hàm tải danh sách đơn hàng theo trang
+            function loadOrdersByPage(pageParams) {
+                showLoading();
+                
+                // Sử dụng URL tuyệt đối thay vì route helper để đảm bảo đúng đường dẫn
+                const listPartialUrl = "{{ url('/customer/orders/list') }}";
+                const indexUrl = "{{ url('/customer/orders') }}";
+                
+                fetch(`${listPartialUrl}?${pageParams}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        orderListContainer.innerHTML = html;
+                        
+                        // Cập nhật URL
+                        window.history.pushState({}, '', `${indexUrl}?${pageParams}`);
+                        
+                        // Cập nhật lại các event listener
+                        reattachActionButtonListeners();
+                        
+                        // Cập nhật lại danh sách orderIds cho Pusher
+                        orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
+                            .map(el => parseInt(el.dataset.orderId))
+                            .filter(id => !isNaN(id));
+                    })
+                    .catch(error => {
+                        console.error('Error loading orders by page:', error);
+                        orderListContainer.innerHTML = '<div class="text-center text-red-500 py-12">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</div>';
+                    });
+            }
+            
+            // Thêm event listener cho các nút lọc trạng thái
+            statusFilterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const status = this.dataset.status;
+                    loadOrdersByStatus(status);
+                    updateFilterButtonsState(status);
+                });
+            });
+            
+            // Thêm event listener cho các nút phân trang
+            document.querySelectorAll('.pagination-item').forEach(item => {
+                if (!item.classList.contains('disabled') && !item.classList.contains('active')) {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const pageUrl = new URL(this.href);
+                        const pageParams = pageUrl.searchParams.toString();
+                        
+                        loadOrdersByPage(pageParams);
+                    });
+                }
+            });
+            
             // Toast thông báo thành công hoặc lỗi
             function showToast(message, color = "bg-green-600") {
                 const toast = document.createElement('div');
@@ -139,6 +369,20 @@
             const modalMessage = document.getElementById('action-modal-message');
             const confirmBtn = document.getElementById('action-confirm-btn');
             const abortBtn = document.getElementById('action-abort-btn');
+            const cancelReasonSection = document.getElementById('cancel-reason-section');
+            const otherReasonContainer = document.getElementById('other-reason-container');
+            const otherReasonText = document.getElementById('other-reason-text');
+
+            // Xử lý hiển thị textarea khi chọn lý do "Khác"
+            document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'Khác') {
+                        otherReasonContainer.classList.remove('hidden');
+                    } else {
+                        otherReasonContainer.classList.add('hidden');
+                    }
+                });
+            });
 
             function openActionModal(form, actionType) {
                 formToSubmit = form;
@@ -152,6 +396,7 @@
                         "Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.";
                     confirmBtn.className = "w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700";
                     confirmBtn.textContent = "Đồng ý hủy";
+                    cancelReasonSection.classList.remove('hidden');
                 } else if (actionType === 'receive') {
                     modalIcon.className = "fas fa-check text-green-600 text-xl";
                     modalIconContainer.className =
@@ -161,6 +406,7 @@
                         "Bạn xác nhận đã nhận được hàng? Vui lòng kiểm tra kỹ trước khi xác nhận.";
                     confirmBtn.className = "w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700";
                     confirmBtn.textContent = "Đã nhận";
+                    cancelReasonSection.classList.add('hidden');
                 }
                 modal.classList.remove('hidden');
             }
@@ -168,7 +414,14 @@
             function closeActionModal() {
                 formToSubmit = null;
                 modal.classList.add('hidden');
+                // Reset radio buttons
+                document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                    radio.checked = false;
+                });
+                otherReasonContainer.classList.add('hidden');
+                otherReasonText.value = '';
             }
+            
             if (confirmBtn) {
                 confirmBtn.addEventListener('click', function() {
                     if (formToSubmit) {
@@ -182,6 +435,28 @@
                         formData.append('_token', csrf);
                         formData.append('status', status);
                         if (methodInput) formData.append('_method', method);
+                        
+                        // Thêm lý do hủy đơn nếu đang hủy đơn hàng
+                        if (modalAction === 'cancel') {
+                            const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+                            if (!selectedReason) {
+                                showToast('Vui lòng chọn lý do hủy đơn hàng', "bg-red-600");
+                                return;
+                            }
+                            
+                            let reason = selectedReason.value;
+                            if (reason === 'Khác') {
+                                const otherReasonValue = otherReasonText.value.trim();
+                                if (!otherReasonValue) {
+                                    showToast('Vui lòng nhập lý do hủy đơn hàng', "bg-red-600");
+                                    return;
+                                }
+                                reason = otherReasonValue;
+                            }
+                            
+                            formData.append('reason', reason);
+                        }
+                        
                         fetch(action, {
                                 method: 'POST',
                                 headers: {
@@ -197,13 +472,8 @@
                                         modalAction === 'cancel' ? 'Hủy đơn hàng thành công!' :
                                         'Đã nhận hàng thành công!'
                                     );
-                                    // Cập nhật lại danh sách đơn hàng thay vì reload trang
                                     setTimeout(() => {
-                                        fetch("{{ route('customer.orders.listPartial') }}")
-                                            .then(response => response.text())
-                                            .then(html => {
-                                                document.getElementById('order-list-container').innerHTML = html;
-                                            });
+                                        window.location.reload();
                                     }, 1300);
                                 } else {
                                     showToast(data.message || 'Có lỗi xảy ra!', "bg-red-600");
@@ -242,20 +512,57 @@
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <script>
         Pusher.logToConsole = true;
-        var pusher = new Pusher('2a1310e928036cd9f6d5', {
-            cluster: 'ap1',
-            encrypted: true
+        var pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+            cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+            encrypted: true,
+            authEndpoint: '/broadcasting/auth',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            }
         });
+        
+        // Add Pusher debugging
+        pusher.connection.bind('connected', function() {
+            console.log('✅ Pusher connected successfully');
+        });
+
+        pusher.connection.bind('error', function(err) {
+            console.error('❌ Pusher connection error:', err);
+        });
+
+        pusher.connection.bind('disconnected', function() {
+            console.log('⚠️ Pusher disconnected');
+        });
+        
         if (orderIds && Array.isArray(orderIds)) {
             orderIds.forEach(function(orderId) {
                 var channel = pusher.subscribe('private-order.' + orderId);
+                
+                channel.bind('pusher:subscription_succeeded', function() {
+                    console.log('✅ Subscribed to order channel:', 'private-order.' + orderId);
+                });
+                
+                channel.bind('pusher:subscription_error', function(error) {
+                    console.error('❌ Failed to subscribe to order channel:', 'private-order.' + orderId, error);
+                });
+                
                 channel.bind('OrderStatusUpdated', function(data) {
                     console.log('Pusher event OrderStatusUpdated received for order', orderId, data);
                     showToast('🔄 Đơn hàng #' + orderId + ' vừa được cập nhật trạng thái!');
-                    fetch("{{ route('customer.orders.listPartial') }}")
+                    
+                    // Lấy trạng thái hiện tại từ URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const currentStatus = urlParams.get('status') || 'all';
+                    
+                    // Cập nhật danh sách đơn hàng với trạng thái hiện tại
+                    fetch("{{ route('customer.orders.listPartial') }}?status=" + currentStatus)
                         .then(response => response.text())
                         .then(html => {
                             document.getElementById('order-list-container').innerHTML = html;
+                            // Gắn lại các event listener sau khi cập nhật nội dung
+                            reattachActionButtonListeners();
                         });
                 });
             });

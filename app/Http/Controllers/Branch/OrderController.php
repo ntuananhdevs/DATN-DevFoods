@@ -245,8 +245,8 @@ class OrderController extends Controller
         ]);
 
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder)); //
-
+        event(new OrderStatusUpdated($freshOrder));
+        
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật trạng thái đơn hàng thành công.',
@@ -386,12 +386,21 @@ class OrderController extends Controller
             'changed_at' => now()
         ]);
 
+        // Lấy lại đơn hàng với dữ liệu mới nhất
+        $freshOrder = $order->fresh();
+        
+        // Broadcast sự kiện cập nhật trạng thái đơn hàng
+        event(new OrderStatusUpdated($freshOrder));
+
         return response()->json([
             'success' => true,
             'message' => 'Hủy đơn hàng thành công'
         ]);
     }
 
+    /**
+     * Lấy stage của đơn hàng để hủy
+     */
     private function getCancellationStage($status)
     {
         $stageMap = [
