@@ -29,7 +29,7 @@
             <div class="out-of-stock-overlay">
                 <span>Hết hàng</span>
             </div>
-            <span class="custom-badge badge-sale" style="background:#dc2626;top:36px;">Hết hàng</span>
+            {{-- <span class="custom-badge badge-sale" style="background:#dc2626;top:36px;">Hết hàng</span> --}}
         @endif
         <a href="{{ route('products.show', $product->slug) }}" class="block">
             @if($product->primary_image)
