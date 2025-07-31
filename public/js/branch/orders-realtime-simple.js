@@ -190,6 +190,17 @@ if (window.ordersRealtimeInitialized) {
                         console.log('❌ Cập nhật trạng thái không thuộc branch hiện tại, bỏ qua');
                     }
                 });
+
+                // Lắng nghe sự kiện khách hàng hủy đơn hàng
+                this.publicChannel.bind('order-cancelled-by-customer', (data) => {
+                    console.log('❌ Nhận được sự kiện order-cancelled-by-customer:', data);
+                    if (data.branch_id == this.branchId) {
+                        console.log('✅ Đơn hàng bị hủy thuộc branch hiện tại, xử lý...');
+                        this.handleOrderCancelledByCustomer(data);
+                    } else {
+                        console.log('❌ Đơn hàng bị hủy không thuộc branch hiện tại, bỏ qua');
+                    }
+                });
             }
 
             startNotificationLoop() {
@@ -306,6 +317,29 @@ if (window.ordersRealtimeInitialized) {
                 if (newStatus === 'awaiting_driver') {
                     this.showNotification('Cập nhật đơn hàng', 'Đã tìm được tài xế cho đơn hàng');
                 }
+            }
+
+            handleOrderCancelledByCustomer(data) {
+                console.log('❌ Xử lý đơn hàng bị hủy bởi khách hàng:', data);
+                const orderId = data.order.id;
+                const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+
+                if (!orderCard) {
+                    console.log('❌ Không tìm thấy order card với ID:', orderId);
+                    return;
+                }
+
+                // Cập nhật trạng thái thành 'cancelled'
+                this.updateOrderCardStatus(orderCard, 'cancelled');
+
+                // Cập nhật nút action
+                this.updateOrderCardActions(orderCard, 'cancelled');
+
+                // Hiển thị thông báo
+                this.showNotification('Đơn hàng bị hủy', `Khách hàng đã hủy đơn hàng #${data.order.order_code || orderId}`);
+
+                // Cập nhật số lượng đơn hàng trong các tab
+                this.updateOrderCountAfterCancel();
             }
 
             updateOrderCardStatus(orderCard, newStatus) {
@@ -598,6 +632,34 @@ if (window.ordersRealtimeInitialized) {
                         const currentCount = parseInt(match[1]) || 0;
                         const newCount = currentCount + 1;
                         driverTab.textContent = `Chờ tài xế (${newCount})`;
+                    }
+                }
+
+                // Tab "Tất cả" không thay đổi vì tổng số đơn hàng không đổi
+            }
+
+            updateOrderCountAfterCancel() {
+                // Giảm số lượng tab "Chờ xác nhận" (vì đơn hàng bị hủy thường ở trạng thái này)
+                const awaitingTab = document.querySelector('[data-status="awaiting_confirmation"]');
+                if (awaitingTab) {
+                    const currentText = awaitingTab.textContent;
+                    const match = currentText.match(/Chờ xác nhận \((\d+)\)/);
+                    if (match) {
+                        const currentCount = parseInt(match[1]) || 0;
+                        const newCount = Math.max(0, currentCount - 1);
+                        awaitingTab.textContent = `Chờ xác nhận (${newCount})`;
+                    }
+                }
+
+                // Tăng số lượng tab "Đã hủy"
+                const cancelledTab = document.querySelector('[data-status="cancelled"]');
+                if (cancelledTab) {
+                    const currentText = cancelledTab.textContent;
+                    const match = currentText.match(/Đã hủy \((\d+)\)/);
+                    if (match) {
+                        const currentCount = parseInt(match[1]) || 0;
+                        const newCount = currentCount + 1;
+                        cancelledTab.textContent = `Đã hủy (${newCount})`;
                     }
                 }
 

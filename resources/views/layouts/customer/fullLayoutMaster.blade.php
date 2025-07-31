@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'FastFood')</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('/images/logo.png') }}">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
@@ -199,6 +202,7 @@
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
     <script src="{{ asset('js/modal.js') }}"></script>
+    <script src="{{ asset('js/Customer/order-realtime-simple.js') }}"></script>
 
     <script>
         // Function to show notifications programmatically
@@ -403,6 +407,10 @@
         @else
             window.currentUserId = null;
         @endif
+        
+        // Set Pusher configuration for order-realtime-simple.js
+        window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+        window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
 
         // Global function to update the cart counter
         window.updateCartCount = function(count) {
@@ -588,7 +596,9 @@
 
 
                         // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                        if (typeof fetchNotifications === 'function') {
+                        if (typeof window.fetchNotifications === 'function') {
+                            window.fetchNotifications();
+                        } else if (typeof fetchNotifications === 'function') {
                             fetchNotifications();
                         }
 
@@ -613,11 +623,15 @@
                 customNotificationChannel.bind('new-message', function(data) {
 
 
-                    if (typeof fetchNotifications === 'function') {
+                    if (typeof window.fetchNotifications === 'function') {
+                        window.fetchNotifications();
+                    } else if (typeof fetchNotifications === 'function') {
                         fetchNotifications();
                     }
 
-                    if (typeof triggerBellShake === 'function') {
+                    if (typeof window.triggerBellShake === 'function') {
+                        window.triggerBellShake();
+                    } else if (typeof triggerBellShake === 'function') {
                         triggerBellShake();
                     }
                 });
@@ -631,53 +645,7 @@
                     console.error('❌ Failed to subscribe to custom notifications channel:', error);
                 });
 
-                // Subscribe to order status updates for all customer orders
-                const orderChannel = window.pusher.subscribe('private-customer.{{ auth()->id() }}.orders');
-
-                orderChannel.bind('OrderStatusUpdated', function(data) {
-                    console.log('🛍️ Order status updated:', data);
-                    console.log('🔍 Debug - data.order exists:', !!data.order);
-                    console.log('🔍 Debug - showToast function exists:', typeof window.showToast);
-                    
-                    // Show notification using the global showToast function
-                    if (typeof window.showToast === 'function') {
-                        let orderId, orderData;
-                        
-                        // Check if data has order property or if data itself is the order
-                        if (data.order) {
-                            orderId = data.order.id;
-                            orderData = {
-                                status: data.order.status,
-                                status_text: data.status_text || getStatusText(data.order.status)
-                            };
-                        } else if (data.id && data.status) {
-                            // Data itself might be the order object
-                            orderId = data.id;
-                            orderData = {
-                                status: data.status,
-                                status_text: data.status_text || getStatusText(data.status)
-                            };
-                        } else {
-                            console.error('❌ Invalid order data structure:', data);
-                            return;
-                        }
-                        
-                        console.log('📋 Calling showOrderNotification with:', { orderId, orderData });
-                        
-                        // Use the same notification logic as in orders.blade.php
-                        showOrderNotification(orderId, orderData);
-                    } else {
-                        console.error('❌ showToast function not available');
-                    }
-                });
-
-                orderChannel.bind('pusher:subscription_succeeded', () => {
-                    console.log('✅ Subscribed to order updates channel for customer {{ auth()->id() }}');
-                });
-
-                orderChannel.bind('pusher:subscription_error', (error) => {
-                    console.error('❌ Failed to subscribe to order updates channel:', error);
-                });
+                // Order status updates are now handled by order-realtime-simple.js
             }
         });
     </script>
@@ -698,14 +666,16 @@
             }
         });
 
-// Giữ lại các hàm cũ để tương thích ngược
-function getCsrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-}
+        // Order notification functions are now handled by order-realtime-simple.js
 
-function updateCsrfToken(newToken) {
-    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-    if (window.jQuery) {
+        // Giữ lại các hàm cũ để tương thích ngược
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        }
+
+        function updateCsrfToken(newToken) {
+            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+            if (window.jQuery) {
                 $.ajaxSetup({
                     headers: {
                         'X-CSRF-TOKEN': newToken
@@ -718,8 +688,16 @@ function updateCsrfToken(newToken) {
 }
 </script>
 
+<<<<<<< HEAD
+    {{-- Thêm component CSRF Auto-Refresh --}}
+    @include('partials.csrf-refresh')
+    
+    {{-- Thêm script xử lý thông báo realtime --}}
+    <script src="{{ asset('js/Customer/notification-handler.js') }}"></script>
+=======
 {{-- Thêm component CSRF Auto-Refresh --}}
 @include('partials.csrf-refresh')
+>>>>>>> f024f03fa6c63eb97ec942a496bf114b0635e3f6
 </body>
 
 </html>
