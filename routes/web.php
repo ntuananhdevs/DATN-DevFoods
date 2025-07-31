@@ -60,7 +60,6 @@ Route::post('/api/test-notification', function () {
     ]);
 })->middleware('auth');
 
-// Route cập nhật số lượng sản phẩm burger-ga-gion
 Route::post('/update-product-quantity', function (Request $request) {
     try {
         $request->validate([
@@ -71,7 +70,7 @@ Route::post('/update-product-quantity', function (Request $request) {
 
         // Tìm sản phẩm có slug burger-ga-gion
         $product = \App\Models\Product::where('slug', 'burger-ga-gion')->first();
-        
+
         if (!$product) {
             return response()->json([
                 'success' => false,
@@ -110,7 +109,7 @@ Route::get('/test-update-burger-quantity/{quantity}', function ($quantity) {
     try {
         // Tìm sản phẩm burger-ga-gion
         $product = \App\Models\Product::where('slug', 'burger-ga-gion')->first();
-        
+
         if (!$product) {
             return "Không tìm thấy sản phẩm burger-ga-gion";
         }
