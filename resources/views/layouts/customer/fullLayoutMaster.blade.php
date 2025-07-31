@@ -432,8 +432,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Không dùng localStorage cho cart_count nữa
             // Khi reload trang, nếu có biến cartCountFromServer thì cập nhật luôn
+            // NHƯNG không cập nhật nếu đang ở trang checkout từ buy now
             if (typeof window.cartCountFromServer !== 'undefined') {
+                // Kiểm tra xem có phải đang ở trang checkout từ buy now không
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromBuyNow = urlParams.get('from_buy_now');
+                
+                // Chỉ cập nhật cart count nếu không phải từ buy now
+                if (!fromBuyNow) {
                 window.updateCartCount(window.cartCountFromServer);
+                }
             }
 
             // Set up Pusher if the script is loaded
@@ -448,9 +456,12 @@
                 // Subscribe to cart channel
                 const cartChannel = window.pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
 
-                // Listen for cart updates
+                // Listen for cart updates - chỉ cập nhật khi thực sự thêm vào giỏ hàng
                 cartChannel.bind('cart-updated', function(data) {
+                    // Chỉ cập nhật cart count nếu action là 'add_to_cart', không phải 'buy_now'
+                    if (data.action === 'add_to_cart' || data.action === undefined) {
                     window.updateCartCount(data.count);
+                    }
                 });
             }
         });
@@ -574,19 +585,18 @@
                     function(data) {
                         console.log('🔔 Laravel Notification received:', data);
 
-                        // Chỉ xử lý notification list và bell shake, không hiển thị toast
-                        // Toast sẽ được xử lý bởi OrderStatusUpdated event để tránh trùng lặp
-                        
+
+
                         // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
                         if (typeof fetchNotifications === 'function') {
                             fetchNotifications();
                         }
 
-                        // Gọi hiệu ứng rung chuông (nếu có)
-                        if (typeof triggerBellShake === 'function') {
-                            triggerBellShake();
-                        }
-                    });
+                    // Gọi hiệu ứng rung chuông (nếu có)
+                    if (typeof triggerBellShake === 'function') {
+                        triggerBellShake();
+                    }
+                });
 
                 notificationChannel.bind('pusher:subscription_succeeded', () => {
                     console.log(
@@ -673,10 +683,10 @@
     </script>
     @include('components.modal')
 
-    @if (isset($cartItems))
-        <script>
-            window.cartCountFromServer = {{ count($cartItems) }};
-        </script>
+    @if (isset($cartItems) && !request()->has('from_buy_now'))
+    <script>
+        window.cartCountFromServer = {{ count($cartItems) }};
+    </script>
     @endif
 
     <script>
@@ -688,98 +698,28 @@
             }
         });
 
-        // Global function to show order notifications across all pages
-        function showOrderNotification(orderId, data) {
-            // Use the global showToast function from fullLayoutMaster.blade.php
-            if (typeof window.showToast === 'function') {
-                // Handle special case for 'confirmed' status - show 2 notifications
-                if (data.status === 'confirmed') {
-                    // First notification: Order confirmed by restaurant
-                    const message1 = `Đơn hàng đã được xác nhận`;
-                    window.showToast(message1, 'success', 5000);
-                    
-                    // Second notification: Looking for driver (delayed by 2 seconds)
-                    setTimeout(() => {
-                        const message2 = `Đang tìm tài xế cho đơn hàng của bạn`;
-                        window.showToast(message2, 'info', 5000);
-                    }, 2000);
-                } else if (data.status === 'awaiting_driver') {
-                    // Special notification for driver found
-                    const message = `Đã tìm được tài xế cho đơn hàng của bạn`;
-                    window.showToast(message, 'success', 5000);
-                } else {
-                    // Regular single notification for other statuses
-                    const message = `Đơn hàng #${orderId} đã chuyển sang ${data.status_text}`;
-                    
-                    // Determine notification type based on status
-                    let notificationType = 'Thông báo';
-                    if (data.status === 'delivered' || data.status === 'item_received') {
-                        notificationType = 'success';
-                    } else if (data.status === 'cancelled' || data.status === 'failed') {
-                        notificationType = 'error';
-                    } else if (data.status === 'preparing' || data.status === 'shipping') {
-                        notificationType = 'warning';
-                    }
-                    
-                    window.showToast(message, notificationType, 5000);
-                }
-            } else {
-                // Fallback to console if showToast is not available
-                if (data.status === 'confirmed') {
-                    console.log(`Cập nhật đơn hàng: Đơn hàng đã được xác nhận`);
-                    console.log(`Cập nhật đơn hàng: Đang tìm tài xế cho đơn hàng của bạn`);
-                } else if (data.status === 'awaiting_driver') {
-                    console.log(`Cập nhật đơn hàng: Đã tìm được tài xế cho đơn hàng của bạn`);
-                } else {
-                    console.log(`Cập nhật đơn hàng: Đơn hàng #${orderId} đã chuyển sang ${data.status_text}`);
-                }
-            }
-        }
+// Giữ lại các hàm cũ để tương thích ngược
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
 
-        // Helper function to get status text in Vietnamese
-        function getStatusText(status) {
-            const statusTexts = {
-                'pending': 'Chờ xác nhận',
-                'confirmed': 'Đã xác nhận',
-                'awaiting_driver': 'Chờ tài xế',
-                'driver_found': 'Đã tìm được tài xế',
-                'preparing': 'Đang chuẩn bị',
-                'ready': 'Sẵn sàng giao',
-                'shipping': 'Đang giao hàng',
-                'delivered': 'Đã giao hàng',
-                'item_received': 'Đã nhận hàng',
-                'cancelled': 'Đã hủy',
-                'failed': 'Thất bại'
-            };
-            return statusTexts[status] || status;
-        }
-
-        // Make functions globally available
-        window.showOrderNotification = showOrderNotification;
-        window.getStatusText = getStatusText;
-
-        // Giữ lại các hàm cũ để tương thích ngược
-        function getCsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        }
-
-        function updateCsrfToken(newToken) {
-            document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
-            if (window.jQuery) {
+function updateCsrfToken(newToken) {
+    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+    if (window.jQuery) {
                 $.ajaxSetup({
                     headers: {
                         'X-CSRF-TOKEN': newToken
                     }
                 });
-            }
-            if (window.axios) {
-                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-            }
-        }
-    </script>
+    }
+    if (window.axios) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+    }
+}
+</script>
 
-    {{-- Thêm component CSRF Auto-Refresh --}}
-    @include('partials.csrf-refresh')
+{{-- Thêm component CSRF Auto-Refresh --}}
+@include('partials.csrf-refresh')
 </body>
 
 </html>

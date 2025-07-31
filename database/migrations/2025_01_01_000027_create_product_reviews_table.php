@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('product_reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('product_id')->nullable()->constrained('products')->onDelete('cascade');
             $table->foreignId('combo_id')->nullable()->constrained('combos')->onDelete('cascade');
-            $table->foreignId('order_id')->constrained('orders');
-            $table->foreignId('branch_id')->nullable()->constrained('branches'); // phân biệt chi nhánh
+            $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+            $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('set null'); // phân biệt chi nhánh
             $table->integer('rating'); // 1-5 sao
             $table->text('review')->nullable();
             $table->dateTime('review_date');

@@ -401,139 +401,143 @@
     .reply-item {
         display: flex;
         align-items: flex-start;
-        gap: 12px;
-        margin-left: 44px;
-        margin-top: 10px;
+        gap: 0;
+        margin-left: 56px;
+        margin-top: 12px;
         position: relative;
-        animation: fadeInReply 0.4s;
     }
-    @keyframes fadeInReply {
-        from { opacity: 0; transform: translateY(-8px);}
-        to { opacity: 1; transform: translateY(0);}
+    
+    /* Đường kẻ dọc kiểu Facebook */
+    .reply-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: -12px;
+        width: 2px;
+        height: 24px;
+        background-color: #e5e7eb;
     }
-    .reply-arrow {
-        width: 24px;
-        display: flex;
-        align-items: flex-start;
-        margin-top: 8px;
-        flex-shrink: 0;
+    
+    /* Đường kẻ ngang */
+    .reply-item::after {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 12px;
+        width: 20px;
+        height: 2px;
+        background-color: #e5e7eb;
     }
+    
     .reply-item .reply-bubble {
-        background: #f4f6fb;
-        border: 1px solid #e3e8f0;
-        border-radius: 12px 12px 12px 4px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         padding: 12px 16px;
         min-width: 0;
-        box-shadow: 0 2px 8px rgba(80, 120, 200, 0.04);
-        transition: box-shadow 0.2s;
-        position: relative;
+        flex: 1;
+        margin-left: 8px;
     }
-    .reply-item .reply-bubble:hover {
-        box-shadow: 0 4px 16px rgba(80, 120, 200, 0.10);
-    }
+    
     .reply-item .reply-header {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
+    
     .reply-item .reply-author {
         font-weight: 600;
-        color: #2563eb;
-        font-size: 1rem;
+        color: #1e40af;
+        font-size: 0.9rem;
     }
+    
     .reply-item .reply-time {
-        font-size: 0.85rem;
-        color: #94a3b8;
+        font-size: 0.8rem;
+        color: #64748b;
     }
+    
     .reply-item .reply-actions {
         margin-left: auto;
         display: flex;
-        gap: 8px;
+        gap: 6px;
     }
+    
     .reply-item .reply-actions button {
         background: none;
         border: none;
-        color: #f87171;
-        font-size: 0.9rem;
+        color: #ef4444;
+        font-size: 0.75rem;
         cursor: pointer;
-        padding: 0 4px;
+        padding: 2px 6px;
         border-radius: 4px;
-        transition: background 0.15s;
     }
-    .reply-item .reply-actions button:hover {
-        background: #fee2e2;
-    }
+    
     .reply-item .reply-content {
-        color: #334155;
-        font-size: 1rem;
-        line-height: 1.5;
+        color: #374151;
+        font-size: 0.9rem;
+        line-height: 1.4;
         word-break: break-word;
     }
-    /* Modal báo cáo review tối ưu lại, ngắn gọn hơn */
+    /* Modal báo cáo review */
     #report-review-modal .bg-white {
-        max-width: 40rem;
+        max-width: 36rem;
         width: 100%;
-        padding: 1rem 1.25rem;
+        padding: 1.5rem;
         margin: 0;
-        max-height: 80vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
-    #report-review-modal .flex.items-center.mb-4 {
-        padding-bottom: 0.25rem;
-        margin-bottom: 0.5rem;
-    }
-    #report-review-modal .bg-gray-50 {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0.5rem;
-    }
     #report-review-modal .reason-option {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    #report-review-modal .reason-option:hover {
+        border-color: #f97316;
+        background-color: #fef3e2;
+    }
+    #report-review-modal .reason-option input:checked + div {
+        color: #f97316;
+    }
+    #report-review-modal .reason-option input:checked {
+        border-color: #f97316;
+        background-color: #fef3e2;
     }
     #report-review-modal .reason-option .font-semibold {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
     }
     #report-review-modal .reason-option .text-xs {
-        font-size: 0.78rem;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.75rem;
+        line-height: 1.3;
+        color: #6b7280;
     }
     #report-review-modal textarea {
-        min-height: 36px;
-        font-size: 0.95rem;
-        padding: 0.4rem 0.6rem;
+        min-height: 80px;
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
         resize: vertical;
     }
-    #report-review-modal .bg-blue-50 {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
-        margin-bottom: 0.3rem;
-    }
-    #report-review-modal .flex.justify-end.gap-2.pt-2 {
-        padding-top: 0.3rem;
-    }
-    #report-review-modal label.block.font-medium.mb-2 {
-        margin-bottom: 0.3rem;
-    }
-    #report-review-modal .grid {
-        gap: 0.5rem;
-    }
     #report-review-modal .preview-binhluan {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
         background: #f9fafb;
-        border-left: 3px solid #ef4444;
+        border-left: 4px solid #ef4444;
+        border-radius: 6px;
         display: flex;
         gap: 0.75rem;
         align-items: flex-start;
     }
     #report-review-modal .preview-binhluan .avatar {
-        width: 2.2rem;
-        height: 2.2rem;
+        width: 2.5rem;
+        height: 2.5rem;
         font-size: 1.1rem;
+        border-radius: 50%;
     }
     #report-review-modal .preview-binhluan .info {
         flex: 1;
@@ -541,27 +545,31 @@
     }
     #report-review-modal .preview-binhluan .info .name {
         font-weight: 600;
-        font-size: 1rem;
-        color: #222;
+        font-size: 0.95rem;
+        color: #374151;
         margin-right: 0.5rem;
     }
     #report-review-modal .preview-binhluan .info .time {
-        font-size: 0.85rem;
-        color: #888;
+        font-size: 0.8rem;
+        color: #6b7280;
     }
     #report-review-modal .preview-binhluan .info .content {
-        font-size: 0.95rem;
-        color: #444;
-        margin-top: 0.1rem;
-        white-space: nowrap;
+        font-size: 0.9rem;
+        color: #4b5563;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
     }
-    @media (max-width: 700px) {
+    @media (max-width: 640px) {
         #report-review-modal .bg-white {
-            max-width: 98vw;
-            padding: 0.5rem 0.2rem;
+            max-width: 95vw;
+            padding: 1rem;
+        }
+        #report-review-modal .grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -854,14 +862,14 @@
                                 @endif
                                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
                                 <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
-                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 checked-indicator transition-transform duration-200"></div>
                                 </div>
                                 @if($selectedBranchId)
                                     @php
                                         $toppingStock = $topping->toppingStocks->first();
                                         $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
                                     @endphp
-                                    @if($stockQuantity < 5)
+                                    @if($stockQuantity <= 10)
                                         <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display">
                                             Còn {{ $stockQuantity }}
                                         </div>
@@ -972,7 +980,7 @@
                             <ul class="space-y-2">
                                 @foreach($product->ingredients as $ingredient)
                                     <li class="flex items-center space-x-2 text-gray-700">
-                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        {{-- <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span> --}} <!-- Ẩn ô tròn màu cam -->
                                         <span class="flex-1">{{ $ingredient }}</span>
                                     </li>
                                 @endforeach
@@ -1132,10 +1140,7 @@
                         <!-- Hiển thị các reply -->
                         @foreach($review->replies as $reply)
                             <div class="reply-item" data-reply-id="{{ $reply->id }}">
-                                <div class="reply-arrow">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                </div>
-                                <div class="reply-bubble flex-1">
+                                <div class="reply-bubble">
                                     <div class="reply-header">
                                         <span class="reply-author">{{ $reply->user->name }}</span>
                                         <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
@@ -1475,7 +1480,7 @@
 @endsection
 
 @section('scripts')
-<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+<script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
 <script>
     window.selectedBranchId = {{ $selectedBranchId ? $selectedBranchId : 'null' }};
     window.productId = {{ $product->id }};
@@ -1597,5 +1602,24 @@
         });
     });
 })();
+</script>
+<script>
+    // Chỉ hiện ô tròn màu cam khi topping được chọn
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.topping-input').forEach(function(checkbox) {
+            function updateIndicator() {
+                const indicator = checkbox.closest('label').querySelector('.checked-indicator');
+                if (checkbox.checked) {
+                    indicator.classList.remove('scale-0');
+                    indicator.classList.add('scale-100');
+                } else {
+                    indicator.classList.remove('scale-100');
+                    indicator.classList.add('scale-0');
+                }
+            }
+            checkbox.addEventListener('change', updateIndicator);
+            updateIndicator(); // init
+        });
+    });
 </script>
 @endsection

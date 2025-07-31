@@ -100,10 +100,10 @@
             </div>
 
             @php
-                $productId = null;
+                $productSlug = null;
                 if ($banner->link) {
                     $parts = explode('/', $banner->link);
-                    $productId = end($parts);
+                    $productSlug = end($parts);
                 }
             @endphp
 
@@ -111,9 +111,9 @@
                 query: '',
                 products: [],
                 selectedProduct: null,
-                productId: '{{ $productId }}',
-            }" class="relative" x-init="if (productId) {
-                fetch(`{{ route('admin.banners.search.product') }}?id=${productId}`)
+                productSlug: '{{ $productSlug }}',
+            }" class="relative" x-init="if (productSlug) {
+                fetch(`{{ route('admin.banners.search.product') }}?slug=${productSlug}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.length > 0) {
@@ -147,7 +147,7 @@
 
                 <!-- Hidden input để submit -->
                 <input type="hidden" name="link"
-                    :value="selectedProduct ? `/shop/products/${selectedProduct.id}` : '{{ $banner->link }}'">
+                    :value="selectedProduct ? `/shop/products/${selectedProduct.slug}` : '{{ $banner->link }}'">
             </div>
 
 

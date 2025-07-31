@@ -5,28 +5,27 @@
     use App\Models\Order;
 @endphp
 @section('content')
-@if(session('success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof dtmodalShowToast === 'function') {
-                dtmodalShowToast('success', {
-                    title: 'Thành công',
-                    message: @json(session('success'))
-                });
-            } else if (typeof showToast === 'function') {
-                showToast('success', {
-                    title: 'Thành công',
-                    message: @json(session('success'))
-                });
-            } else {
-                alert(@json(session('success')));
-            }
-        });
-    </script>
-@endif
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof dtmodalShowToast === 'function') {
+                    dtmodalShowToast('success', {
+                        title: 'Thành công',
+                        message: @json(session('success'))
+                    });
+                } else if (typeof showToast === 'function') {
+                    showToast('success', {
+                        title: 'Thành công',
+                        message: @json(session('success'))
+                    });
+                } else {
+                    alert(@json(session('success')));
+                }
+            });
+        </script>
+    @endif
     <div id="order-details-card" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}"
-        data-customer-latitude="{{ $latitude }}"
-        data-customer-longitude="{{ $longitude }}"
+        data-customer-latitude="{{ $latitude }}" data-customer-longitude="{{ $longitude }}"
         data-customer-phone="{{ $order->customer->phone ?? ($order->guest_phone ?? '') }}"> {{-- THÊM DÒNG NÀY --}}
         <div class="pt-4 p-4 space-y-4">
             {{-- CẬP NHẬT: Thêm Header --}}
@@ -51,7 +50,8 @@
                         <p class="text-sm text-gray-500">Cập nhật lúc: {{ $order->updated_at->format('H:i') }}</p>
                     </div>
                     <span class="px-3 py-1 rounded-full text-sm ml-auto"
-                        style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">#{{ $order->order_code }}</span>
+                        style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">#{{ $order->order_code }}
+                    </span>
                 </div>
             </div>
 
@@ -164,7 +164,6 @@
                             Bắt đầu di chuyển đến điểm lấy hàng
                         </button>
                         {{-- Nút "Xem bản đồ lớn" --}}
-
                     @break
 
                     @case('waiting_driver_pick_up')
@@ -433,7 +432,7 @@
             let routeSourceId = 'route-source';
 
             // Lấy Mapbox Access Token từ config Laravel
-            const mapboxToken = '{{ config("services.mapbox.access_token") }}';
+            const mapboxToken = '{{ config('services.mapbox.access_token') }}';
             if (mapboxToken && mapboxToken !== '' && mapboxToken !== 'null') {
                 mapboxgl.accessToken = mapboxToken;
             }
