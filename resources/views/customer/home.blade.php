@@ -6,10 +6,6 @@
 <!-- Add meta tag for selected branch -->
 @if(isset($selectedBranch))
 <meta name="selected-branch" content="{{ $selectedBranch->id }}">
-@elseif(session('selected_branch_id'))
-<meta name="selected-branch" content="{{ session('selected_branch_id') }}">
-@elseif(isset($defaultBranch))
-<meta name="selected-branch" content="{{ $defaultBranch->id }}">
 @endif
 
 <style>
