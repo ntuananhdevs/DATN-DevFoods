@@ -50,7 +50,7 @@
    .cart-item-checkbox, #select-all-cart {
        width: 22px;
        height: 22px;
-       border-radius: 50%;
+       border-radius: 6px;
        appearance: none;
        -webkit-appearance: none;
        -moz-appearance: none;
@@ -87,10 +87,12 @@
        left: 50%;
        top: 50%;
        transform: translate(-50%, -50%) scale(0);
-       width: 8px;
+       width: 12px;
        height: 8px;
-       background-color: white;
-       border-radius: 50%;
+       border: 2px solid white;
+       border-top: none;
+       border-right: none;
+       transform: translate(-50%, -60%) rotate(-45deg) scale(0);
        animation: checkmark 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
    }
    
@@ -100,26 +102,26 @@
    
    @keyframes checkmark {
        0% {
-           transform: translate(-50%, -50%) scale(0);
+           transform: translate(-50%, -60%) rotate(-45deg) scale(0);
            opacity: 0;
        }
        60% {
-           transform: translate(-50%, -50%) scale(1.3);
+           transform: translate(-50%, -60%) rotate(-45deg) scale(1.3);
            opacity: 0.9;
        }
        100% {
-           transform: translate(-50%, -50%) scale(1);
+           transform: translate(-50%, -60%) rotate(-45deg) scale(1);
            opacity: 1;
        }
    }
    
    @keyframes uncheckmark {
        0% {
-           transform: translate(-50%, -50%) scale(1);
+           transform: translate(-50%, -60%) rotate(-45deg) scale(1);
            opacity: 1;
        }
        100% {
-           transform: translate(-50%, -50%) scale(0);
+           transform: translate(-50%, -60%) rotate(-45deg) scale(0);
            opacity: 0;
        }
    }

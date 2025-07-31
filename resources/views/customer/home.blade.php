@@ -3,6 +3,11 @@
 @section('title', 'FastFood - Trang Chủ')
 
 @section('content')
+<!-- Add meta tag for selected branch -->
+@if(isset($selectedBranch))
+<meta name="selected-branch" content="{{ $selectedBranch->id }}">
+@endif
+
 <style>
    /* Example for badges - adjust to your styling system */
     .custom-badge {
@@ -518,7 +523,9 @@
 <script>
     window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
     window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    window.csrfToken = '{{ csrf_token() }}';
 </script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
+<script src="{{ asset('js/Customer/add-to-cart-direct.js') }}"></script>
 @endsection

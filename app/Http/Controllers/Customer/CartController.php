@@ -313,21 +313,10 @@ class CartController extends Controller
             // Log request data
             \Log::debug('Add to cart request:', $request->all());
 
-            // Log variant values details
-            $variantValues = $request->variant_values;
-            foreach ($variantValues as $valueId) {
-                $variantValue = \App\Models\VariantValue::with('attribute')->find($valueId);
-                \Log::debug('Variant Value Details:', [
-                    'id' => $valueId,
-                    'name' => $variantValue->value,
-                    'variant_type' => $variantValue->attribute->name
-                ]);
-            }
-
             // Validate request
             $request->validate([
                 'product_id' => 'required|exists:products,id',
-                'variant_values' => 'required|array',
+                'variant_values' => 'nullable|array',
                 'branch_id' => 'required|exists:branches,id',
                 'quantity' => 'required|integer|min:1',
                 'toppings' => 'nullable|array',
@@ -365,22 +354,52 @@ class CartController extends Controller
                 ]);
             }
 
-            // Find product variant based on selected values
-            $variantValueIds = $request->variant_values;
-            $variantValueIds = array_map('intval', $variantValueIds);
-            $variant = ProductVariant::where('product_id', $request->product_id)
-                ->whereHas('variantValues', function($query) use ($variantValueIds) {
-                    $query->whereIn('variant_value_id', $variantValueIds);
-                }, '=', count($variantValueIds))
-                ->whereHas('variantValues', function($query) use ($variantValueIds) {
-                    $query->whereNotIn('variant_value_id', $variantValueIds);
-                }, '=', 0)
-                ->first();
+            // Find product variant based on selected values or get default variant
+            $variant = null;
+            
+            if ($request->has('variant_values') && !empty($request->variant_values)) {
+                // Log variant values details
+                $variantValues = $request->variant_values;
+                foreach ($variantValues as $valueId) {
+                    $variantValue = \App\Models\VariantValue::with('attribute')->find($valueId);
+                    if ($variantValue) {
+                        \Log::debug('Variant Value Details:', [
+                            'id' => $valueId,
+                            'name' => $variantValue->value,
+                            'variant_type' => $variantValue->attribute->name
+                        ]);
+                    }
+                }
+
+                // Find variant based on selected values
+                $variantValueIds = array_map('intval', $request->variant_values);
+                $variant = ProductVariant::where('product_id', $request->product_id)
+                    ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                        $query->whereIn('variant_value_id', $variantValueIds);
+                    }, '=', count($variantValueIds))
+                    ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                        $query->whereNotIn('variant_value_id', $variantValueIds);
+                    }, '=', 0)
+                    ->first();
+            } else {
+                // No variant_values provided, get the first available variant
+                $variant = ProductVariant::where('product_id', $request->product_id)
+                    ->whereHas('branchStocks', function($query) use ($request) {
+                        $query->where('branch_id', $request->branch_id)
+                              ->where('stock_quantity', '>', 0);
+                    })
+                    ->first();
+                
+                if (!$variant) {
+                    // If no variant with stock, get any variant
+                    $variant = ProductVariant::where('product_id', $request->product_id)->first();
+                }
+            }
 
             if (!$variant) {
                 Log::error('Variant not found:', [
                     'product_id' => $request->product_id,
-                    'variant_values' => $request->variant_values
+                    'variant_values' => $request->variant_values ?? 'none'
                 ]);
                 return response()->json([
                     'success' => false,

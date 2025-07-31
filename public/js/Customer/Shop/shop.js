@@ -284,6 +284,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (window.updateCartCount && data.cart_count !== undefined) {
                         window.updateCartCount(data.cart_count);
                     }
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast("success", {
+                            title: "Thành công",
+                            message: data.message || "Đã thêm vào giỏ hàng!"
+                        });
+                    }
                 } else {
                     dtmodalShowToast("error", {
                         title: "Lỗi",
