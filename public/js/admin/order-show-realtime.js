@@ -561,22 +561,95 @@ if (window.adminOrderShowRealtimeInitialized) {
             }
 
             updateDeliveryTime(data) {
-                // Update delivery time information
-                const deliveryTimeSection = document.querySelector('.delivery-time');
-                if (deliveryTimeSection) {
-                    if (data.actual_delivery_time) {
-                        const actualTimeElement = deliveryTimeSection.querySelector('.actual-delivery-time');
-                        if (actualTimeElement) {
-                            actualTimeElement.textContent = data.actual_delivery_time;
+                console.log('🕒 Updating delivery time with data:', data);
+                
+                const newStatus = data.status || data.new_status;
+                
+                // Find the delivery time container
+                const estimatedDeliveryContainer = document.querySelector('.estimated-delivery-time');
+                const actualDeliveryContainer = document.querySelector('.actual-delivery-time');
+                
+                console.log('📍 Found estimated container:', !!estimatedDeliveryContainer);
+                console.log('📍 Found actual container:', !!actualDeliveryContainer);
+                
+                // If order is delivered or item_received, show actual delivery time
+                if (['delivered', 'item_received'].includes(newStatus)) {
+                    console.log('✅ Order delivered, updating to actual delivery time');
+                    
+                    // Hide estimated delivery time container if it exists
+                    if (estimatedDeliveryContainer) {
+                        estimatedDeliveryContainer.style.display = 'none';
+                    }
+                    
+                    // Create or update actual delivery time container
+                    let actualContainer = actualDeliveryContainer;
+                    if (!actualContainer) {
+                        // Create new actual delivery time container
+                        actualContainer = document.createElement('div');
+                        actualContainer.className = 'mt-6 p-4 bg-green-50 rounded-lg border border-green-200 actual-delivery-time';
+                        
+                        // Insert after estimated container or at appropriate location
+                        const insertLocation = estimatedDeliveryContainer || 
+                                             document.querySelector('.progress-tracker')?.parentElement ||
+                                             document.querySelector('.order-timeline');
+                        
+                        if (insertLocation) {
+                            insertLocation.parentNode.insertBefore(actualContainer, insertLocation.nextSibling);
                         }
                     }
                     
-                    if (data.estimated_delivery_time) {
-                        const estimatedTimeElement = deliveryTimeSection.querySelector('.estimated-delivery-time');
-                        if (estimatedTimeElement) {
-                            estimatedTimeElement.textContent = data.estimated_delivery_time;
-                        }
+                    // Update actual delivery time content
+                    const actualTime = data.actual_delivery_time || new Date().toLocaleString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }).replace(',', ' -');
+                    
+                    actualContainer.innerHTML = `
+                        <div class="flex items-center text-green-800">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span class="font-medium">Đã giao thành công lúc: </span>
+                            <span class="ml-1 delivery-time-value">${actualTime}</span>
+                        </div>
+                    `;
+                    
+                    // Show the actual container
+                    actualContainer.style.display = 'block';
+                    
+                    // Add animation effect
+                    actualContainer.style.animation = 'fadeIn 0.5s ease-in-out';
+                    
+                } else if (data.estimated_delivery_time && estimatedDeliveryContainer) {
+                    // Update estimated delivery time
+                    console.log('⏰ Updating estimated delivery time');
+                    
+                    const timeValueElement = estimatedDeliveryContainer.querySelector('.delivery-time-value');
+                    if (timeValueElement) {
+                        timeValueElement.textContent = data.estimated_delivery_time;
                     }
+                    
+                    // Ensure estimated container is visible
+                    estimatedDeliveryContainer.style.display = 'block';
+                    
+                    // Hide actual container if it exists
+                    if (actualDeliveryContainer) {
+                        actualDeliveryContainer.style.display = 'none';
+                    }
+                }
+                
+                // Add CSS animation if not already present
+                if (!document.querySelector('#delivery-time-animations')) {
+                    const style = document.createElement('style');
+                    style.id = 'delivery-time-animations';
+                    style.textContent = `
+                        @keyframes fadeIn {
+                            from { opacity: 0; transform: translateY(-10px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                    `;
+                    document.head.appendChild(style);
                 }
             }
 

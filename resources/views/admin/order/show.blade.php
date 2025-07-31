@@ -89,12 +89,7 @@
                                             </span>
                                         </div>
                                     @elseif($order->status != 'cancelled')
-                                        <div>
-                                            <span class="text-gray-500">Dự kiến giao:</span>
-                                            <span class="font-medium ml-2">
-                                                {{ $order->estimated_delivery_time ? date('H:i', strtotime($order->estimated_delivery_time)) : 'N/A' }}
-                                            </span>
-                                        </div>
+                                    
                                     @endif
                                 </div>
                             </div>
@@ -680,51 +675,6 @@
                 </div>
             @endif
 
-            <!-- Action Buttons -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Hành động</h3>
-                    <div id="action-buttons" class="flex flex-wrap gap-3 justify-center">
-                        @if ($order->status == 'awaiting_confirmation')
-                            <form action="{{ route('customer.orders.updateStatus', $order) }}" method="POST"
-                                class="cancel-order-form">
-                                @csrf
-                                <input type="hidden" name="status" value="cancelled">
-                                <button type="submit"
-                                    class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
-                                    <i class="fas fa-times mr-2"></i>Hủy đơn hàng
-                                </button>
-                            </form>
-                        @elseif($order->status == 'delivered')
-                            <a href="{{ route('customer.orders.updateStatus', $order) }}"
-                                class="px-6 py-3 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition-colors font-medium inline-block">
-                                <i class="fas fa-exclamation-triangle mr-2"></i>Chưa nhận được hàng
-                            </a>
-                            <form class="receive-order-form" action="{{ route('customer.orders.updateStatus', $order) }}"
-                                method="POST">
-                                @csrf
-                                <input type="hidden" name="status" value="item_received">
-                                <button type="submit"
-                                    class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                                    <i class="fas fa-check mr-2"></i>Xác nhận đã nhận hàng
-                                </button>
-                            </form>
-                        @elseif($order->status == 'item_received')
-                            <a href="#"
-                                class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium inline-block">
-                                <i class="fas fa-star mr-2"></i>Đánh giá đơn hàng
-                            </a>
-                        @endif
-
-                        @if (in_array($order->status, ['item_received', 'cancelled']))
-                            <button
-                                class="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium">
-                                <i class="fas fa-redo mr-2"></i>Đặt lại đơn hàng
-                            </button>
-                        @endif
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
     <!-- Product Detail Modal -->
@@ -733,36 +683,6 @@
         <div id="modal-content"
             class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300 shadow-xl">
         </div>
-    </div>
-
-    <!-- Action Confirmation Modal -->
-    <div id="action-confirmation-modal"
-        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="relative mx-auto p-5 border w-96 bg-white rounded-lg shadow-xl">
-            <div class="mt-3 text-center">
-                <div id="modal-icon-container"
-                    class="mx-auto flex items-center justify-center h-12 w-12 bg-red-100 rounded-full">
-                    <i id="modal-icon" class="fas fa-times text-red-600 text-xl"></i>
-                </div>
-                <h3 id="action-modal-title" class="text-lg font-medium text-gray-900 mt-4">Xác nhận hành động</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p id="action-modal-message" class="text-sm text-gray-500">Bạn có chắc chắn thực hiện thao tác này
-                        không?</p>
-                </div>
-                <div class="items-center px-4 py-3 flex gap-3">
-                    <button id="action-abort-btn"
-                        class="w-full px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg transition-colors">Không</button>
-                    <button id="action-confirm-btn"
-                        class="w-full px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors">Đồng
-                        ý</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast-message"
-        class="fixed top-20 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden transition-all duration-300">
     </div>
 @endsection
 
@@ -773,170 +693,16 @@
     {{-- Include order show real-time script --}}
     <script src="{{ asset('js/admin/order-show-realtime.js') }}"></script>
     
-    {{-- Script xử lý modal và real-time giữ nguyên --}}
     <script>
         // Set Pusher configuration for real-time updates
         window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
         window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
-        // Định nghĩa hàm showToast để hiển thị thông báo
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast-message');
-            toast.textContent = message;
-            toast.classList.remove('bg-green-600', 'bg-red-600', 'hidden');
-            if (type === 'success') {
-                toast.classList.add('bg-green-600');
-            } else if (type === 'error') {
-                toast.classList.add('bg-red-600');
-            }
-            toast.classList.add('animate-slideIn'); // Thêm animation nếu có
-            toast.classList.remove('hidden');
-
-            setTimeout(() => {
-                toast.classList.add('hidden');
-                toast.classList.remove('animate-slideIn');
-            }, 3000); // Ẩn sau 3 giây
-        }
-
-        // Định nghĩa hàm openActionModal
-        function openActionModal(form, actionType) {
-            const modal = document.getElementById('action-confirmation-modal');
-            const title = document.getElementById('action-modal-title');
-            const message = document.getElementById('action-modal-message');
-            const confirmBtn = document.getElementById('action-confirm-btn');
-            const abortBtn = document.getElementById('action-abort-btn');
-            const modalIconContainer = document.getElementById('modal-icon-container');
-            const modalIcon = document.getElementById('modal-icon');
-
-            // Reset icon và màu nền của icon
-            modalIcon.className = ''; // Xóa tất cả các class
-            modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full';
-
-            if (actionType === 'receive') {
-                title.textContent = 'Xác nhận đã nhận hàng';
-                message.textContent =
-                    'Bạn có chắc chắn muốn xác nhận đã nhận đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Xác nhận';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-green-100');
-                modalIcon.classList.add('fas', 'fa-check-circle', 'text-green-600', 'text-xl');
-            } else if (actionType === 'cancel') {
-                title.textContent = 'Xác nhận hủy đơn hàng';
-                message.textContent = 'Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Hủy đơn';
-                confirmBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-                confirmBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                modalIconContainer.classList.add('bg-red-100');
-                modalIcon.classList.add('fas', 'fa-times-circle', 'text-red-600', 'text-xl');
-            } else {
-                title.textContent = 'Xác nhận hành động';
-                message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
-                confirmBtn.textContent = 'Đồng ý';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-gray-100');
-                modalIcon.classList.add('fas', 'fa-question-circle', 'text-gray-600', 'text-xl');
-            }
-
-            modal.classList.remove('hidden'); // Hiển thị modal
-
-            // Xử lý khi nhấn nút "Đồng ý"
-            confirmBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal ngay lập tức
-
-                // Lấy dữ liệu form
-                const formData = new FormData(form);
-
-                // Gửi yêu cầu AJAX
-                fetch(form.action, {
-                        method: form.method,
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest', // Để backend biết đây là AJAX request
-                            'Accept': 'application/json' // Yêu cầu phản hồi JSON
-                        }
-                    })
-                    .then(response => response.json()) // Chuyển phản hồi sang JSON
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message, 'success');
-                            // Cập nhật UI của trạng thái đơn hàng
-                            const statusElement = document.getElementById(
-                                'order-status-display'); // Thêm ID này vào span hiển thị trạng thái
-                            if (statusElement && data.order) {
-                                statusElement.textContent = data.order.status_text;
-                                statusElement.style.backgroundColor = data.order.status_color;
-                                statusElement.style.color = data.order.status_text_color;
-                                const statusIcon = statusElement.querySelector('i');
-                                if (statusIcon) {
-                                    statusIcon.className = ''; // Xóa class cũ
-                                    statusIcon.classList.add(...data.order.status_icon.split(
-                                        ' ')); // Thêm class mới
-                                }
-
-                                // Vô hiệu hóa hoặc ẩn form "Đã nhận hàng" hoặc "Hủy đơn hàng"
-                                if (actionType === 'receive') {
-                                    form.remove(); // Xóa form "Đã nhận hàng" sau khi xác nhận
-                                    // Hoặc: form.style.display = 'none';
-                                } else if (actionType === 'cancel') {
-                                    form.remove(); // Xóa form "Hủy đơn hàng"
-                                }
-
-                                // Nếu có timeline trạng thái, bạn có thể cân nhắc cập nhật nó qua AJAX cũng
-                                // Tuy nhiên, việc này phức tạp hơn và có thể yêu cầu partial reload hoặc logic render lại phức tạp.
-                                // Tạm thời, chúng ta chỉ cập nhật phần trạng thái chính.
-                            }
-                        } else {
-                            showToast(data.message, 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Lỗi khi gửi yêu cầu:', error);
-                        showToast('Đã xảy ra lỗi khi thực hiện thao tác.', 'error');
-                    });
-            };
-
-            // Xử lý khi nhấn nút "Không" hoặc click bên ngoài modal
-            abortBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal
-            };
-
-            // Ẩn modal khi nhấn phím Esc
-            document.onkeydown = function(event) {
-                if (event.key === 'Escape') {
-                    modal.classList.add('hidden');
-                }
-            };
-        }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý nút "Đã nhận hàng"
-            const receiveOrderButton = document.querySelector('.receive-order-form button[type="submit"]');
-            if (receiveOrderButton) {
-                receiveOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'receive');
-                });
-            }
-
-            // Xử lý nút "Hủy đơn hàng" (nếu có)
-            const cancelOrderButton = document.querySelector('.cancel-order-form button[type="submit"]');
-            if (cancelOrderButton) {
-                cancelOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'cancel');
-                });
-            }
-
             // Initialize real-time order status updates
             if (typeof AdminOrderShowRealtime !== 'undefined') {
                 const orderId = {{ $order->id }};
                 window.orderShowRealtime = new AdminOrderShowRealtime(orderId);
-                console.log('🚀 Real-time order status updates initialized for order:', orderId);
-            } else {
-                console.warn('⚠️ AdminOrderShowRealtime class not found. Real-time updates will not work.');
             }
         });
     </script>
