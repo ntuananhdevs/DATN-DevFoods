@@ -52,7 +52,7 @@ class BannerController extends Controller
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
-                'title' => 'required|string|max:255',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
@@ -228,7 +228,7 @@ class BannerController extends Controller
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
-                'title' => 'required|string|max:255',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
@@ -299,8 +299,11 @@ class BannerController extends Controller
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
-                unset($validated['image_path']);
-                unset($validated['image_link']);
+                // Vẫn yêu cầu ảnh trong update
+                return back()->withErrors([
+                    'image_path' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
+                    'image_link' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
+                ])->withInput();
             }
 
             // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
