@@ -201,8 +201,8 @@
                 });
             }
             
-            // Hàm để gắn event listener cho các nút hành động
-            function attachActionButtonListeners() {
+            // Hàm để gắn lại các event listener cho các nút hành động
+            function reattachActionButtonListeners() {
                 document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
                     button.addEventListener('click', function(event) {
                         event.preventDefault();
@@ -229,7 +229,6 @@
                 const listPartialUrl = "{{ url('/customer/orders/list') }}";
                 const indexUrl = "{{ url('/customer/orders') }}";
                 
-                // Tự động tải danh sách đơn hàng khi chọn trạng thái mà không cần nhấn nút tải lại
                 fetch(`${listPartialUrl}?${url.searchParams.toString()}`)
                     .then(response => {
                         if (!response.ok) {
@@ -241,7 +240,7 @@
                         orderListContainer.innerHTML = html;
                         
                         // Cập nhật lại các event listener cho các nút trong danh sách đơn hàng
-                        attachActionButtonListeners();
+                        reattachActionButtonListeners();
                         
                         // Cập nhật lại danh sách orderIds cho Pusher
                         orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
@@ -293,7 +292,6 @@
                 const listPartialUrl = "{{ url('/customer/orders/list') }}";
                 const indexUrl = "{{ url('/customer/orders') }}";
                 
-                // Tự động tải danh sách đơn hàng khi chuyển trang
                 fetch(`${listPartialUrl}?${pageParams}`)
                     .then(response => {
                         if (!response.ok) {
@@ -308,25 +306,12 @@
                         window.history.pushState({}, '', `${indexUrl}?${pageParams}`);
                         
                         // Cập nhật lại các event listener
-                        attachActionButtonListeners();
+                        reattachActionButtonListeners();
                         
                         // Cập nhật lại danh sách orderIds cho Pusher
                         orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
                             .map(el => parseInt(el.dataset.orderId))
                             .filter(id => !isNaN(id));
-                        
-                        // Cập nhật lại event listener cho các nút phân trang mới
-                        document.querySelectorAll('.pagination-item').forEach(item => {
-                            if (!item.classList.contains('disabled') && !item.classList.contains('active')) {
-                                item.addEventListener('click', function(e) {
-                                    e.preventDefault();
-                                    const pageUrl = new URL(this.href);
-                                    const pageParams = pageUrl.searchParams.toString();
-                                    
-                                    loadOrdersByPage(pageParams);
-                                });
-                            }
-                        });
                     })
                     .catch(error => {
                         console.error('Error loading orders by page:', error);
@@ -487,37 +472,9 @@
                                         modalAction === 'cancel' ? 'Hủy đơn hàng thành công!' :
                                         'Đã nhận hàng thành công!'
                                     );
-                                    // Thay vì tải lại trang, chỉ cập nhật danh sách đơn hàng
                                     setTimeout(() => {
-                                        // Lấy trạng thái hiện tại từ URL
-                                        const urlParams = new URLSearchParams(window.location.search);
-                                        const currentStatus = urlParams.get('status') || 'all';
-                                        
-                                        // Cập nhật danh sách đơn hàng với trạng thái hiện tại
-                                        fetch("{{ route('customer.orders.listPartial') }}?status=" + currentStatus)
-                                            .then(response => {
-                                                if (!response.ok) {
-                                                    throw new Error(`HTTP error! Status: ${response.status}`);
-                                                }
-                                                return response.text();
-                                            })
-                                            .then(html => {
-                                                document.getElementById('order-list-container').innerHTML = html;
-                                                
-                                                // Gắn lại các event listener sau khi cập nhật nội dung
-                                                attachActionButtonListeners();
-                                                
-                                                // Cập nhật lại danh sách orderIds cho Pusher
-                                                orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
-                                                    .map(el => parseInt(el.dataset.orderId))
-                                                    .filter(id => !isNaN(id));
-                                            })
-                                            .catch(error => {
-                                                console.error('Error updating orders after action:', error);
-                                                // Nếu có lỗi, tải lại trang
-                                                window.location.reload();
-                                            });
-                                    }, 1000);
+                                        window.location.reload();
+                                    }, 1300);
                                 } else {
                                     showToast(data.message || 'Có lỗi xảy ra!', "bg-red-600");
                                 }
@@ -536,8 +493,20 @@
                     closeActionModal();
                 });
             }
-            // Gắn sự kiện cho các nút hành động
-            attachActionButtonListeners();
+            document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const form = this.closest('form');
+                    openActionModal(form, 'cancel');
+                });
+            });
+            document.querySelectorAll('.receive-order-form button[type="submit"]').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const form = this.closest('form');
+                    openActionModal(form, 'receive');
+                });
+            });
         });
     </script>
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
@@ -579,7 +548,6 @@
                     console.error('❌ Failed to subscribe to order channel:', 'private-order.' + orderId, error);
                 });
                 
-                // Trong hàm xử lý sự kiện Pusher OrderStatusUpdated
                 channel.bind('OrderStatusUpdated', function(data) {
                     console.log('Pusher event OrderStatusUpdated received for order', orderId, data);
                     showToast('🔄 Đơn hàng #' + orderId + ' vừa được cập nhật trạng thái!');
@@ -590,28 +558,11 @@
                     
                     // Cập nhật danh sách đơn hàng với trạng thái hiện tại
                     fetch("{{ route('customer.orders.listPartial') }}?status=" + currentStatus)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! Status: ${response.status}`);
-                            }
-                            return response.text();
-                        })
+                        .then(response => response.text())
                         .then(html => {
                             document.getElementById('order-list-container').innerHTML = html;
-                            
                             // Gắn lại các event listener sau khi cập nhật nội dung
-                            attachActionButtonListeners();
-                            
-                            // Cập nhật lại danh sách orderIds cho Pusher
-                            orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
-                                .map(el => parseInt(el.dataset.orderId))
-                                .filter(id => !isNaN(id));
-                        })
-                        .catch(error => {
-                            console.error('Error updating orders via Pusher:', error);
-                            // Nếu có lỗi, hiển thị thông báo và tự động tải lại trang sau 2 giây
-                            showToast('Có lỗi khi cập nhật đơn hàng, đang tải lại...', "bg-orange-500");
-                            setTimeout(() => window.location.reload(), 2000);
+                            reattachActionButtonListeners();
                         });
                 });
             });

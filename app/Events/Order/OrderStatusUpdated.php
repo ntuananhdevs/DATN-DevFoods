@@ -25,13 +25,17 @@ class OrderStatusUpdated implements ShouldBroadcast
     public $branchId;
     public $driverId;
     public $isCancelledByCustomer = false;
+    public string $oldStatus;
+    public string $newStatus;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Order $order, $isCancelledByCustomer = false)
+    public function __construct(Order $order, $isCancelledByCustomer = false, string $oldStatus = null, string $newStatus = null)
     {
         $this->order = $order;
+        $this->oldStatus = $oldStatus ?? $order->getOriginal('status') ?? $order->status;
+        $this->newStatus = $newStatus ?? $order->status;
         $this->branchId = $order->branch_id;
         $this->driverId = $order->driver_id;
         $this->isCancelledByCustomer = $isCancelledByCustomer;
@@ -47,7 +51,7 @@ class OrderStatusUpdated implements ShouldBroadcast
         }
 
         // Lấy trạng thái mới
-        $status = $order->status;
+        $status = $this->newStatus;
         $message = $this->getStatusMessage($status, $order);
 
         // Gửi cho branch
@@ -246,6 +250,11 @@ class OrderStatusUpdated implements ShouldBroadcast
             'status_color' => $this->order->status_color, // Gửi cả object/mảng màu sắc
             'status_icon' => $this->order->status_icon,   // Gửi cả icon để cập nhật giao diện
             'actual_delivery_time' => optional($this->order->actual_delivery_time)->format('H:i - d/m/Y'),
+            'branch_id' => $this->order->branch_id,
+            'branch_name' => optional($this->order->branch)->name,
+            'customer_name' => optional($this->order->customer)->name,
+            'total_amount' => $this->order->total_amount,
+            'updated_at' => $this->order->updated_at->format('H:i - d/m/Y'),
         ];
     }
 }

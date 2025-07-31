@@ -31,7 +31,7 @@
                     banner</label>
                 <input
                     class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('title') border-red-500 @enderror"
-                    type="text" id="title" name="title" value="{{ old('title', $banner->title) }}">
+                    type="text" id="title" name="title" value="{{ old('title', $banner->title) }}" placeholder="Nhập tiêu đề banner (không bắt buộc)">
                 @error('title')
                     <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                 @enderror
@@ -157,6 +157,7 @@
                 <select
                     class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('position') border-red-500 @enderror"
                     id="position" name="position">
+                    <option value="">Chọn vị trí hiển thị (không bắt buộc)</option>
                     <option value="homepage" {{ old('position', $banner->position) == 'homepage' ? 'selected' : '' }}>Trang
                         chủ (Homepage)</option>
                     <option value="footers" {{ old('position', $banner->position) == 'footers' ? 'selected' : '' }}>Chân
@@ -216,7 +217,7 @@
                     <input
                         class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('start_at') border-red-500 @enderror"
                         type="date" id="start_at" name="start_at"
-                        value="{{ old('start_at', $banner->start_at ? date('Y-m-d', strtotime($banner->start_at)) : '') }}">
+                        value="{{ old('start_at', $banner->start_at ? date('Y-m-d', strtotime($banner->start_at)) : '') }}" placeholder="Chọn ngày bắt đầu (không bắt buộc)">
                     @error('start_at')
                         <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
@@ -228,7 +229,7 @@
                     <input
                         class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('end_at') border-red-500 @enderror"
                         type="date" id="end_at" name="end_at"
-                        value="{{ old('end_at', $banner->end_at ? date('Y-m-d', strtotime($banner->end_at)) : '') }}">
+                        value="{{ old('end_at', $banner->end_at ? date('Y-m-d', strtotime($banner->end_at)) : '') }}" placeholder="Chọn ngày kết thúc (không bắt buộc)">
                     @error('end_at')
                         <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
