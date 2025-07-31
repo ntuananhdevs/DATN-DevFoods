@@ -21,16 +21,20 @@ class OrderStatusUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public Order $order;
+    public string $oldStatus;
+    public string $newStatus;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Order $order)
+    public function __construct(Order $order, string $oldStatus = null, string $newStatus = null)
     {
         $this->order = $order;
+        $this->oldStatus = $oldStatus ?? $order->getOriginal('status') ?? $order->status;
+        $this->newStatus = $newStatus ?? $order->status;
 
         // Lấy trạng thái mới
-        $status = $order->status;
+        $status = $this->newStatus;
         $message = $this->getStatusMessage($status, $order);
 
         // Gửi cho branch
@@ -117,6 +121,11 @@ class OrderStatusUpdated implements ShouldBroadcast
             'status_color' => $this->order->status_color, // Gửi cả object/mảng màu sắc
             'status_icon' => $this->order->status_icon,   // Gửi cả icon để cập nhật giao diện
             'actual_delivery_time' => optional($this->order->actual_delivery_time)->format('H:i - d/m/Y'),
+            'branch_id' => $this->order->branch_id,
+            'branch_name' => optional($this->order->branch)->name,
+            'customer_name' => optional($this->order->customer)->name,
+            'total_amount' => $this->order->total_amount,
+            'updated_at' => $this->order->updated_at->format('H:i - d/m/Y'),
         ];
     }
 }

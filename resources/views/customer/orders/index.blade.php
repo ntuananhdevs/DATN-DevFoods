@@ -197,8 +197,13 @@
                                         modalAction === 'cancel' ? 'Hủy đơn hàng thành công!' :
                                         'Đã nhận hàng thành công!'
                                     );
+                                    // Cập nhật lại danh sách đơn hàng thay vì reload trang
                                     setTimeout(() => {
-                                        window.location.reload();
+                                        fetch("{{ route('customer.orders.listPartial') }}")
+                                            .then(response => response.text())
+                                            .then(html => {
+                                                document.getElementById('order-list-container').innerHTML = html;
+                                            });
                                     }, 1300);
                                 } else {
                                     showToast(data.message || 'Có lỗi xảy ra!', "bg-red-600");
