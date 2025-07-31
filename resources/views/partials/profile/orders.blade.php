@@ -459,8 +459,6 @@ class CustomerOrderRealtime {
         // Add appropriate buttons based on new status
         if (newStatus === 'confirmed') {
             // Add "Đang tìm tài xế" status indicator
-            const statusIndicator = this.createStatusIndicator('Đang tìm tài xế');
-            actionContainer.appendChild(statusIndicator);
         } else if (newStatus === 'delivered') {
             // Add "Xác nhận đã nhận hàng" button
             const receiveForm = this.createReceiveOrderForm(orderElement.dataset.orderId);
