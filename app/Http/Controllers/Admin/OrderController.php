@@ -7,6 +7,8 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Models\Branch;
 use Illuminate\Support\Facades\Log;
+use App\Events\Order\OrderStatusUpdated;
+use App\Events\Order\OrderConfirmed;
 
 class OrderController extends Controller
 {
@@ -226,20 +228,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show($orderId)
-    {
-        $order = Order::with([
-            'customer',
-            'branch',
-            'driver',
-            'orderItems.productVariant.product.primaryImage',
-            'orderItems.product',
-            'orderItems.combo',
-            'orderItems.toppings.topping',
-            'payment',
-        ])->findOrFail($orderId);
-        return view('admin.order.show', compact('order'));
-    }
+
 
     public function getOrderRow($orderId)
     {
@@ -271,6 +260,31 @@ class OrderController extends Controller
         return response($html)->header('Content-Type', 'text/html');
     }
 
+    /**
+     * Display the specified order.
+     */
+    public function show($id)
+    {
+        $order = Order::with([
+            'customer',
+            'driver',
+            'branch',
+            'payment',
+            'address',
+            'orderItems.productVariant.product.primaryImage',
+            'orderItems.productVariant.variantValues.attribute',
+            'orderItems.combo',
+            'orderItems.toppings.topping',
+            'statusHistory.changedBy',
+            'cancellation.cancelledBy'
+        ])->findOrFail($id);
+
+        return view('admin.order.show', compact('order'));
+    }
+
+    /**
+     * Export orders to Excel
+     */
     public function export()
     {
         // Tạm thời redirect về trang index
@@ -318,9 +332,9 @@ class OrderController extends Controller
         
         // Dispatch event for real-time updates
         if ($newStatus === 'confirmed') {
-            broadcast(new \App\Events\Order\OrderConfirmed($order));
+            broadcast(new OrderConfirmed($order));
         } else {
-            broadcast(new \App\Events\Order\OrderStatusUpdated($order, $oldStatus, $newStatus));
+            broadcast(new OrderStatusUpdated($order, $oldStatus, $newStatus));
         }
         
         if ($request->ajax()) {
@@ -366,8 +380,28 @@ class OrderController extends Controller
     public function cancel($orderId)
     {
         $order = Order::findOrFail($orderId);
-        $order->status = 'cancelled';
+        $oldStatus = $order->status;
+        $newStatus = 'cancelled';
+        
+        $order->status = $newStatus;
         $order->save();
+
+        // Broadcast event for real-time updates
+        broadcast(new OrderStatusUpdated($order, $oldStatus, $newStatus));
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đơn hàng đã được hủy thành công!',
+                'order' => [
+                    'id' => $order->id,
+                    'status' => $order->status,
+                    'status_text' => $order->statusText,
+                    'status_color' => $order->statusColor,
+                    'status_icon' => $order->statusIcon,
+                ]
+            ]);
+        }
 
         return redirect()->route('admin.orders.show', $orderId)
             ->with('success', 'Đơn hàng đã được hủy thành công!');
@@ -453,6 +487,141 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'counts' => $counts
+        ]);
+    }
+
+    /**
+     * Get order details for AJAX requests
+     */
+    public function details($id)
+    {
+        $order = Order::with([
+            'customer',
+            'driver',
+            'branch',
+            'payment',
+            'orderItems.product',
+            'orderItems.toppings',
+            'orderItems.combo'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'order' => [
+                'id' => $order->id,
+                'order_code' => $order->order_code,
+                'status' => $order->status,
+                'status_text' => $order->statusText,
+                'status_color' => $order->statusColor,
+                'status_icon' => $order->statusIcon,
+                'total_amount' => $order->total_amount,
+                'estimated_delivery_time' => $order->estimated_delivery_time,
+                'actual_delivery_time' => $order->actual_delivery_time,
+                'customer' => $order->customer,
+                'driver' => $order->driver,
+                'branch' => $order->branch,
+                'payment' => $order->payment,
+                'order_items' => $order->orderItems,
+                'delivery_address' => $order->delivery_address,
+                'created_at' => $order->created_at,
+                'updated_at' => $order->updated_at,
+            ]
+        ]);
+    }
+
+    /**
+     * Refresh order status for AJAX requests
+     */
+    public function refreshStatus($id)
+    {
+        $order = Order::with(['customer', 'driver', 'branch', 'payment'])->findOrFail($id);
+        
+        // Get available transitions
+        $currentStatus = $order->status;
+        $allowedTransitions = [
+            'awaiting_confirmation' => ['confirmed', 'cancelled'],
+            'confirmed' => ['awaiting_driver', 'cancelled'],
+            'awaiting_driver' => ['driver_confirmed', 'cancelled'],
+            'driver_confirmed' => ['waiting_driver_pick_up', 'cancelled'],
+            'waiting_driver_pick_up' => ['driver_picked_up', 'cancelled'],
+            'driver_picked_up' => ['in_transit', 'cancelled'],
+            'in_transit' => ['delivered', 'cancelled'],
+            'delivered' => ['item_received', 'refunded'],
+            'item_received' => ['refunded'],
+            'cancelled' => ['refunded'],
+            'refunded' => [],
+            'payment_failed' => ['payment_received', 'cancelled'],
+            'payment_received' => ['confirmed'],
+            'order_failed' => ['cancelled']
+        ];
+
+        $transitions = $allowedTransitions[$currentStatus] ?? [];
+        $transitionsWithText = [];
+
+        foreach ($transitions as $status) {
+            $transitionsWithText[] = [
+                'status' => $status,
+                'text' => $this->getStatusText($status)
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'order' => [
+                'id' => $order->id,
+                'status' => $order->status,
+                'status_text' => $order->statusText,
+                'status_color' => $order->statusColor,
+                'status_icon' => $order->statusIcon,
+                'estimated_delivery_time' => $order->estimated_delivery_time,
+                'actual_delivery_time' => $order->actual_delivery_time,
+                'driver' => $order->driver,
+                'updated_at' => $order->updated_at,
+            ],
+            'available_transitions' => $transitionsWithText
+        ]);
+    }
+
+    /**
+     * Get available status transitions for an order
+     */
+    public function availableTransitions($id)
+    {
+        $order = Order::findOrFail($id);
+        $currentStatus = $order->status;
+
+        $allowedTransitions = [
+            'awaiting_confirmation' => ['confirmed', 'cancelled'],
+            'confirmed' => ['awaiting_driver', 'cancelled'],
+            'awaiting_driver' => ['driver_confirmed', 'cancelled'],
+            'driver_confirmed' => ['waiting_driver_pick_up', 'cancelled'],
+            'waiting_driver_pick_up' => ['driver_picked_up', 'cancelled'],
+            'driver_picked_up' => ['in_transit', 'cancelled'],
+            'in_transit' => ['delivered', 'cancelled'],
+            'delivered' => ['item_received', 'refunded'],
+            'item_received' => ['refunded'],
+            'cancelled' => ['refunded'],
+            'refunded' => [],
+            'payment_failed' => ['payment_received', 'cancelled'],
+            'payment_received' => ['confirmed'],
+            'order_failed' => ['cancelled']
+        ];
+
+        $transitions = $allowedTransitions[$currentStatus] ?? [];
+        $transitionsWithText = [];
+
+        foreach ($transitions as $status) {
+            $transitionsWithText[] = [
+                'status' => $status,
+                'text' => $this->getStatusText($status)
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'current_status' => $currentStatus,
+            'current_status_text' => $this->getStatusText($currentStatus),
+            'available_transitions' => $transitionsWithText
         ]);
     }
 }

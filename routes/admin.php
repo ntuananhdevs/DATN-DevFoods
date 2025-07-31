@@ -358,6 +358,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/counts', [OrderController::class, 'getCounts'])->name('counts');
         Route::post('/{id}/update-status', [OrderController::class, 'updateStatus'])->name('update-status');
         Route::post('/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('cancel');
+        
+        // AJAX routes for enhanced functionality
+        Route::get('/{id}/details', [OrderController::class, 'details'])->name('details');
+        Route::get('/{id}/refresh-status', [OrderController::class, 'refreshStatus'])->name('refresh-status');
+        Route::get('/{id}/available-transitions', [OrderController::class, 'availableTransitions'])->name('available-transitions');
     });
 
     // Reviews Management

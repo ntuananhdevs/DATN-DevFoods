@@ -349,17 +349,18 @@
         </div>
     </div>
 </div>
-
-<!-- Pusher Configuration -->
-<script>
-    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
-    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
-</script>
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+{{-- Pusher Configuration --}}
+<script>
+window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
+window.pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
+</script>
+
+{{-- Load Pusher and Realtime Scripts --}}
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script src="{{ asset('js/admin/orders-realtime.js') }}" defer></script>
 <script>
 // AJAX Tab Switching
 document.addEventListener('DOMContentLoaded', function() {
@@ -706,14 +707,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-{{-- Pusher Configuration --}}
-<script>
-window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
-window.pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
-</script>
-
-{{-- Load Pusher and Realtime Scripts --}}
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-<script src="{{ asset('js/admin/orders-realtime.js') }}" defer></script>
 @endsection

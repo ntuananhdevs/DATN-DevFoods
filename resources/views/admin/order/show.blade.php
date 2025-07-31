@@ -1,4 +1,4 @@
-@extends('layouts.customer.fullLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
 
 @section('title', 'Chi tiết đơn hàng #' . ($order->order_code ?? $order->id))
 
@@ -19,7 +19,6 @@
             'awaiting_confirmation' => 'awaiting_confirmation',
             'confirmed' => 'confirmed',
             'awaiting_driver' => 'awaiting_driver',
-            'driver_assigned' => 'driver_assigned',
             'driver_confirmed' => 'driver_assigned',
             'waiting_driver_pick_up' => 'driver_assigned',
             'driver_picked_up' => 'driver_assigned',
@@ -204,6 +203,7 @@
                                                 @endif
                                             </div>
 
+                                        <div class="driver-container">
                                             @if (in_array($order->status, ['confirmed', 'awaiting_driver']) && !$order->driver_id)
                                                 <!-- Hiệu ứng loading khi đang tìm tài xế -->
                                                 <div class="flex items-center space-x-3">
@@ -228,7 +228,7 @@
                                                 </div>
                                             @elseif($order->driver_id && $order->driver)
                                                 <!-- Thông tin tài xế đầy đủ -->
-                                                <div class="space-y-3">
+                                                <div class="space-y-3 driver-info">
                                                     <div class="flex items-center space-x-3">
                                                         <div
                                                             class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -241,7 +241,7 @@
                                                             </svg>
                                                         </div>
                                                         <div>
-                                                            <div class="font-semibold text-gray-900">
+                                                            <div class="font-semibold text-gray-900 driver-name">
                                                                 {{ $order->driver->full_name ?? $order->driver->name }}
                                                             </div>
                                                             <div class="text-sm text-gray-600">Tài xế giao hàng</div>
@@ -253,7 +253,7 @@
                                                             <div class="flex items-center justify-between">
                                                                 <span class="text-gray-600">Số điện thoại:</span>
                                                                 <a href="tel:{{ $order->driver->phone_number }}"
-                                                                    class="font-medium text-blue-600 hover:text-blue-800 flex items-center">
+                                                                    class="font-medium text-blue-600 hover:text-blue-800 flex items-center driver-phone">
                                                                     <svg class="w-4 h-4 mr-1" fill="none"
                                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round"
@@ -270,16 +270,16 @@
                                                             <div class="flex items-center justify-between">
                                                                 <span class="text-gray-600">Biển số xe:</span>
                                                                 <span
-                                                                    class="font-medium text-gray-900 font-mono bg-white px-2 py-1 rounded border">{{ $order->driver->license_plate }}</span>
+                                                                    class="font-medium text-gray-900 font-mono bg-white px-2 py-1 rounded border driver-vehicle">{{ $order->driver->license_plate }}</span>
                                                             </div>
                                                         @endif
                                                     </div>
 
                                                     <!-- Trạng thái giao hàng -->
-                                                    <div class="mt-3 p-2 bg-white rounded border-l-4 border-green-500">
+                                                    <div class="mt-3 p-2 bg-white rounded border-l-4 border-green-500 driver-status-container">
                                                         <div class="text-sm">
                                                             <span class="text-gray-600">Trạng thái:</span>
-                                                            <span class="font-medium text-green-600 ml-1">
+                                                            <span class="font-medium text-green-600 ml-1 driver-status">
                                                                 @if ($order->status == 'confirmed')
                                                                     Đã xác nhận đơn hàng
                                                                 @elseif($order->status == 'awaiting_driver')
@@ -318,6 +318,7 @@
                                                 </div>
                                             @endif
                                         </div>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -326,7 +327,7 @@
                         </div>
                         <div class="flex-shrink-0">
                             <div class="text-center">
-                                <span class="inline-block px-4 py-2 text-sm font-medium rounded-lg"
+                                <span id="order-status-display" class="inline-block px-4 py-2 text-sm font-medium rounded-lg"
                                     style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color }};">
                                     {{ $order->status_text }}
                                 </span>
@@ -349,31 +350,13 @@
                             </div>
                         </div>
                         
-                        <!-- Current Status Badge -->
-                        <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                            <div class="flex items-center">
-                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-4">
-                                    <i class="{{ $order->statusIcon }} text-white"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-semibold text-blue-900">{{ $order->statusText }}</h4>
-                                    <p class="text-sm text-blue-700">
-                                        @if($currentStepKey && isset($progressSteps[$currentStepKey]['description']))
-                                            {{ $progressSteps[$currentStepKey]['description'] }}
-                                        @else
-                                            Trạng thái hiện tại của đơn hàng
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="relative">
+                      
+                        <div class="relative progress-tracker">
                             <!-- Steps -->
                             <div class="relative flex justify-between">
                                 <!-- Progress Bar -->
                                 <div class="absolute top-4 left-4 right-4 h-1 bg-gray-200 rounded-full">
-                                    <div class="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-700 ease-in-out"
+                                    <div class="progress-bar-fill h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-700 ease-in-out"
                                         style="width: {{ $currentStepIndex >= 0 ? (($currentStepIndex + 1) / count($progressSteps)) * 100 : 0 }}%">
                                     </div>
                                 </div>
@@ -384,9 +367,9 @@
                                         $isCurrent = $stepIndex === $currentStepIndex;
                                         $isPending = $stepIndex > $currentStepIndex;
                                     @endphp
-                                    <div class="flex flex-col items-center relative" data-step-key="{{ $key }}">
+                                    <div class="progress-step flex flex-col items-center relative {{ $isCompleted ? 'completed' : ($isCurrent ? 'current' : 'pending') }}" data-step-key="{{ $key }}">
                                         <!-- Step Circle -->
-                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-300
+                                        <div class="step-icon w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-300
                                             @if($isCompleted && !$isCurrent)
                                                 bg-green-500 text-white shadow-lg
                                             @elseif($isCurrent)
@@ -405,7 +388,7 @@
 
                                         <!-- Step Label -->
                                         <div class="mt-3 text-center max-w-20">
-                                            <span class="text-sm font-medium block
+                                            <span class="step-text text-sm font-medium block
                                                 @if($isCompleted)
                                                     text-green-600
                                                 @elseif($isCurrent)
@@ -431,17 +414,18 @@
                         </div>
 
                         <!-- Delivery Time Information -->
+                        <div class="delivery-time">
                         @if(!in_array($order->status, ['delivered', 'item_received', 'cancelled', 'refunded', 'payment_failed', 'order_failed']))
                             @if($order->estimated_delivery_time)
-                                <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200 estimated-delivery-time">
                                     <div class="flex items-center text-yellow-800">
                                         <i class="fas fa-clock mr-2"></i>
                                         <span class="font-medium">Dự kiến giao hàng: </span>
-                                        <span class="ml-1">{{ \Carbon\Carbon::parse($order->estimated_delivery_time)->format('H:i - d/m/Y') }}</span>
+                                        <span class="ml-1 delivery-time-value">{{ \Carbon\Carbon::parse($order->estimated_delivery_time)->format('H:i - d/m/Y') }}</span>
                                     </div>
                                 </div>
                             @else
-                                <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 estimated-delivery-time">
                                     <div class="flex items-center text-blue-800">
                                         <i class="fas fa-info-circle mr-2"></i>
                                         <span class="font-medium">Thời gian giao hàng sẽ được cập nhật sau khi xác nhận đơn hàng</span>
@@ -450,15 +434,15 @@
                             @endif
                         @elseif(in_array($order->status, ['delivered', 'item_received']))
                             @if($order->actual_delivery_time)
-                                <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200 actual-delivery-time">
                                     <div class="flex items-center text-green-800">
                                         <i class="fas fa-check-circle mr-2"></i>
                                         <span class="font-medium">Đã giao thành công lúc: </span>
-                                        <span class="ml-1">{{ \Carbon\Carbon::parse($order->actual_delivery_time)->format('H:i - d/m/Y') }}</span>
+                                        <span class="ml-1 delivery-time-value">{{ \Carbon\Carbon::parse($order->actual_delivery_time)->format('H:i - d/m/Y') }}</span>
                                     </div>
                                 </div>
                             @else
-                                <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200 actual-delivery-time">
                                     <div class="flex items-center text-green-800">
                                         <i class="fas fa-check-circle mr-2"></i>
                                         <span class="font-medium">Đơn hàng đã được giao thành công</span>
@@ -466,6 +450,7 @@
                                 </div>
                             @endif
                         @endif
+                        </div>
                     </div>
                 </div>
             @elseif(in_array($order->status, ['cancelled', 'refunded']))
@@ -782,8 +767,17 @@
 @endsection
 
 @push('scripts')
+    {{-- Include Pusher for real-time updates --}}
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    
+    {{-- Include order show real-time script --}}
+    <script src="{{ asset('js/admin/order-show-realtime.js') }}"></script>
+    
     {{-- Script xử lý modal và real-time giữ nguyên --}}
     <script>
+        // Set Pusher configuration for real-time updates
+        window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+        window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
         // Định nghĩa hàm showToast để hiển thị thông báo
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast-message');
@@ -934,6 +928,15 @@
                     const form = this.closest('form');
                     openActionModal(form, 'cancel');
                 });
+            }
+
+            // Initialize real-time order status updates
+            if (typeof AdminOrderShowRealtime !== 'undefined') {
+                const orderId = {{ $order->id }};
+                window.orderShowRealtime = new AdminOrderShowRealtime(orderId);
+                console.log('🚀 Real-time order status updates initialized for order:', orderId);
+            } else {
+                console.warn('⚠️ AdminOrderShowRealtime class not found. Real-time updates will not work.');
             }
         });
     </script>
