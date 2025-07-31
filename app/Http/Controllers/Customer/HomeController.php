@@ -228,7 +228,15 @@ class HomeController extends Controller
         }
 
         // Pass all necessary data to the view
-        return view('customer.home', compact('products', 'featuredProducts', 'topRatedProducts', 'featuredCombos', 'categories', 'banners'));
+        return view('customer.home', [
+            'products' => $products,
+            'featuredProducts' => $featuredProducts,
+            'topRatedProducts' => $topRatedProducts,
+            'featuredCombos' => $featuredCombos,
+            'categories' => $categories,
+            'banners' => $banners,
+            'selectedBranch' => $currentBranch, // Thêm dòng này
+        ]);
     }
 
     public function search(Request $request)

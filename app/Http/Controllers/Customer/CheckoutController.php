@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
 use App\Services\OrderSnapshotService;
 use App\Models\GeneralSetting;
+use Carbon\Carbon;
 
 class CheckoutController extends Controller
 {
@@ -105,7 +106,14 @@ class CheckoutController extends Controller
             }
             $currentBranch = $this->branchService->getCurrentBranch();
             
-            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+            // Get delivery time configuration
+            $deliveryConfig = [
+                'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+                'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+                'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+            ];
+            
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
         }
 
         $cartItems = [];
@@ -185,8 +193,15 @@ class CheckoutController extends Controller
 
         // Get current selected branch for distance calculation
         $currentBranch = $this->branchService->getCurrentBranch();
+        
+        // Get delivery time configuration
+        $deliveryConfig = [
+            'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+            'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+            'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+        ];
 
-        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
     }
     
     /**
