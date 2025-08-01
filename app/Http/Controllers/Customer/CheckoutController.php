@@ -514,6 +514,15 @@ class CheckoutController extends Controller
                 $order->guest_district = $request->district;
                 $order->guest_ward = $request->ward;
                 $order->guest_city = $request->city;
+                $order->guest_latitude = $request->latitude;
+                $order->guest_longitude = $request->longitude;
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Setting guest coordinates for order', [
+                    'order_code' => $order->order_code,
+                    'guest_latitude' => $request->latitude,
+                    'guest_longitude' => $request->longitude
+                ]);
             }
             
             $order->branch_id = $branchId;

@@ -74,7 +74,7 @@ class OrderController extends Controller
                     ->orWhere('guest_name', 'like', "%{$search}%")
                     ->orWhere('guest_phone', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', "%{$search}%")
+                        $customerQuery->where('full_name', 'like', "%{$search}%")
                             ->orWhere('phone', 'like', "%{$search}%");
                     });
             });
