@@ -52,34 +52,51 @@ return new class extends Migration
     {
         // Xóa các trường snapshot từ bảng order_items
         Schema::table('order_items', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'product_name_snapshot',
                 'variant_name_snapshot',
                 'variant_attributes_snapshot',
                 'combo_name_snapshot',
-                'combo_items_snapshot',
-                'combo_price_snapshot'
-            ]);
+                'combo_items_snapshot'
+            ];
+            
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('order_items', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
         
         // Xóa các trường snapshot từ bảng orders
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'delivery_address_line_snapshot',
                 'delivery_ward_snapshot',
                 'delivery_district_snapshot',
                 'delivery_province_snapshot',
                 'delivery_phone_snapshot',
                 'delivery_recipient_name_snapshot'
-            ]);
+            ];
+            
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('orders', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
 
         // Xóa các trường snapshot từ bảng order_item_toppings
         Schema::table('order_item_toppings', function (Blueprint $table) {
-            $table->dropColumn([
+            $columns = [
                 'topping_name_snapshot',
                 'topping_unit_price_snapshot'
-            ]);
+            ];
+            
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('order_item_toppings', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };
