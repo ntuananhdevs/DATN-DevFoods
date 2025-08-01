@@ -388,8 +388,8 @@
                                 @endphp
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($isCombo && $combo && $combo->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($combo->primary_image->img) }}"
+                                        @if ($isCombo && $combo && $combo->image)
+                                            <img src="{{ Storage::disk('s3')->url($combo->image) }}"
                                                  alt="{{ $combo->name }}"
                                                  class="object-cover w-full h-full">
                                         @elseif ($product && $product->primary_image)
@@ -470,7 +470,7 @@
                                     Thời gian giao hàng dự kiến
                                     <span id="delivery-time-indicator" class="ml-1 text-xs text-green-500 opacity-0 transition-opacity duration-300">●</span>
                                 </span>
-                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Đang tính...</span>
+                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Nhập địa chỉ để tính toán</span>
                             </div>
 
                             <div id="coupon-discount-row" class="flex justify-between text-green-600 font-semibold {{ $discount > 0 ? '' : 'hidden' }}">
@@ -976,7 +976,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const deliveryTimeEl = document.getElementById('delivery-time-display');
             const indicatorEl = document.getElementById('delivery-time-indicator');
             
-            if (distance <= 0 || distance > shippingConfig.maxDeliveryDistance) {
+            if (distance <= 0) {
+                deliveryTimeEl.textContent = 'Nhập địa chỉ để tính toán';
+                deliveryTimeEl.classList.remove('text-red-500');
+                deliveryTimeEl.classList.add('text-orange-600');
+                return;
+            }
+            
+            if (distance > shippingConfig.maxDeliveryDistance) {
                 deliveryTimeEl.textContent = 'Không khả dụng';
                 deliveryTimeEl.classList.remove('text-orange-600');
                 deliveryTimeEl.classList.add('text-red-500');
@@ -1109,16 +1116,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const subtotal = parseFloat(document.getElementById('subtotal-display')?.dataset?.value || 0);
             const shippingFee = calculateShippingFee(distance, subtotal);
             const shippingFeeEl = document.getElementById('shipping-fee-display');
+            const deliveryTimeEl = document.getElementById('delivery-time-display');
 
             if (shippingFeeEl) {
                 if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;
                     shippingFeeEl.textContent = shippingFee > 0 ? formatCurrency(shippingFee) : 'Miễn phí';
                     shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi có địa chỉ hợp lệ
+                    updateDeliveryTimeDisplay(distance);
                 } else {
                     shippingFeeEl.dataset.value = 0;
                     shippingFeeEl.textContent = 'Ngoài vùng phục vụ';
                     shippingFeeEl.classList.add('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi ngoài vùng phục vụ
+                    if (deliveryTimeEl) {
+                        deliveryTimeEl.textContent = 'Không khả dụng';
+                        deliveryTimeEl.classList.remove('text-orange-600');
+                        deliveryTimeEl.classList.add('text-red-500');
+                    }
                 }
             }
 
@@ -1304,6 +1322,7 @@ document.addEventListener('DOMContentLoaded', function() {
             function initializeCheckoutPage() {
                 if (typeof turf === 'undefined' || !branchLat || !branchLng) {
                     document.getElementById('shipping-fee-display').textContent = 'Lỗi cấu hình';
+                    document.getElementById('delivery-time-display').textContent = 'Lỗi cấu hình';
                     toggleCheckoutButton(false, 'Lỗi cấu hình chi nhánh, không thể đặt hàng.');
                     return;
                 }
@@ -1336,11 +1355,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } else if (addressLabels.length === 0) {
                         updateShippingFeeUI(-1); // No addresses, so invalid
+                        document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                     }
                 } else if ({{ Auth::check() ? 'true' : 'false' }} && addressLabels.length === 0) {
                     updateShippingFeeUI(-1); // Logged in but no addresses
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 } else if (!{{ Auth::check() ? 'true' : 'false' }}) {
                     document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ';
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 }
 
                 // 2. Defer calculation for the rest of the addresses

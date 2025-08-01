@@ -227,11 +227,14 @@ class OrderController extends Controller
     /**
      * HÀM HELPER: Xử lý các tác vụ chung.
      */
-    private function processUpdate(Order $order, string $successMessage): JsonResponse
+    private function processUpdate(Order $order, string $successMessage, string $oldStatus = null): JsonResponse
     {
+        if ($oldStatus === null) {
+            $oldStatus = $order->getOriginal('status');
+        }
         $order->save();
         $freshOrder = $order->fresh();
-        broadcast(new OrderStatusUpdated($freshOrder));
+        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
 
         return response()->json([
             'success' => true,
@@ -249,8 +252,9 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Đơn hàng không khả dụng để xác nhận.'], 400);
         }
 
+        $oldStatus = $order->status;
         $order->status = 'driver_confirmed';
-        return $this->processUpdate($order, 'Bạn đã xác nhận nhận đơn. Hãy bắt đầu đến điểm lấy hàng!');
+        return $this->processUpdate($order, 'Bạn đã xác nhận nhận đơn. Hãy bắt đầu đến điểm lấy hàng!', $oldStatus);
     }
 
     /**
@@ -262,8 +266,9 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
         }
 
+        $oldStatus = $order->status;
         $order->status = 'waiting_driver_pick_up';
-        return $this->processUpdate($order, 'Bạn đang trên đường đến điểm lấy hàng!');
+        return $this->processUpdate($order, 'Bạn đang trên đường đến điểm lấy hàng!', $oldStatus);
     }
 
     /**
@@ -278,15 +283,17 @@ class OrderController extends Controller
             return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
+        $oldStatus = $order->status;
         $order->status = 'driver_picked_up';
-        $order->save();
 
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Bạn đã lấy hàng thành công! Đang giao hàng.'
-            ]);
+            return $this->processUpdate($order, 'Bạn đã lấy hàng thành công! Đang giao hàng.', $oldStatus);
         }
+
+        // For non-AJAX requests, save and broadcast manually
+        $order->save();
+        $freshOrder = $order->fresh();
+        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Bạn đã lấy hàng thành công!');
@@ -301,8 +308,9 @@ class OrderController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
         }
 
+        $oldStatus = $order->status;
         $order->status = 'in_transit';
-        return $this->processUpdate($order, 'Bạn đang giao hàng!');
+        return $this->processUpdate($order, 'Bạn đang giao hàng!', $oldStatus);
     }
 
     /**
@@ -317,6 +325,7 @@ class OrderController extends Controller
             return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
+        $oldStatus = $order->status;
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
         
@@ -325,15 +334,15 @@ class OrderController extends Controller
             $commissionRate = config('shipping.driver_commission_rate', 0.6);
             $order->driver_earning = $order->delivery_fee * $commissionRate;
         }
-        
-        $order->save();
 
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã giao hàng thành công!'
-            ]);
+            return $this->processUpdate($order, 'Đã giao hàng thành công!', $oldStatus);
         }
+
+        // For non-AJAX requests, save and broadcast manually
+        $order->save();
+        $freshOrder = $order->fresh();
+        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Đã giao hàng thành công!');
