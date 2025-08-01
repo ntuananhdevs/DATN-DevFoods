@@ -139,8 +139,7 @@ function fetchCities(selected = null) {
 }
 // Lấy quận/huyện
 function fetchDistricts(cityName = null, selected = null) {
-    const hanoiCode = 1;
-    fetch(`https://provinces.open-api.vn/api/p/${hanoiCode}?depth=2`)
+    fetch('/data/hanoi-districts.json')
         .then(res => res.json())
         .then(data => {
             if (!data.districts || !Array.isArray(data.districts)) {
@@ -157,8 +156,7 @@ function fetchDistricts(cityName = null, selected = null) {
 }
 // Lấy phường/xã
 function fetchWards(cityName, districtName, selected = null) {
-    const hanoiCode = 1;
-    fetch(`https://provinces.open-api.vn/api/p/${hanoiCode}?depth=2`)
+    fetch('/data/hanoi-districts.json')
         .then(res => res.json())
         .then(data => {
             const district = data.districts && Array.isArray(data.districts)
@@ -168,16 +166,14 @@ function fetchWards(cityName, districtName, selected = null) {
                 wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
                 return;
             }
-            fetch(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`)
-                .then(res => res.json())
-                .then(districtData => {
-                    if (!districtData.wards || !Array.isArray(districtData.wards)) {
-                        wardSelect.innerHTML = '<option value="">Không có phường/xã</option>';
-                        return;
-                    }
-                    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>' + districtData.wards.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
-                    if (selected) wardSelect.value = selected;
-                });
+            
+            if (!district.wards || !Array.isArray(district.wards)) {
+                wardSelect.innerHTML = '<option value="">Không có phường/xã</option>';
+                return;
+            }
+            
+            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>' + district.wards.map(w => `<option value="${w.name}">${w.name}</option>`).join('');
+            if (selected) wardSelect.value = selected;
         })
         .catch(err => {
             wardSelect.innerHTML = '<option value="">Lỗi tải phường/xã</option>';
@@ -204,7 +200,6 @@ citySelect.addEventListener('change', function() {
 });
 districtSelect.addEventListener('change', function() {
     fetchWards(citySelect.value, this.value);
-    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
 });
 
 // Geocode địa chỉ bằng Mapbox
