@@ -188,7 +188,7 @@ class HomeController extends Controller
             });
         }
 
-        $featuredCombos = $featuredCombos->take(4)->get();
+        $featuredCombos = $featuredCombos->take(6)->get();
 
         // Transform combos để thêm thông tin cần thiết
         $featuredCombos->transform(function ($combo) use ($selectedBranchId) {

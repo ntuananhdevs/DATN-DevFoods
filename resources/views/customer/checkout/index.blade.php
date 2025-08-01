@@ -388,8 +388,8 @@
                                 @endphp
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($isCombo && $combo && $combo->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($combo->primary_image->img) }}"
+                                        @if ($isCombo && $combo && $combo->image)
+                                            <img src="{{ Storage::disk('s3')->url($combo->image) }}"
                                                  alt="{{ $combo->name }}"
                                                  class="object-cover w-full h-full">
                                         @elseif ($product && $product->primary_image)

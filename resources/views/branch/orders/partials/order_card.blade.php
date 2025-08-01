@@ -117,19 +117,39 @@
             @endif
             <div class="flex justify-between">
                 <span class="text-gray-500">Thanh toán:</span>
-                @php $pm = strtolower($order->payment?->payment_method ?? ''); @endphp
-                @if($pm === 'cod')
-                    <span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>
-                @elseif($pm === 'vnpay')
-                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
-                            <text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text>
-                            <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
-                        </svg>
+                <div class="flex items-center gap-1">
+                    @php 
+                        $pm = strtolower($order->payment?->payment_method ?? ''); 
+                        $ps = $order->payment?->payment_status ?? 'pending';
+                        $paymentStatusColors = [
+                            'pending' => 'bg-yellow-100 text-yellow-800',
+                            'completed' => 'bg-green-100 text-green-800',
+                            'failed' => 'bg-red-100 text-red-800',
+                            'refunded' => 'bg-pink-100 text-pink-800'
+                        ];
+                        $paymentStatusText = [
+                            'pending' => 'Chờ xử lý',
+                            'completed' => 'Thành công',
+                            'failed' => 'Thất bại',
+                            'refunded' => 'Đã hoàn tiền'
+                        ];
+                    @endphp
+                    @if($pm === 'cod')
+                        <span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>
+                    @elseif($pm === 'vnpay')
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
+                                <text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text>
+                                <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
+                            </svg>
+                        </span>
+                    @elseif($pm === 'balance')
+                        <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Số dư</span>
+                    @endif
+                    <span class="payment-status-badge inline-block px-2 py-0.5 rounded text-xs font-semibold {{ $paymentStatusColors[$ps] ?? 'bg-gray-100 text-gray-800' }}">
+                        {{ $paymentStatusText[$ps] ?? ucfirst($ps) }}
                     </span>
-                @elseif($pm === 'balance')
-                    <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Số dư</span>
-                @endif
+                </div>
             </div>
             @if($order->notes)
             <div class="flex justify-between">

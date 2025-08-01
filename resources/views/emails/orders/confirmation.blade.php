@@ -27,56 +27,54 @@
             <tr>
                 <th colspan="3" style="padding-top:10px;" align="left">Chi tiết món đã đặt</th>
             </tr>
-            <tr>
-                <td colspan="3" style="background:#f0f0f0;font-size:12px;">
-                    Debug: OrderItems count = {{ $data['order']->orderItems->count() }}
-                </td>
-            </tr>
             <tr style="background:#FF6B35;color:#fff;">
-                <th align="left">Món</th>
-                <th align="center">SL</th>
-                <th align="right">Thành tiền</th>
+                <th align="left" style="padding:8px;">Món</th>
+                <th align="center" style="padding:8px;">SL</th>
+                <th align="right" style="padding:8px;">Thành tiền</th>
             </tr>
             @foreach($data['order']->orderItems as $item)
             @php
-                // Debug: Try different ways to get product name
-                $itemName = 'Sản phẩm'; // Default
-                $debugInfo = '';
+                // Xác định tên sản phẩm
+                $itemName = 'Sản phẩm';
+                $imageUrl = null;
                 
                 if($item->productVariant && $item->productVariant->product) {
                     $itemName = $item->productVariant->product->name;
-                    $debugInfo = ' (via productVariant)';
+                    if($item->productVariant->product->images->count()) {
+                        $img = $item->productVariant->product->images->where('is_primary',true)->first() ?? $item->productVariant->product->images->first();
+                        $imageUrl = $img->img ?? $img->url ?? null;
+                    }
                 } elseif($item->combo) {
                     $itemName = $item->combo->name;
-                    $debugInfo = ' (via combo)';
+                    $imageUrl = $item->combo->image ?? null;
                 } elseif($item->product) {
                     $itemName = $item->product->name;
-                    $debugInfo = ' (via product)';
-                } else {
-                    $debugInfo = ' (no relation found - variant_id: ' . ($item->product_variant_id ?? 'null') . ', combo_id: ' . ($item->combo_id ?? 'null') . ')';
+                    if($item->product->images->count()) {
+                        $img = $item->product->images->where('is_primary',true)->first() ?? $item->product->images->first();
+                        $imageUrl = $img->img ?? $img->url ?? null;
+                    }
+                }
+                
+                // Xử lý URL ảnh từ S3
+                if($imageUrl && !str_starts_with($imageUrl, 'http')) {
+                    $imageUrl = config('filesystems.disks.s3.url') . '/' . ltrim($imageUrl, '/');
                 }
             @endphp
-            @php
-                $imageUrl = null;
-                if($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count()){
-                    $img = $item->productVariant->product->images->where('is_primary',true)->first() ?? $item->productVariant->product->images->first();
-                    $imageUrl = url($img->img ?? $img->url ?? '');
-                } elseif($item->combo && $item->combo->image){
-                    $imageUrl = url($item->combo->image);
-                } elseif($item->product && $item->product->images->count()){
-                    $img = $item->product->images->where('is_primary',true)->first() ?? $item->product->images->first();
-                    $imageUrl = url($img->img ?? $img->url ?? '');
-                }
-            @endphp
-            <tr style="background:#ffffff;">
-                <td style="display:flex;align-items:center;gap:8px;">
-                    @if($imageUrl)
-                        <img src="{{ $imageUrl }}" alt="{{ $itemName }}" width="48" style="border-radius:4px;object-fit:cover;">
-                    @endif
-                    <span>{{ $itemName }}{{ $debugInfo }}</span>
+            <tr style="background:#ffffff;border-bottom:1px solid #eee;">
+                <td style="padding:8px;vertical-align:middle;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        @if($imageUrl)
+                            <img src="{{ $imageUrl }}" alt="{{ $itemName }}" width="50" height="50" style="border-radius:6px;object-fit:cover;border:1px solid #ddd;">
+                        @else
+                            <div style="width:50px;height:50px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #ddd;">
+                                <span style="color:#999;font-size:12px;">No img</span>
+                            </div>
+                        @endif
+                        <span style="font-weight:500;color:#333;">{{ $itemName }}</span>
+                    </div>
                 </td>
-                <td align="center">{{ $item->quantity }}</td>
-                <td align="right">{{ number_format($item->total_price,0,',','.') }}đ</td>
+                <td align="center" style="padding:8px;vertical-align:middle;">{{ $item->quantity }}</td>
+                <td align="right" style="padding:8px;vertical-align:middle;font-weight:500;">{{ number_format($item->total_price,0,',','.') }}đ</td>
             </tr>
             @endforeach
         </table>
@@ -86,4 +84,4 @@
         <p>Nếu bạn có bất kỳ thắc mắc nào, xin vui lòng phản hồi email này hoặc liên hệ với bộ phận hỗ trợ khách hàng.</p>
         <p style="margin-bottom:0;">Trân trọng,<br>{{ config('app.name') }}</p>
     </div>
-@endsection 
+@endsection
