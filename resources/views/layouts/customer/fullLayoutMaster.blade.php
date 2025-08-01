@@ -187,7 +187,7 @@
     <!-- Navbar -->
     @include('partials.customer.header')
     <!-- Main Content -->
-    <main>
+    <main style="background: #f0f0f0;">
         @yield('content')
 
         <!-- Chat Widget -->
