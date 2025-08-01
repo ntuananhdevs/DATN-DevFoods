@@ -289,7 +289,7 @@
                         <span class="text-xl font-bold text-purple-600">{{ number_format($order->total_amount) }}đ</span>
                     </div>
                     <div class="mt-2">
-                        @if($order->payment_method == 'COD')
+                        @if($order->payment && $order->payment->payment_method == 'cod')
                         <div class="flex items-center text-yellow-700 text-xs bg-yellow-100 rounded px-2 py-1">
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             Thanh toán khi nhận hàng (COD) <span class="ml-2">Vui lòng chuẩn bị đủ tiền khi nhận hàng</span>
