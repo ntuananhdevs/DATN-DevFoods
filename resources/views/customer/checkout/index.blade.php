@@ -742,16 +742,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn tỉnh/thành phố, load quận/huyện
     citySelect.addEventListener('change', function() {
-        const cityCode = this.selectedOptions[0]?.dataset?.code;
         districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!cityCode) return;
-        fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+        
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
                 data.districts.forEach(d => {
                     districtSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                 });
+            })
+            .catch(error => {
+                console.error('Error loading districts:', error);
             });
     });
 
@@ -760,14 +768,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn quận/huyện, load xã/phường và geocode
     districtSelect.addEventListener('change', function() {
-        const districtCode = this.selectedOptions[0]?.dataset?.code;
+        const districtName = this.value;
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!districtCode) return;
+        if (!districtName) return;
         
-        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
-                data.wards.forEach(w => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
+                const district = data.districts.find(d => d.name === districtName);
+                if (!district || !district.wards || !Array.isArray(district.wards)) {
+                    console.error('District not found or has no wards');
+                    return;
+                }
+                
+                district.wards.forEach(w => {
                     wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                 });
             })
@@ -1644,16 +1664,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When city changes, load districts
                 newCitySelect.addEventListener('change', function() {
-                    const cityCode = this.selectedOptions[0]?.dataset?.code;
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!cityCode) return;
-                    fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+                    
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
                             data.districts.forEach(d => {
                                 newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                             });
+                        })
+                        .catch(error => {
+                            console.error('Error loading districts:', error);
                         });
                 });
                 
@@ -1666,14 +1694,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When district changes, load wards and geocode
                 newDistrictSelect.addEventListener('change', function() {
-                    const districtCode = this.selectedOptions[0]?.dataset?.code;
+                    const districtName = this.value;
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!districtCode) return;
+                    if (!districtName) return;
                     
-                    fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
-                            data.wards.forEach(w => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
+                            const district = data.districts.find(d => d.name === districtName);
+                            if (!district || !district.wards || !Array.isArray(district.wards)) {
+                                console.error('District not found or has no wards');
+                                return;
+                            }
+                            
+                            district.wards.forEach(w => {
                                 newWardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                             });
                         })
@@ -1767,12 +1807,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newWardSelect = document.getElementById('new_ward');
                 
                 try {
-                    // Load districts for Hà Nội
-                    const districtResponse = await fetch('https://provinces.open-api.vn/api/p/1?depth=2');
+                    // Load districts for Hà Nội from JSON file
+                    const districtResponse = await fetch('/data/hanoi-districts.json');
                     const districtData = await districtResponse.json();
                     
                     // Populate districts
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+                    if (!districtData.districts || !Array.isArray(districtData.districts)) {
+                        console.error('Invalid districts data format');
+                        return;
+                    }
+                    
                     districtData.districts.forEach(d => {
                         const selected = d.name === targetDistrict ? 'selected' : '';
                         newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}" ${selected}>${d.name}</option>`;
@@ -1782,12 +1827,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (targetDistrict) {
                         const selectedDistrict = districtData.districts.find(d => d.name === targetDistrict);
                         if (selectedDistrict) {
-                            const wardResponse = await fetch(`https://provinces.open-api.vn/api/d/${selectedDistrict.code}?depth=2`);
-                            const wardData = await wardResponse.json();
-                            
-                            // Populate wards
+                            // Populate wards from the same JSON data
                             newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                            wardData.wards.forEach(w => {
+                            if (!selectedDistrict.wards || !Array.isArray(selectedDistrict.wards)) {
+                                console.error('District has no wards');
+                                return;
+                            }
+                            
+                            selectedDistrict.wards.forEach(w => {
                                 const selected = w.name === targetWard ? 'selected' : '';
                                 newWardSelect.innerHTML += `<option value="${w.name}" ${selected}>${w.name}</option>`;
                             });
