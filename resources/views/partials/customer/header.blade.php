@@ -459,8 +459,8 @@
 
 <script>
     window.LaravelRoutes = {
-        productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
-        comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
+        productShow: "{{ route('products.show', ['slug' => 'slug']) }}",
+        comboShow: "{{ route('combos.show', ['slug' => 'slug']) }}"
     };
 </script>
 

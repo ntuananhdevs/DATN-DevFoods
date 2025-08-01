@@ -195,3 +195,12 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
 Route::get('/track', [CustomerOrderController::class, 'showTrackingForm'])->name('customer.order.track.form');
 Route::post('/track', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track.submit');
 Route::get('/track/{order_code}', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track');
+
+// Route test để debug products
+Route::get('/debug-products', function() {
+    $products = \App\Models\Product::select('id', 'name', 'slug')->get();
+    return response()->json([
+        'total' => $products->count(),
+        'products' => $products->toArray()
+    ]);
+});
