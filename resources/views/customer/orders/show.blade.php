@@ -636,60 +636,58 @@
     <div id="action-confirmation-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="relative mx-auto p-5 border w-96 bg-white rounded-lg shadow-xl">
-            <div class="mt-3 text-center">
-                <div id="modal-icon-container"
-                    class="mx-auto flex items-center justify-center h-12 w-12 bg-red-100 rounded-full">
-                    <i id="modal-icon" class="fas fa-times text-red-600 text-xl"></i>
-                </div>
-                <h3 id="action-modal-title" class="text-lg font-medium text-gray-900 mt-4">Xác nhận hành động</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p id="action-modal-message" class="text-sm text-gray-500">Bạn có chắc chắn thực hiện thao tác này
-                        không?</p>
-                    
-                    <!-- Phần chọn lý do hủy đơn -->
-                    <div id="cancel-reason-section" class="mt-4 text-left hidden">
-                        <p class="text-sm font-medium text-gray-700 mb-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
-                        <div class="space-y-2">
-                            <div>
-                                <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
-                                <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
-                                <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
-                                <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
-                                <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
-                                <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
-                                <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
-                                <label for="reason-other" class="text-sm text-gray-600">Khác</label>
-                            </div>
-                            <div id="other-reason-container" class="hidden mt-2">
-                                <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Vui lòng nhập lý do khác..."></textarea>
-                            </div>
+            <!-- Close button -->
+            <button type="button" id="action-close-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center">
+                <h3 id="action-modal-title" class="text-xl font-medium text-gray-900">Hủy đơn hàng</h3>
+                <p id="action-modal-message" class="text-sm text-gray-500 mt-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
+                
+                <!-- Phần chọn lý do hủy đơn -->
+                <div id="cancel-reason-section" class="mt-4 text-left">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Lý do hủy đơn hàng</p>
+                    <div class="space-y-2">
+                        <div>
+                            <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
+                            <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
+                            <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
+                            <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
+                            <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
+                            <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
+                            <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                            <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                        </div>
+                        <div id="other-reason-container" class="mt-2">
+                            <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Nhập lý do cụ thể..."></textarea>
                         </div>
                     </div>
                 </div>
-                <div class="items-center px-4 py-3 flex gap-3">
+                
+                <div class="mt-6 flex justify-between gap-3">
                     <button id="action-abort-btn"
-                        class="w-full px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg transition-colors">Không</button>
+                        class="px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg transition-colors">Quay lại</button>
                     <button id="action-confirm-btn"
-                        class="w-full px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors">Đồng
-                        ý</button>
+                        class="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors">Xác nhận hủy</button>
                 </div>
             </div>
         </div>
@@ -734,49 +732,40 @@
                 const message = document.getElementById('action-modal-message');
                 const confirmBtn = document.getElementById('action-confirm-btn');
                 const abortBtn = document.getElementById('action-abort-btn');
-                const modalIconContainer = document.getElementById('modal-icon-container');
-                const modalIcon = document.getElementById('modal-icon');
                 const cancelReasonSection = document.getElementById('cancel-reason-section');
                 const otherReasonContainer = document.getElementById('other-reason-container');
                 const otherReasonText = document.getElementById('other-reason-text');
                 
                 formToSubmit = form;
                 modalAction = actionType;
-                
-                // Reset icon và màu nền của icon
-                modalIcon.className = ''; // Xóa tất cả các class
-                modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full';
             
                 if (actionType === 'receive') {
                     title.textContent = 'Xác nhận đã nhận hàng';
                     message.textContent = 'Bạn xác nhận đã nhận được hàng? Vui lòng kiểm tra kỹ trước khi xác nhận.';
                     confirmBtn.textContent = 'Đã nhận';
-                    confirmBtn.className = 'w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700';
-                    modalIconContainer.classList.add('bg-green-100');
-                    modalIcon.className = 'fas fa-check text-green-600 text-xl';
+                    confirmBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors';
                     cancelReasonSection.classList.add('hidden');
                 } else if (actionType === 'cancel') {
-                    title.textContent = 'Xác nhận hủy đơn hàng';
-                    message.textContent = 'Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.';
-                    confirmBtn.textContent = 'Đồng ý hủy';
-                    confirmBtn.className = 'w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700';
-                    modalIconContainer.classList.add('bg-red-100');
-                    modalIcon.className = 'fas fa-times text-red-600 text-xl';
+                    title.textContent = 'Hủy đơn hàng';
+                    message.textContent = 'Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.';
+                    confirmBtn.textContent = 'Xác nhận hủy';
+                    confirmBtn.className = 'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors';
+                    abortBtn.textContent = 'Quay lại';
                     cancelReasonSection.classList.remove('hidden');
                     
                     // Reset radio buttons và textarea
                     document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
                         radio.checked = false;
                     });
-                    otherReasonContainer.classList.add('hidden');
+                    // Xóa nội dung textarea
                     otherReasonText.value = '';
+                    // Ẩn container lý do khác
+                    otherReasonContainer.classList.add('hidden');
                 } else {
                     title.textContent = 'Xác nhận hành động';
                     message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
                     confirmBtn.textContent = 'Đồng ý';
-                    confirmBtn.className = 'w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700';
-                    modalIconContainer.classList.add('bg-gray-100');
-                    modalIcon.className = 'fas fa-question-circle text-gray-600 text-xl';
+                    confirmBtn.className = 'px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors';
                     cancelReasonSection.classList.add('hidden');
                 }
             
@@ -788,10 +777,13 @@
                 document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
                     radio.addEventListener('change', function() {
                         const otherReasonContainer = document.getElementById('other-reason-container');
+                        const otherReasonText = document.getElementById('other-reason-text');
                         if (this.value === 'Khác') {
                             otherReasonContainer.classList.remove('hidden');
+                            otherReasonText.focus();
                         } else {
                             otherReasonContainer.classList.add('hidden');
+                            otherReasonText.value = '';
                         }
                     });
                 });
@@ -799,8 +791,22 @@
                 const modal = document.getElementById('action-confirmation-modal');
                 const confirmBtn = document.getElementById('action-confirm-btn');
                 const abortBtn = document.getElementById('action-abort-btn');
+                const closeBtn = document.getElementById('action-close-btn');
                 const otherReasonContainer = document.getElementById('other-reason-container');
                 const otherReasonText = document.getElementById('other-reason-text');
+                
+                // Xử lý nút đóng modal
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        modal.classList.add('hidden');
+                        // Reset radio buttons
+                        document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                            radio.checked = false;
+                        });
+                        otherReasonContainer.classList.add('hidden');
+                        otherReasonText.value = '';
+                    });
+                }
         
                 // Xử lý khi nhấn nút "Đồng ý"
                 if (confirmBtn) {
