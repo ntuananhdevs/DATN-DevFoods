@@ -314,6 +314,7 @@ if (window.adminOrdersRealtimeInitialized) {
                         'payment_failed': ['Thanh toán thất bại', 'bg-red-200 text-red-900'],
                         'payment_received': ['Đã nhận thanh toán', 'bg-lime-100 text-lime-800'],
                         'order_failed': ['Đơn thất bại', 'bg-gray-300 text-gray-900'],
+                        'unpaid': ['Chưa thanh toán', 'bg-orange-100 text-orange-800'],
                     };
                     
                     const [label, cssClasses] = statusMap[status] || [
@@ -471,7 +472,8 @@ if (window.adminOrdersRealtimeInitialized) {
                     'refunded': 'Đã hoàn tiền',
                     'payment_failed': 'Thanh toán thất bại',
                     'payment_received': 'Đã thanh toán',
-                    'order_failed': 'Đơn hàng thất bại'
+                    'order_failed': 'Đơn hàng thất bại',
+                    'unpaid': 'Chưa thanh toán'
                 };
 
                 // Decrease count for old status tab

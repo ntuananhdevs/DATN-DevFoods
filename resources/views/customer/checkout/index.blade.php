@@ -388,8 +388,8 @@
                                 @endphp
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($isCombo && $combo && $combo->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($combo->primary_image->img) }}"
+                                        @if ($isCombo && $combo && $combo->image)
+                                            <img src="{{ Storage::disk('s3')->url($combo->image) }}"
                                                  alt="{{ $combo->name }}"
                                                  class="object-cover w-full h-full">
                                         @elseif ($product && $product->primary_image)
@@ -470,7 +470,7 @@
                                     Thời gian giao hàng dự kiến
                                     <span id="delivery-time-indicator" class="ml-1 text-xs text-green-500 opacity-0 transition-opacity duration-300">●</span>
                                 </span>
-                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Đang tính...</span>
+                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Nhập địa chỉ để tính toán</span>
                             </div>
 
                             <div id="coupon-discount-row" class="flex justify-between text-green-600 font-semibold {{ $discount > 0 ? '' : 'hidden' }}">
@@ -742,16 +742,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn tỉnh/thành phố, load quận/huyện
     citySelect.addEventListener('change', function() {
-        const cityCode = this.selectedOptions[0]?.dataset?.code;
         districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!cityCode) return;
-        fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+        
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
                 data.districts.forEach(d => {
                     districtSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                 });
+            })
+            .catch(error => {
+                console.error('Error loading districts:', error);
             });
     });
 
@@ -760,14 +768,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn quận/huyện, load xã/phường và geocode
     districtSelect.addEventListener('change', function() {
-        const districtCode = this.selectedOptions[0]?.dataset?.code;
+        const districtName = this.value;
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!districtCode) return;
+        if (!districtName) return;
         
-        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
-                data.wards.forEach(w => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
+                const district = data.districts.find(d => d.name === districtName);
+                if (!district || !district.wards || !Array.isArray(district.wards)) {
+                    console.error('District not found or has no wards');
+                    return;
+                }
+                
+                district.wards.forEach(w => {
                     wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                 });
             })
@@ -976,7 +996,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const deliveryTimeEl = document.getElementById('delivery-time-display');
             const indicatorEl = document.getElementById('delivery-time-indicator');
             
-            if (distance <= 0 || distance > shippingConfig.maxDeliveryDistance) {
+            if (distance <= 0) {
+                deliveryTimeEl.textContent = 'Nhập địa chỉ để tính toán';
+                deliveryTimeEl.classList.remove('text-red-500');
+                deliveryTimeEl.classList.add('text-orange-600');
+                return;
+            }
+            
+            if (distance > shippingConfig.maxDeliveryDistance) {
                 deliveryTimeEl.textContent = 'Không khả dụng';
                 deliveryTimeEl.classList.remove('text-orange-600');
                 deliveryTimeEl.classList.add('text-red-500');
@@ -1109,16 +1136,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const subtotal = parseFloat(document.getElementById('subtotal-display')?.dataset?.value || 0);
             const shippingFee = calculateShippingFee(distance, subtotal);
             const shippingFeeEl = document.getElementById('shipping-fee-display');
+            const deliveryTimeEl = document.getElementById('delivery-time-display');
 
             if (shippingFeeEl) {
                 if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;
                     shippingFeeEl.textContent = shippingFee > 0 ? formatCurrency(shippingFee) : 'Miễn phí';
                     shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi có địa chỉ hợp lệ
+                    updateDeliveryTimeDisplay(distance);
                 } else {
                     shippingFeeEl.dataset.value = 0;
                     shippingFeeEl.textContent = 'Ngoài vùng phục vụ';
                     shippingFeeEl.classList.add('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi ngoài vùng phục vụ
+                    if (deliveryTimeEl) {
+                        deliveryTimeEl.textContent = 'Không khả dụng';
+                        deliveryTimeEl.classList.remove('text-orange-600');
+                        deliveryTimeEl.classList.add('text-red-500');
+                    }
                 }
             }
 
@@ -1304,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
             function initializeCheckoutPage() {
                 if (typeof turf === 'undefined' || !branchLat || !branchLng) {
                     document.getElementById('shipping-fee-display').textContent = 'Lỗi cấu hình';
+                    document.getElementById('delivery-time-display').textContent = 'Lỗi cấu hình';
                     toggleCheckoutButton(false, 'Lỗi cấu hình chi nhánh, không thể đặt hàng.');
                     return;
                 }
@@ -1336,11 +1375,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } else if (addressLabels.length === 0) {
                         updateShippingFeeUI(-1); // No addresses, so invalid
+                        document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                     }
                 } else if ({{ Auth::check() ? 'true' : 'false' }} && addressLabels.length === 0) {
                     updateShippingFeeUI(-1); // Logged in but no addresses
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 } else if (!{{ Auth::check() ? 'true' : 'false' }}) {
                     document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ';
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 }
 
                 // 2. Defer calculation for the rest of the addresses
@@ -1622,16 +1664,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When city changes, load districts
                 newCitySelect.addEventListener('change', function() {
-                    const cityCode = this.selectedOptions[0]?.dataset?.code;
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!cityCode) return;
-                    fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+                    
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
                             data.districts.forEach(d => {
                                 newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                             });
+                        })
+                        .catch(error => {
+                            console.error('Error loading districts:', error);
                         });
                 });
                 
@@ -1644,14 +1694,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When district changes, load wards and geocode
                 newDistrictSelect.addEventListener('change', function() {
-                    const districtCode = this.selectedOptions[0]?.dataset?.code;
+                    const districtName = this.value;
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!districtCode) return;
+                    if (!districtName) return;
                     
-                    fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
-                            data.wards.forEach(w => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
+                            const district = data.districts.find(d => d.name === districtName);
+                            if (!district || !district.wards || !Array.isArray(district.wards)) {
+                                console.error('District not found or has no wards');
+                                return;
+                            }
+                            
+                            district.wards.forEach(w => {
                                 newWardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                             });
                         })
@@ -1745,12 +1807,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newWardSelect = document.getElementById('new_ward');
                 
                 try {
-                    // Load districts for Hà Nội
-                    const districtResponse = await fetch('https://provinces.open-api.vn/api/p/1?depth=2');
+                    // Load districts for Hà Nội from JSON file
+                    const districtResponse = await fetch('/data/hanoi-districts.json');
                     const districtData = await districtResponse.json();
                     
                     // Populate districts
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+                    if (!districtData.districts || !Array.isArray(districtData.districts)) {
+                        console.error('Invalid districts data format');
+                        return;
+                    }
+                    
                     districtData.districts.forEach(d => {
                         const selected = d.name === targetDistrict ? 'selected' : '';
                         newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}" ${selected}>${d.name}</option>`;
@@ -1760,12 +1827,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (targetDistrict) {
                         const selectedDistrict = districtData.districts.find(d => d.name === targetDistrict);
                         if (selectedDistrict) {
-                            const wardResponse = await fetch(`https://provinces.open-api.vn/api/d/${selectedDistrict.code}?depth=2`);
-                            const wardData = await wardResponse.json();
-                            
-                            // Populate wards
+                            // Populate wards from the same JSON data
                             newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                            wardData.wards.forEach(w => {
+                            if (!selectedDistrict.wards || !Array.isArray(selectedDistrict.wards)) {
+                                console.error('District has no wards');
+                                return;
+                            }
+                            
+                            selectedDistrict.wards.forEach(w => {
                                 const selected = w.name === targetWard ? 'selected' : '';
                                 newWardSelect.innerHTML += `<option value="${w.name}" ${selected}>${w.name}</option>`;
                             });

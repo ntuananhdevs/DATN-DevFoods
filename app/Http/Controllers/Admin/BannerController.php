@@ -52,7 +52,7 @@ class BannerController extends Controller
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
-                'title' => 'required|string|max:255',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
@@ -228,7 +228,7 @@ class BannerController extends Controller
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/[a-z0-9\-]+$/'],
                 'position' => 'required|string',
-                'title' => 'required|string|max:255',
+                'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
@@ -299,6 +299,7 @@ class BannerController extends Controller
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
+                // Không có ảnh mới được chọn, giữ nguyên ảnh cũ
                 unset($validated['image_path']);
                 unset($validated['image_link']);
             }

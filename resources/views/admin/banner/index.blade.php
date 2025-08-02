@@ -190,7 +190,13 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $banner->title }}</div>
+                                        <div class="text-sm font-medium text-gray-900">
+                                            @if ($banner->title)
+                                                {{ $banner->title }}
+                                            @else
+                                                <span class="text-gray-400 italic">Chưa set tiêu đề</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <form action="{{ route('admin.banners.toggle-status', $banner->id) }}"

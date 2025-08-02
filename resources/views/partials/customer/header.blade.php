@@ -9,6 +9,7 @@
                 </button>
 
                 <a href="/" class="flex items-center gap-2 ml-4 md:ml-0">
+                    <img src="{{ asset('/images/logo.png') }}" alt="Logo" class="w-12 h-12">
                     <span class="font-bold text-xl text-orange-500">PolyCrispyWings</span>
                 </a>
 
@@ -459,8 +460,8 @@
 
 <script>
     window.LaravelRoutes = {
-        productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
-        comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
+        productShow: "{{ route('products.show', ['slug' => 'slug']) }}",
+        comboShow: "{{ route('combos.show', ['slug' => 'slug']) }}"
     };
 </script>
 
@@ -560,25 +561,31 @@
 
             window.Echo.channel('customer.' + window.currentCustomerId + '.notifications')
                 .listen('.new-message', function(data) {
-                    fetchNotifications(); // Cập nhật badge và danh sách noti
+                    // Sử dụng hàm toàn cục nếu có, nếu không thì sử dụng hàm cục bộ
+                    if (typeof window.fetchNotifications === 'function') {
+                        window.fetchNotifications(); // Cập nhật badge và danh sách noti
+                    } else if (typeof fetchNotifications === 'function') {
+                        fetchNotifications(); // Fallback
+                    }
                 });
         }
     });
 
     let lastUnreadCount = parseInt(document.querySelector('.notification-unread-count')?.textContent || '0');
 
-    function triggerBellShake() {
+    // Định nghĩa hàm toàn cục để có thể gọi từ các file khác
+    window.triggerBellShake = function() {
         const bellBtn = document.querySelector('.notification-bell-btn ion-icon');
         if (bellBtn) {
             bellBtn.classList.add('bell-shake');
-            setTimeout(() => bellBtn.classLi        });
-                }
-                // Gọi hiệu ứng rung chuông khi badge tăng
-                if (data.unreadCount > lastUnreadCount) {
-                    triggerBellShake();
-                }
-                lastUnreadCount = data.unreadCount;
-            });
+            setTimeout(() => bellBtn.classList.remove('bell-shake'), 1000);
+        }
+    };
+    
+    // Giữ lại hàm cục bộ để tương thích ngược
+    function triggerBellShake() {
+        window.triggerBellShake();
+    }
     }
 
 
@@ -605,7 +612,11 @@
                     if (count > 0) el.textContent = count - 1;
                 });
                 // Gọi lại fetchNotifications để đồng bộ dữ liệu
-                fetchNotifications();
+                if (typeof window.fetchNotifications === 'function') {
+                    window.fetchNotifications();
+                } else if (typeof fetchNotifications === 'function') {
+                    fetchNotifications();
+                }
                 // Chuyển hướng nếu có
                 if (redirectUrl) {
                     window.location.href = redirectUrl;

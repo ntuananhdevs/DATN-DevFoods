@@ -70,6 +70,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/continue-payment/{order}', [CustomerCheckoutController::class, 'continuePayment'])->name('checkout.continuePayment');
     // --- Thêm route cho Mua ngay ---
     Route::post('/checkout/combo-buy-now', [CustomerCheckoutController::class, 'comboBuyNow'])->name('checkout.comboBuyNow');
     Route::post('/checkout/product-buy-now', [CustomerCheckoutController::class, 'productBuyNow'])->name('checkout.productBuyNow');
@@ -195,3 +196,12 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
 Route::get('/track', [CustomerOrderController::class, 'showTrackingForm'])->name('customer.order.track.form');
 Route::post('/track', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track.submit');
 Route::get('/track/{order_code}', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track');
+
+// Route test để debug products
+Route::get('/debug-products', function() {
+    $products = \App\Models\Product::select('id', 'name', 'slug')->get();
+    return response()->json([
+        'total' => $products->count(),
+        'products' => $products->toArray()
+    ]);
+});

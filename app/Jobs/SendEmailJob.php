@@ -50,8 +50,8 @@ class SendEmailJob implements ShouldQueue
         $this->email = $email;
         $this->mailable = $mailable;
         
-        // Set queue priority for important emails
-        $this->onQueue('emails');
+        // Sử dụng default queue để queue worker có thể xử lý
+        // $this->onQueue('emails'); // Commented out để sử dụng default queue
     }
 
     /**
@@ -118,4 +118,4 @@ class SendEmailJob implements ShouldQueue
         // Exponential backoff: 30s, 60s, 120s
         return [30, 60, 120];
     }
-} 
+}

@@ -29,7 +29,12 @@ class ProfileController extends Controller
         $user->load('userRank', 'addresses', 'favorites');
 
         // Lấy 3 đơn hàng gần nhất
-        $recentOrders = $user->orders()->with('items.product')->latest()->take(3)->get();
+        $recentOrders = $user->orders()->with([
+            'orderItems.productVariant.product.primaryImage',
+            'orderItems.combo',
+            'orderItems.toppings',
+            'branch'
+        ])->latest()->take(3)->get();
 
         // Lấy các voucher còn hiệu lực
         $vouchers = $user->userDiscountCodes()->where('status', 'available')->get();
