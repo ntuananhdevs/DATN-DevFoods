@@ -89,6 +89,196 @@ if (window.adminOrderShowRealtimeInitialized) {
                 }
             }
 
+            showRealtimeNotification(newStatus, oldStatus, statusText) {
+                console.log('🔔 Showing real-time notification for status change:', oldStatus, '->', newStatus);
+                
+                // Create notification container if it doesn't exist
+                this.createNotificationContainer();
+                
+                // Get status icon and color
+                const statusInfo = this.getStatusNotificationInfo(newStatus);
+                
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `realtime-notification fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 ${statusInfo.borderColor} transform translate-x-full transition-transform duration-300 ease-in-out`;
+                
+                notification.innerHTML = `
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 rounded-full ${statusInfo.bgColor} flex items-center justify-center">
+                                    <i class="${statusInfo.icon} text-white text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="ml-3 w-0 flex-1">
+                                <div class="text-sm font-medium text-gray-900">
+                                    Cập nhật trạng thái đơn hàng
+                                </div>
+                                <div class="mt-1 text-sm text-gray-600">
+                                    ${statusText}
+                                </div>
+                                <div class="mt-1 text-xs text-gray-400">
+                                    ${new Date().toLocaleTimeString('vi-VN')}
+                                </div>
+                            </div>
+                            <div class="ml-4 flex-shrink-0 flex">
+                                <button class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                                    <i class="fas fa-times text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add to page
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.classList.add('translate-x-full');
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+                
+                // Play notification sound if available
+                this.playNotificationSound();
+            }
+
+            createNotificationContainer() {
+                // Add CSS for notifications if not already present
+                if (!document.querySelector('#realtime-notification-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'realtime-notification-styles';
+                    style.textContent = `
+                        .realtime-notification {
+                            animation: slideInRight 0.3s ease-out;
+                        }
+                        
+                        @keyframes slideInRight {
+                            from {
+                                transform: translateX(100%);
+                                opacity: 0;
+                            }
+                            to {
+                                transform: translateX(0);
+                                opacity: 1;
+                            }
+                        }
+                        
+                        .realtime-notification:hover {
+                            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+
+            getStatusNotificationInfo(status) {
+                const statusMap = {
+                    'awaiting_confirmation': {
+                        icon: 'fas fa-clock',
+                        bgColor: 'bg-yellow-500',
+                        borderColor: 'border-yellow-500'
+                    },
+                    'confirmed': {
+                        icon: 'fas fa-check',
+                        bgColor: 'bg-blue-500',
+                        borderColor: 'border-blue-500'
+                    },
+                    'order_confirmed': {
+                        icon: 'fas fa-check',
+                        bgColor: 'bg-blue-500',
+                        borderColor: 'border-blue-500'
+                    },
+                    'awaiting_driver': {
+                        icon: 'fas fa-search',
+                        bgColor: 'bg-blue-600',
+                        borderColor: 'border-blue-600'
+                    },
+                    'driver_confirmed': {
+                        icon: 'fas fa-user-check',
+                        bgColor: 'bg-indigo-500',
+                        borderColor: 'border-indigo-500'
+                    },
+                    'waiting_driver_pick_up': {
+                        icon: 'fas fa-hand-paper',
+                        bgColor: 'bg-purple-500',
+                        borderColor: 'border-purple-500'
+                    },
+                    'driver_picked_up': {
+                        icon: 'fas fa-box',
+                        bgColor: 'bg-purple-600',
+                        borderColor: 'border-purple-600'
+                    },
+                    'in_transit': {
+                        icon: 'fas fa-truck',
+                        bgColor: 'bg-cyan-500',
+                        borderColor: 'border-cyan-500'
+                    },
+                    'delivered': {
+                        icon: 'fas fa-check-circle',
+                        bgColor: 'bg-green-500',
+                        borderColor: 'border-green-500'
+                    },
+                    'item_received': {
+                        icon: 'fas fa-thumbs-up',
+                        bgColor: 'bg-green-600',
+                        borderColor: 'border-green-600'
+                    },
+                    'cancelled': {
+                        icon: 'fas fa-times-circle',
+                        bgColor: 'bg-red-500',
+                        borderColor: 'border-red-500'
+                    },
+                    'refunded': {
+                        icon: 'fas fa-undo',
+                        bgColor: 'bg-pink-500',
+                        borderColor: 'border-pink-500'
+                    }
+                };
+                
+                return statusMap[status] || {
+                    icon: 'fas fa-info-circle',
+                    bgColor: 'bg-gray-500',
+                    borderColor: 'border-gray-500'
+                };
+            }
+
+            playNotificationSound() {
+                try {
+                    // Create a subtle notification sound
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+                    
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                } catch (error) {
+                    // Ignore audio errors
+                    console.log('Could not play notification sound:', error);
+                }
+            }
+
             initializePusher() {
                 try {
                     console.log('🚀 Initializing Pusher for order show page with key:', this.pusherKey, 'cluster:', this.pusherCluster);
@@ -153,6 +343,41 @@ if (window.adminOrderShowRealtimeInitialized) {
                         this.handleOrderStatusUpdate(data);
                     }
                 });
+
+                // Subscribe to admin orders channel for additional coverage
+                this.subscribeToAdminChannel();
+            }
+
+            subscribeToAdminChannel() {
+                // Subscribe to admin orders channel for real-time status updates
+                console.log('🔔 Subscribing to admin-orders-channel for order:', this.orderId);
+                this.adminChannel = this.pusher.subscribe('admin-orders-channel');
+                
+                this.adminChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('✅ Successfully subscribed to admin-orders-channel');
+                });
+
+                this.adminChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to admin-orders-channel:', status);
+                });
+
+                // Listen for order status updates from admin channel
+                this.adminChannel.bind('order-status-updated', (data) => {
+                    console.log('📦 Admin channel - order-status-updated event received:', data);
+                    // Only handle updates for this specific order
+                    if (data.order_id == this.orderId) {
+                        this.handleOrderStatusUpdate(data);
+                    }
+                });
+
+                // Listen for OrderStatusUpdated events
+                this.adminChannel.bind('OrderStatusUpdated', (data) => {
+                    console.log('📦 Admin channel - OrderStatusUpdated event received:', data);
+                    // Only handle updates for this specific order
+                    if (data.order_id == this.orderId) {
+                        this.handleOrderStatusUpdate(data);
+                    }
+                });
             }
 
             handleOrderStatusUpdate(data) {
@@ -160,6 +385,9 @@ if (window.adminOrderShowRealtimeInitialized) {
                 
                 const newStatus = data.status || data.new_status;
                 const statusText = data.status_text || this.getStatusText(newStatus);
+                
+                // Show real-time notification first
+                this.showRealtimeNotification(newStatus, data.old_status, statusText);
                 
                 // Update the order status display
                 this.updateOrderStatusDisplay(newStatus, statusText, data);
@@ -818,6 +1046,9 @@ if (window.adminOrderShowRealtimeInitialized) {
                 if (this.orderStatusChannel) {
                     this.pusher.unsubscribe('order-status-updates');
                 }
+                if (this.adminChannel) {
+                    this.pusher.unsubscribe('admin-orders-channel');
+                }
                 if (this.pusher) {
                     this.pusher.disconnect();
                 }
@@ -827,4 +1058,6 @@ if (window.adminOrderShowRealtimeInitialized) {
         // Export class to global scope
         window.AdminOrderShowRealtime = AdminOrderShowRealtime;
     }
+
+
 }
