@@ -5,89 +5,6 @@
 @section('content')
 <x-customer-container>
 <style>
-    /* Reply styles kiểu Facebook */
-    .reply-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 0;
-        margin-left: 56px;
-        margin-top: 12px;
-        position: relative;
-    }
-    
-    /* Đường kẻ dọc kiểu Facebook - màu xanh nhạt */
-    .reply-item::before {
-        content: '';
-        position: absolute;
-        left: -28px;
-        top: -12px;
-        width: 2px;
-        height: 24px;
-        background-color: #bfdbfe;
-    }
-    
-    /* Đường kẻ ngang - màu xanh nhạt */
-    .reply-item::after {
-        content: '';
-        position: absolute;
-        left: -28px;
-        top: 12px;
-        width: 20px;
-        height: 2px;
-        background-color: #bfdbfe;
-    }
-    
-    .reply-item .reply-bubble {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 12px 16px;
-        min-width: 0;
-        flex: 1;
-        margin-left: 8px;
-    }
-    
-    .reply-item .reply-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
-    }
-    
-    .reply-item .reply-author {
-        font-weight: 600;
-        color: #1e40af;
-        font-size: 0.9rem;
-    }
-    
-    .reply-item .reply-time {
-        font-size: 0.8rem;
-        color: #64748b;
-    }
-    
-    .reply-item .reply-actions {
-        margin-left: auto;
-        display: flex;
-        gap: 6px;
-    }
-    
-    .reply-item .reply-actions button {
-        background: none;
-        border: none;
-        color: #ef4444;
-        font-size: 0.75rem;
-        cursor: pointer;
-        padding: 2px 6px;
-        border-radius: 4px;
-    }
-    
-    .reply-item .reply-content {
-        color: #374151;
-        font-size: 0.9rem;
-        line-height: 1.4;
-        word-break: break-word;
-    }
-
     #report-review-modal .bg-white {
         max-width: 40rem;
         width: 100%;
@@ -181,8 +98,6 @@
             padding: 0.5rem 0.2rem;
         }
     }
-    
-
 </style>
     <div class="container mx-auto px-4 py-8">
         <!-- Product Info Section -->
@@ -335,7 +250,7 @@
                             <ul class="space-y-2">
                                 @foreach ($items as $item)
                                     <li class="flex items-center space-x-2 text-gray-700">
-                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full topping-indicator" style="display: none"></span>
+                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
                                         <button type="button"
                                             class="flex-1 text-left hover:text-orange-600 font-semibold product-ingredient-btn"
                                             data-ingredients='@json($item['product_ingredients'])'
@@ -495,22 +410,33 @@
                                     </div>
                                     <!-- Hiển thị các reply -->
                                     @foreach ($review->replies as $reply)
-                                        <div class="reply-item" data-reply-id="{{ $reply->id }}">
-                                            <div class="reply-bubble">
-                                                <div class="reply-header">
-                                                    <span class="reply-author">{{ $reply->user->name }}</span>
-                                                    <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
+                                        <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative"
+                                            data-reply-id="{{ $reply->id }}">
+                                            <div class="reply-arrow">
+                                                <svg width="24" height="24" viewBox="0 0 24 24"
+                                                    class="text-blue-400">
+                                                    <path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor"
+                                                        stroke-width="2" fill="none" stroke-linecap="round"
+                                                        stroke-linejoin="round" />
+                                                </svg>
+                                            </div>
+                                            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <span
+                                                        class="font-semibold text-blue-700">{{ $reply->user->name }}</span>
+                                                    <span
+                                                        class="text-xs text-gray-400">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
                                                     @auth
                                                         @if ($reply->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
-                                                            <span class="reply-actions">
-                                                                <button class="delete-reply-btn" data-reply-id="{{ $reply->id }}">
-                                                                    <i class="fas fa-trash-alt"></i> Xóa
-                                                                </button>
-                                                            </span>
+                                                            <button
+                                                                class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn"
+                                                                data-reply-id="{{ $reply->id }}">
+                                                                <i class="fas fa-trash-alt"></i> Xóa
+                                                            </button>
                                                         @endif
                                                     @endauth
                                                 </div>
-                                                <div class="reply-content">{{ $reply->reply }}</div>
+                                                <div class="text-gray-700">{{ $reply->reply }}</div>
                                             </div>
                                         </div>
                                     @endforeach
@@ -718,6 +644,11 @@
                         contents.forEach(c => c.classList.add('hidden'));
                         document.getElementById('content-' + this.dataset.tab).classList.remove(
                             'hidden');
+                        
+                        // Nếu tab thành phần được click, tự động hiển thị thành phần của sản phẩm đầu tiên
+                        if (this.dataset.tab === 'ingredients') {
+                            showFirstProductIngredients();
+                        }
                     });
                 });
                 // Script tăng giảm số lượng combo
@@ -756,27 +687,44 @@
                 if (!btns.length || !panel) return;
                 btns.forEach(btn => {
                     btn.addEventListener('click', function() {
-                        const name = this.dataset.name;
-                        let ingredients = this.dataset.ingredients;
-                        let html = '';
-                        try {
-                            ingredients = JSON.parse(ingredients);
-                        } catch (e) {}
-                        if (Array.isArray(ingredients)) {
-                            html =
-                                `<div class='font-semibold mb-1 text-orange-700'>${name}</div><ul class='list-disc pl-5'>` +
-                                ingredients.map(i => `<li>${i}</li>`).join('') + '</ul>';
-                        } else if (typeof ingredients === 'string' && ingredients.trim() !== '') {
-                            html =
-                                `<div class='font-semibold mb-1 text-orange-700'>${name}</div><div>${ingredients}</div>`;
-                        } else {
-                            html =
-                                `<div class='font-semibold mb-1 text-orange-700'>${name}</div><div class='text-gray-400'>Không có thông tin thành phần.</div>`;
-                        }
-                        panel.innerHTML = html;
+                        displayProductIngredients(this);
                     });
                 });
             }
+
+            // Function để hiển thị thành phần của một sản phẩm
+            function displayProductIngredients(btn) {
+                const panel = document.getElementById('ingredient-detail-content');
+                if (!panel) return;
+                
+                const name = btn.dataset.name;
+                let ingredients = btn.dataset.ingredients;
+                let html = '';
+                try {
+                    ingredients = JSON.parse(ingredients);
+                } catch (e) {}
+                if (Array.isArray(ingredients)) {
+                    html =
+                        `<div class='font-semibold mb-1 text-orange-700'>${name}</div><ul class='list-disc pl-5'>` +
+                        ingredients.map(i => `<li>${i}</li>`).join('') + '</ul>';
+                } else if (typeof ingredients === 'string' && ingredients.trim() !== '') {
+                    html =
+                        `<div class='font-semibold mb-1 text-orange-700'>${name}</div><div>${ingredients}</div>`;
+                } else {
+                    html =
+                        `<div class='font-semibold mb-1 text-orange-700'>${name}</div><div class='text-gray-400'>Không có thông tin thành phần.</div>`;
+                }
+                panel.innerHTML = html;
+            }
+
+            // Function để hiển thị thành phần của sản phẩm đầu tiên
+            function showFirstProductIngredients() {
+                const firstBtn = document.querySelector('.product-ingredient-btn');
+                if (firstBtn) {
+                    displayProductIngredients(firstBtn);
+                }
+            }
+
             // Gọi lại hàm này sau khi DOM đã render
             setupIngredientPanel();
         </script>
@@ -851,7 +799,6 @@
     <script>
         window.csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
     </script>
-    <script>window.comboId = {{ $combo->id }};</script>
     @include('partials.customer.branch-check')
     <script src="{{ asset('js/Customer/Shop/combo.js') }}"></script>
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
@@ -859,18 +806,5 @@
         // Pusher configuration
         window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
         window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
-        // Topping indicator logic
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.product-ingredient-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    // Ẩn tất cả ô tròn
-                    document.querySelectorAll('.topping-indicator').forEach(function(ind) {
-                        ind.style.display = 'none';
-                    });
-                    // Hiện ô tròn của topping được chọn
-                    this.parentElement.querySelector('.topping-indicator').style.display = 'inline-block';
-                });
-            });
-        });
     </script>
 @endsection
