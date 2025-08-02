@@ -50,7 +50,7 @@ Route::post('/api/test-notification', function () {
     }
     
     // Trigger the event
-    event(new \App\Events\Order\OrderStatusUpdated($order));
+    event(new \App\Events\Order\OrderStatusUpdated($order, false, $order->status, $order->status));
     
     return response()->json([
         'success' => true,

@@ -234,7 +234,7 @@ class OrderController extends Controller
         }
         $order->save();
         $freshOrder = $order->fresh();
-        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
+        broadcast(new OrderStatusUpdated($freshOrder, false, $oldStatus, $freshOrder->status));
 
         return response()->json([
             'success' => true,
@@ -293,7 +293,7 @@ class OrderController extends Controller
         // For non-AJAX requests, save and broadcast manually
         $order->save();
         $freshOrder = $order->fresh();
-        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
+        broadcast(new OrderStatusUpdated($freshOrder, false, $oldStatus, $freshOrder->status));
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Bạn đã lấy hàng thành công!');
@@ -342,7 +342,7 @@ class OrderController extends Controller
         // For non-AJAX requests, save and broadcast manually
         $order->save();
         $freshOrder = $order->fresh();
-        broadcast(new OrderStatusUpdated($freshOrder, $oldStatus, $freshOrder->status));
+        broadcast(new OrderStatusUpdated($freshOrder, false, $oldStatus, $freshOrder->status));
 
         return redirect()->route('driver.orders.show', $order->id)
             ->with('success', 'Đã giao hàng thành công!');

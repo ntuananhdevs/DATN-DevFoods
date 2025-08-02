@@ -352,6 +352,13 @@
 @endsection
 
 @section('scripts')
+<!-- Pusher for real-time updates -->
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script>
+    window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+    window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+</script>
+<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
 <script>
 // AJAX Tab Switching
 document.addEventListener('DOMContentLoaded', function() {

@@ -105,6 +105,8 @@ class OrderStatusUpdated implements ShouldBroadcastNow
             new Channel('branch-orders-channel'),
             // Admin channel for real-time updates - Admin cần nhận tất cả cập nhật
             new Channel('admin-orders-channel'),
+            // General order status updates channel for JavaScript listeners
+            new Channel('order-status-updates'),
         ];
         
         // Add customer-specific channel for global notifications
