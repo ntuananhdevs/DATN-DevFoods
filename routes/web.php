@@ -203,3 +203,8 @@ Route::get('/test-update-burger-all-variants/{quantity}', function ($quantity) {
         return "❌ Lỗi: " . $e->getMessage();
     }
 })->name('test.update.burger.all.variants');
+
+// Navigation Route
+Route::get('/navigation/turn-by-turn', function () {
+    return view('navigation.turn-by-turn');
+})->name('navigation.turn-by-turn');

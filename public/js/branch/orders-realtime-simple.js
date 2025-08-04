@@ -541,8 +541,13 @@ if (window.ordersRealtimeInitialized) {
                     btn.classList.add('opacity-50', 'cursor-not-allowed');
                 });
 
-                // Remove card khỏi DOM NGAY LẬP TỨC
-                document.querySelectorAll(`[data-order-id="${orderId}"]`).forEach(card => card.remove());
+                // Chỉ ẩn đơn hàng nếu đang ở tab "Chờ xác nhận", không xóa hoàn toàn
+                const currentTab = new URLSearchParams(window.location.search).get('status');
+                if (currentTab === 'awaiting_confirmation') {
+                    document.querySelectorAll(`[data-order-id="${orderId}"]`).forEach(card => {
+                        card.style.display = 'none';
+                    });
+                }
 
                 fetch(`/branch/orders/${orderId}/confirm`, {
                         method: 'POST',
