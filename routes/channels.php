@@ -220,6 +220,13 @@ Broadcast::channel('branch-orders-channel', function ($user = null) {
     return true;
 });
 
+// Admin orders channel for real-time updates
+Broadcast::channel('admin-orders-channel', function ($user = null) {
+    // Allow all authenticated users to listen to admin order updates
+    // Admin cần nhận tất cả cập nhật đơn hàng từ mọi chi nhánh
+    return true;
+});
+
 // Customer orders channel for order status updates
 Broadcast::channel('customer.{customerId}.orders', function ($user, $customerId) {
     // Only the authenticated customer with the matching ID can listen to their order updates

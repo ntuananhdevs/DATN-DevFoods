@@ -265,7 +265,7 @@ class OrderController extends Controller
         ]);
 
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $oldStatus, $newStatus));
         
         return response()->json([
             'success' => true,
@@ -411,7 +411,7 @@ class OrderController extends Controller
         $freshOrder = $order->fresh();
         
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), 'cancelled'));
 
         return response()->json([
             'success' => true,
@@ -490,7 +490,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast event để cập nhật realtime
-            event(new OrderStatusUpdated($order));
+            event(new OrderStatusUpdated($order, false, 'awaiting_confirmation', 'confirmed'));
 
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));

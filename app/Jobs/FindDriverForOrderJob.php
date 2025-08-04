@@ -234,7 +234,7 @@ class FindDriverForOrderJob implements ShouldQueue
                     
                     // Gửi event thông báo đã gán driver
                     event(new DriverAssigned($currentOrder, $currentOrder->driver));
-                    event(new OrderStatusUpdated($currentOrder));
+                    event(new OrderStatusUpdated($currentOrder, false, 'confirmed', 'awaiting_driver'));
                     
                     Log::info('Đã gán đơn hàng cho tài xế thành công', [
                         'order_id' => $order->id,
