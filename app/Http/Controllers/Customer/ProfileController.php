@@ -36,6 +36,8 @@ class ProfileController extends Controller
             'branch'
         ])->latest()->take(3)->get();
 
+        $orderAll = $user->orders()->count();
+
         // Lấy các voucher còn hiệu lực
         $vouchers = $user->userDiscountCodes()->where('status', 'available')->get();
 
@@ -70,6 +72,7 @@ class ProfileController extends Controller
         return view('customer.profile.index', compact(
             'user',
             'recentOrders',
+            'orderAll',
             'vouchers',
             'pointHistory',
             'favoriteProducts',
@@ -177,12 +180,12 @@ class ProfileController extends Controller
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
             ]);
-            
+
             $data['user_id'] = Auth::id();
-            
+
             // Check if user has any existing addresses
             $existingAddressCount = Address::where('user_id', Auth::id())->count();
-            
+
             // If this is the first address, make it default automatically
             if ($existingAddressCount == 0) {
                 $data['is_default'] = true;
@@ -190,14 +193,14 @@ class ProfileController extends Controller
                 // Handle checkbox value properly
                 $data['is_default'] = $request->has('is_default') && $request->input('is_default') == '1';
             }
-            
+
             // If setting as default, remove default from other addresses
             if ($data['is_default']) {
                 Address::where('user_id', Auth::id())->update(['is_default' => false]);
             }
-            
+
             $address = Address::create($data);
-            
+
             // Prepare response data with all necessary fields
             $responseData = [
                 'id' => $address->id,
@@ -212,13 +215,12 @@ class ProfileController extends Controller
                 'is_default' => $address->is_default,
                 'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city
             ];
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Địa chỉ đã được thêm thành công!',
                 'data' => $responseData
             ], 201);
-            
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -239,7 +241,7 @@ class ProfileController extends Controller
     {
         try {
             $address = Auth::user()->addresses()->findOrFail($id);
-            
+
             $data = $request->validate([
                 'recipient_name' => 'required|string|max:255',
                 'address_line' => 'required|string|max:255',
@@ -251,14 +253,14 @@ class ProfileController extends Controller
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
             ]);
-            
+
             // If setting as default, remove default from other addresses
             if (!empty($data['is_default'])) {
                 Address::where('user_id', Auth::id())->update(['is_default' => false]);
             }
-            
+
             $address->update($data);
-            
+
             // Prepare response data with all necessary fields
             $responseData = [
                 'id' => $address->id,
@@ -273,13 +275,12 @@ class ProfileController extends Controller
                 'is_default' => $address->is_default,
                 'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city
             ];
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Địa chỉ đã được cập nhật thành công!',
                 'data' => $responseData
             ]);
-            
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
