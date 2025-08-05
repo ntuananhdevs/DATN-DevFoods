@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Branch\DriverAssignmentController;
+// use App\Http\Controllers\Branch\DriverAssignmentController;
 use App\Http\Controllers\Branch\NotificationController;
 
 // Branch Authentication Routes
@@ -39,9 +39,11 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
 
         // Driver assignment routes
-        Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
-        Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
-        Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
+        // Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
+    // Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
+    // Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
+        Route::get('/{id}/nearby-drivers', [BranchOrderController::class, 'getNearbyDrivers'])->name('nearby-drivers');
+        Route::post('/{id}/assign-driver', [BranchOrderController::class, 'assignDriver'])->name('assign-driver');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');

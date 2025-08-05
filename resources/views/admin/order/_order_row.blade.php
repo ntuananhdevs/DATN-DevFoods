@@ -1,5 +1,5 @@
 <tr class="order-row border-b" data-order-id="{{ $order->id }}">
-    <td class="py-3 px-4 font-medium">{{ $order->order_code }}</td>
+    <td class="py-3 px-4 font-medium">#{{ $order->order_code }}</td>
     <td class="py-3 px-4">
         <div class="flex items-center gap-2">
             <img src="{{ $order->customer->avatar_url ?? '/images/default-avatar.png' }}" alt="avatar" class="w-8 h-8 rounded-full border object-cover">

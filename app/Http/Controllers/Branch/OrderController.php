@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Branch;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\Driver;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\Order\OrderStatusUpdated;
@@ -203,7 +205,23 @@ class OrderController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        return view('branch.orders.show', compact('order'));
+        // Get branch coordinates
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+        
+        // Get customer coordinates
+        $customerLat = null;
+        $customerLng = null;
+        
+        if ($order->address) {
+            $customerLat = $order->address->latitude;
+            $customerLng = $order->address->longitude;
+        } else {
+            $customerLat = $order->guest_latitude;
+            $customerLng = $order->guest_longitude;
+        }
+
+        return view('branch.orders.show',  compact('order', 'branchLat', 'branchLng', 'customerLat', 'customerLng'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -265,7 +283,7 @@ class OrderController extends Controller
         ]);
 
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $oldStatus, $newStatus));
         
         return response()->json([
             'success' => true,
@@ -411,7 +429,7 @@ class OrderController extends Controller
         $freshOrder = $order->fresh();
         
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), 'cancelled'));
 
         return response()->json([
             'success' => true,
@@ -490,7 +508,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast event để cập nhật realtime
-            event(new OrderStatusUpdated($order));
+            event(new OrderStatusUpdated($order, false, 'awaiting_confirmation', 'confirmed'));
 
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));
@@ -519,6 +537,120 @@ class OrderController extends Controller
     }
 
 
+
+    /**
+     * Lấy danh sách tài xế gần đó cho đơn hàng
+     */
+    public function getNearbyDrivers($id)
+    {
+        $branch = Auth::guard('manager')->user()->branch;
+        $order = Order::with(['address'])->where('branch_id', $branch->id)->findOrFail($id);
+        
+        // Lấy toạ độ giao hàng
+        $lat = $order->address->latitude ?? $order->guest_latitude;
+        $lng = $order->address->longitude ?? $order->guest_longitude;
+        
+        if (!$lat || !$lng) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy toạ độ giao hàng'
+            ]);
+        }
+        
+        // Tìm tài xế gần đó (trong bán kính 10km)
+        $drivers = DB::select("
+            SELECT d.*, dl.latitude, dl.longitude,
+                   (6371 * acos(cos(radians(?)) * cos(radians(dl.latitude)) * 
+                   cos(radians(dl.longitude) - radians(?)) + 
+                   sin(radians(?)) * sin(radians(dl.latitude)))) AS distance,
+                   COALESCE(order_counts.current_orders, 0) as current_orders
+            FROM drivers d
+            INNER JOIN driver_locations dl ON d.id = dl.driver_id
+            LEFT JOIN (
+                SELECT driver_id, COUNT(*) as current_orders
+                FROM orders 
+                WHERE status IN ('awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit')
+                GROUP BY driver_id
+            ) order_counts ON d.id = order_counts.driver_id
+            WHERE d.status = 'active' 
+                AND d.is_available = 1
+                AND COALESCE(order_counts.current_orders, 0) < 3
+            HAVING distance <= 10
+            ORDER BY distance ASC
+            LIMIT 20
+        ", [$lat, $lng, $lat]);
+        
+        return response()->json([
+            'success' => true,
+            'drivers' => $drivers,
+            'order_location' => [
+                'latitude' => $lat,
+                'longitude' => $lng
+            ]
+        ]);
+    }
+    
+    /**
+     * Gán tài xế cho đơn hàng
+     */
+    public function assignDriver(Request $request, $id)
+    {
+        $request->validate([
+            'driver_id' => 'required|exists:drivers,id'
+        ]);
+        
+        $branch = Auth::guard('manager')->user()->branch;
+        $order = Order::where('branch_id', $branch->id)->findOrFail($id);
+        
+        try {
+            DB::transaction(function () use ($order, $request) {
+                // Kiểm tra driver có available không
+                $driver = Driver::where('id', $request->driver_id)
+                    ->where('status', 'active')
+                    ->where('is_available', 1)
+                    ->firstOrFail();
+                
+                // Kiểm tra driver chưa vượt quá số đơn tối đa
+                $currentOrders = Order::where('driver_id', $driver->id)
+                    ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
+                    ->count();
+                    
+                if ($currentOrders >= 3) {
+                    throw new \Exception('Tài xế đã vượt quá số đơn tối đa');
+                }
+                
+                // Gán tài xế cho đơn hàng
+                $order->driver_id = $driver->id;
+                $order->status = 'driver_assigned';
+                $order->save();
+                
+                // Tạo status history
+                $order->statusHistory()->create([
+                    'old_status' => 'awaiting_driver',
+                    'new_status' => 'driver_assigned',
+                    'changed_by' => Auth::guard('manager')->id(),
+                    'changed_by_role' => 'branch_manager',
+                    'note' => 'Phân công tài xế thủ công',
+                    'changed_at' => now()
+                ]);
+                
+                // Broadcast event
+                event(new \App\Events\Order\OrderStatusUpdated($order, false, 'awaiting_driver', 'driver_assigned'));
+            });
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã phân công tài xế thành công',
+                'driver' => $order->fresh()->driver
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Trả về HTML partial card cho 1 order (dùng cho realtime)

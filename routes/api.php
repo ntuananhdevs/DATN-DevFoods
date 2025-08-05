@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Order API endpoints
-Route::post('/orders', [OrderController::class, 'store']);
+// Route::post('/orders', [OrderController::class, 'store']);
 
 // Shipping fee calculation
 Route::get('/shipping-fee', function () {

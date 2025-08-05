@@ -118,12 +118,12 @@ class BranchOrdersRealtime {
                 // Disconnected
             });
 
+            // Subscribe to private branch channel for new orders
             const channelName = `private-branch.${this.branchId}.orders`;
-            
             this.channel = this.pusher.subscribe(channelName);
 
             this.channel.bind('pusher:subscription_succeeded', () => {
-                // Successfully subscribed
+                // Successfully subscribed to private branch channel
             });
 
             this.channel.bind('pusher:subscription_error', (status) => {
@@ -134,8 +134,32 @@ class BranchOrdersRealtime {
                 this.handleNewOrder(data);
             });
 
-            this.channel.bind('order-status-updated', (data) => {
-                this.handleStatusUpdate(data);
+            // Subscribe to public branch orders channel for status updates
+            this.branchOrdersChannel = this.pusher.subscribe('branch-orders-channel');
+            
+            this.branchOrdersChannel.bind('pusher:subscription_succeeded', () => {
+                // Successfully subscribed to branch orders channel
+            });
+
+            this.branchOrdersChannel.bind('order-status-updated', (data) => {
+                // Only handle updates for this branch
+                if (data.branch_id == this.branchId) {
+                    this.handleStatusUpdate(data);
+                }
+            });
+
+            // Subscribe to order status updates channel for additional coverage
+            this.orderStatusChannel = this.pusher.subscribe('order-status-updates');
+            
+            this.orderStatusChannel.bind('pusher:subscription_succeeded', () => {
+                // Successfully subscribed to order status updates channel
+            });
+
+            this.orderStatusChannel.bind('order-status-updated', (data) => {
+                // Only handle updates for this branch
+                if (data.branch_id == this.branchId) {
+                    this.handleStatusUpdate(data);
+                }
             });
 
         } catch (error) {
@@ -837,14 +861,27 @@ class BranchOrdersRealtime {
             this.pollingInterval = null;
         }
         
-        // Disconnect Pusher
+        // Unsubscribe from all channels
         if (this.pusher) {
+            if (this.channel) {
+                this.pusher.unsubscribe(`private-branch.${this.branchId}.orders`);
+            }
+            if (this.branchOrdersChannel) {
+                this.pusher.unsubscribe('branch-orders-channel');
+            }
+            if (this.orderStatusChannel) {
+                this.pusher.unsubscribe('order-status-updates');
+            }
+            
+            // Disconnect Pusher
             this.pusher.disconnect();
             this.pusher = null;
         }
         
-        // Clear channel
+        // Clear channel references
         this.channel = null;
+        this.branchOrdersChannel = null;
+        this.orderStatusChannel = null;
     }
 }
 

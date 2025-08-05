@@ -39,6 +39,11 @@ Route::get('/refresh-csrf', function () {
 
 Route::get('/customer/profile/branches-map', [ProfileController::class, 'getBranchesForMap']);
 
+// Navigation routes
+Route::get('/navigation/turn-by-turn', function () {
+    return view('navigation.turn-by-turn');
+})->name('navigation.turn-by-turn');
+
 Route::get('/test-notification-debug', function () {
     return view('test-notification-debug');
 })->middleware('auth');
@@ -50,7 +55,7 @@ Route::post('/api/test-notification', function () {
     }
     
     // Trigger the event
-    event(new \App\Events\Order\OrderStatusUpdated($order));
+    event(new \App\Events\Order\OrderStatusUpdated($order, false, $order->status, $order->status));
     
     return response()->json([
         'success' => true,
@@ -203,8 +208,3 @@ Route::get('/test-update-burger-all-variants/{quantity}', function ($quantity) {
         return "❌ Lỗi: " . $e->getMessage();
     }
 })->name('test.update.burger.all.variants');
-
-// Navigation Route
-Route::get('/navigation/turn-by-turn', function () {
-    return view('navigation.turn-by-turn');
-})->name('navigation.turn-by-turn');

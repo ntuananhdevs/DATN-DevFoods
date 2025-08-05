@@ -334,9 +334,20 @@ class OrderController extends Controller
         
         // Dispatch event for real-time updates
         if ($newStatus === 'confirmed') {
+            \Log::info('Broadcasting OrderConfirmed event', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'status' => $newStatus
+            ]);
             broadcast(new OrderConfirmed($order));
         } else {
-            broadcast(new OrderStatusUpdated($order, $oldStatus, $newStatus));
+            \Log::info('Broadcasting OrderStatusUpdated event', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus
+            ]);
+            broadcast(new OrderStatusUpdated($order, false, $oldStatus, $newStatus));
         }
         
         if ($request->ajax()) {
@@ -390,7 +401,7 @@ class OrderController extends Controller
         $order->save();
 
         // Broadcast event for real-time updates
-        broadcast(new OrderStatusUpdated($order, $oldStatus, $newStatus));
+        broadcast(new OrderStatusUpdated($order, false, $oldStatus, $newStatus));
 
         if (request()->ajax()) {
             return response()->json([
