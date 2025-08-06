@@ -283,8 +283,11 @@
                             <path d="m6 9 6 6 6-6"></path>
                         </svg>
                     </button>
-                    <div
-                        class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                    <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                        <a href="{{ route('admin.drivers.tracking') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.drivers.tracking') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Theo dõi tài xế</span>
+                        </a>
                         <a href="{{ route('admin.drivers.index') }}"
                             class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.drivers.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Tất cả tài xế</span>

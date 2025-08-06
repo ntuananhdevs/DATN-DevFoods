@@ -30,6 +30,7 @@ class Driver extends Model implements Authenticatable
         'auto_deposit_earnings',
         'otp',
         'expires_at',
+        'last_active_at',
         'admin_notes',
         'password_reset_at',
         'password_changed_at',
@@ -58,6 +59,7 @@ class Driver extends Model implements Authenticatable
         'locked_until' => 'datetime',
         'unlocked_at' => 'datetime',
         'status_changed_at' => 'datetime',
+        'last_active_at' => 'datetime',
         'is_available' => 'boolean',
         'auto_deposit_earnings' => 'boolean',
         'must_change_password' => 'boolean',
@@ -70,6 +72,27 @@ class Driver extends Model implements Authenticatable
     // {
     //     $this->attributes['password'] = bcrypt($value);
     // }
+    
+    // Accessor để kiểm tra xem tài xế có đang online không
+    public function getIsOnlineAttribute()
+    {
+        if (!$this->last_active_at) {
+            return false;
+        }
+        
+        // Tài xế được coi là online nếu đã ping trong vòng 5 phút gần đây
+        return $this->last_active_at->diffInMinutes(now()) <= 5;
+    }
+    
+    // Accessor để lấy trạng thái chi tiết của tài xế
+    public function getDriverStatusAttribute()
+    {
+        if (!$this->is_online) {
+            return 'offline';
+        }
+        
+        return $this->is_available ? 'available' : 'delivering';
+    }
 
     // Relationships
     public function user()
@@ -184,4 +207,6 @@ class Driver extends Model implements Authenticatable
             default => 'Không xác định'
         };
     }
+    
+    // Các phương thức getIsOnlineAttribute() và getDriverStatusAttribute() đã được định nghĩa ở trên
 }

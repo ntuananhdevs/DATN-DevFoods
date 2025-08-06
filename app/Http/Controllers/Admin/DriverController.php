@@ -106,7 +106,7 @@ class DriverController extends Controller
                 'processedSearch'
             ));
         } catch (\Exception $e) {
-            \Log::error('Error in listApplications: ' . $e->getMessage(), [
+            Log::error('Error in listApplications: ' . $e->getMessage(), [
                 'request' => $request->all(),
                 'exception' => $e
             ]);
@@ -1076,5 +1076,39 @@ class DriverController extends Controller
                 'message' => 'Không thể thêm vi phạm: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function tracking()
+    {
+        // Lấy tất cả tài xế active
+        $drivers = \App\Models\Driver::where('status', 'active')->with('location')->get();
+        
+        // Tính toán thống kê dựa trên accessor mới
+        $totalDrivers = $drivers->count();
+        $onlineDrivers = $drivers->filter(function($driver) {
+            return $driver->is_online;
+        })->count();
+        
+        $availableDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'available';
+        })->count();
+        
+        $deliveringDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'delivering';
+        })->count();
+        
+        $offlineDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'offline';
+        })->count();
+        
+        return view('admin.driver.tracking', [
+            'stats' => [
+                'total' => $totalDrivers,
+                'online' => $onlineDrivers,
+                'available' => $availableDrivers,
+                'delivering' => $deliveringDrivers,
+                'offline' => $offlineDrivers
+            ]
+        ]);
     }
 }

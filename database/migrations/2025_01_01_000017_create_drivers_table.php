@@ -32,6 +32,9 @@ return new class extends Migration
             $table->string('otp', 6)->nullable();
             $table->timestamp('expires_at')->nullable();
 
+            // Bật/tắt nhận đơn (do tài xế tự chọn)
+            $table->timestamp('last_active_at')->nullable(); // Thời điểm cuối cùng tài xế ping
+            
             // Ghi chú và lịch sử
             $table->text('admin_notes')->nullable();
             $table->timestamp('password_reset_at')->nullable();

@@ -145,3 +145,30 @@ Route::get('/locations/districts/{code}/wards', function ($code) {
 });
 
 // API routes will be added here when needed
+
+// Driver location API endpoint
+Route::get('/drivers/locations', function () {
+    $driverLocations = \App\Models\DriverLocation::with('driver')
+        ->whereHas('driver', function($query) {
+            $query->where('status', 'active');
+        })
+        ->get()
+        ->map(function ($location) {
+            $driver = $location->driver;
+            
+            return [
+                'id' => $driver->id,
+                'name' => $driver->full_name,
+                'phone' => $driver->phone_number,
+                'lat' => (float) $location->latitude,
+                'lng' => (float) $location->longitude,
+                'status' => $driver->driver_status, // Sử dụng accessor mới
+                'is_online' => $driver->is_online, // Thêm trạng thái online/offline
+                'rating' => $driver->rating,
+                'totalOrders' => $driver->orders()->count(),
+                'updated_at' => $location->updated_at ? $location->updated_at->diffForHumans() : null
+            ];
+        });
+    
+    return response()->json($driverLocations);
+});
