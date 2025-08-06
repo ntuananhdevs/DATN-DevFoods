@@ -207,11 +207,11 @@ class Order extends Model
     protected function paymentMethodText(): Attribute
     {
         return Attribute::make(
-            get: fn() => match ($this->payment_method) {
+            get: fn() => match ($this->payment->payment_method ?? 'unknown') {
                 'cash' => 'Tiền mặt',
-                'cod' => 'Tiền mặt', // Backward compatibility
-                'vnpay' => 'VNPAY',
-                'balance' => 'Số dư tài khoản',
+                'cod' => 'Thanh toán khi nhận hàng (COD)',
+                'vnpay' => 'Thanh toán qua VNPAY',
+                'balance' => 'Thanh toán bằng số dư tài khoản',
                 default => 'Không xác định',
             }
         );

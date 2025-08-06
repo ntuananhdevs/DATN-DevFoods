@@ -485,13 +485,17 @@
 @endsection
 
 @section('scripts')
-<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
+    // Set Pusher configuration for real-time updates
+    window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+    window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+    
     // Enable pusher logging - remove in production!
     Pusher.logToConsole = true;
 
-    var pusher = new Pusher('2a1310e928036cd9f6d5', {
-        cluster: 'ap1',
+    var pusher = new Pusher(window.pusherKey, {
+        cluster: window.pusherCluster,
         encrypted: true
     });
 

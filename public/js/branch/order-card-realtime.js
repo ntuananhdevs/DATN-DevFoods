@@ -53,6 +53,9 @@ class BranchOrderCardRealtime {
         
         // Subscribe to branch orders channel for general updates
         this.subscribeToBranchOrdersChannel();
+        
+        // Subscribe to order status updates channel for additional coverage
+        this.subscribeToOrderStatusUpdatesChannel();
     }
 
     subscribeToOrderChannel(orderId) {
@@ -89,6 +92,24 @@ class BranchOrderCardRealtime {
             });
         } catch (error) {
             console.error('Error subscribing to branch orders channel:', error);
+        }
+    }
+
+    subscribeToOrderStatusUpdatesChannel() {
+        if (!this.pusher) return;
+        
+        try {
+            const statusUpdatesChannel = this.pusher.subscribe('order-status-updates');
+            this.channels.set('order-status-updates', statusUpdatesChannel);
+
+            statusUpdatesChannel.bind('order-status-updated', (data) => {
+                console.log('Received order status update from status updates channel:', data);
+                if (data.order && data.order.id) {
+                    this.handleOrderStatusUpdate(data.order.id, data);
+                }
+            });
+        } catch (error) {
+            console.error('Error subscribing to order status updates channel:', error);
         }
     }
 
@@ -271,6 +292,8 @@ class BranchOrderCardRealtime {
             if (this.pusher) {
                 if (channelKey === 'branch-orders') {
                     this.pusher.unsubscribe('branch-orders-channel');
+                } else if (channelKey === 'order-status-updates') {
+                    this.pusher.unsubscribe('order-status-updates');
                 } else {
                     this.pusher.unsubscribe(`private-order.${channelKey}`);
                 }

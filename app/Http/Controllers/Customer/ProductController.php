@@ -40,20 +40,9 @@ class ProductController extends Controller
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
 
-        // Get filter parameters
-        $search = $request->get('search');
-        $sort = $request->get('sort', 'popular');
-        $categoryFilter = $request->get('category');
-
-        // Build categories query with filters
-        $categoriesQuery = Category::where('status', true);
-        
-        // Apply category filter if specified
-        if ($categoryFilter) {
-            $categoriesQuery->where('id', $categoryFilter);
-        }
-        
-        $categories = $categoriesQuery->with(['products' => function($query) use ($selectedBranchId, $search, $sort) {
+        // Lấy tất cả categories để hiển thị filter và lazy load
+        $categories = Category::where('status', true)
+            ->with(['products' => function($query) use ($selectedBranchId) {
                 $query->where('status', 'selling')
                     ->with([
                         'category',
@@ -66,39 +55,15 @@ class ProductController extends Controller
                         'variants.variantValues'
                     ]);
                 
-                // Apply search filter
-                if ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('name', 'LIKE', '%' . $search . '%')
-                          ->orWhere('description', 'LIKE', '%' . $search . '%')
-                          ->orWhere('ingredients', 'LIKE', '%' . $search . '%');
-                    });
-                }
-                
                 // Filter sản phẩm theo stock nếu có branch được chọn
+                // Không filter theo stock để hiển thị tất cả sản phẩm (kể cả hết hàng)
                 if ($selectedBranchId) {
                     $query->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
                         $q->where('branch_id', $selectedBranchId);
                     });
                 }
-                
-                // Apply sorting
-                switch ($sort) {
-                    case 'price-asc':
-                        $query->orderBy('base_price', 'asc');
-                        break;
-                    case 'price-desc':
-                        $query->orderBy('base_price', 'desc');
-                        break;
-                    case 'name-asc':
-                        $query->orderBy('name', 'asc');
-                        break;
-                    case 'popular':
-                    default:
-                        $query->orderBy('created_at', 'desc');
-                        break;
-                }
-            }, 'combos' => function($query) use ($selectedBranchId, $search, $sort) {
+                // Không phân trang
+            }, 'combos' => function($query) use ($selectedBranchId) {
                 $query->where('status', 'selling')
                     ->where('active', true)
                     ->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
@@ -107,36 +72,11 @@ class ProductController extends Controller
                         }
                     }]);
                 
-                // Apply search filter for combos
-                if ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('name', 'LIKE', '%' . $search . '%')
-                          ->orWhere('description', 'LIKE', '%' . $search . '%');
-                    });
-                }
-                
-                // Filter combo theo stock nếu có branch được chọn
+                // Không filter theo stock để hiển thị tất cả combo (kể cả hết hàng)
                 if ($selectedBranchId) {
                     $query->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
                         $q->where('branch_id', $selectedBranchId);
                     });
-                }
-                
-                // Apply sorting for combos
-                switch ($sort) {
-                    case 'price-asc':
-                        $query->orderBy('price', 'asc');
-                        break;
-                    case 'price-desc':
-                        $query->orderBy('price', 'desc');
-                        break;
-                    case 'name-asc':
-                        $query->orderBy('name', 'asc');
-                        break;
-                    case 'popular':
-                    default:
-                        $query->orderBy('created_at', 'desc');
-                        break;
                 }
             }])
             ->get();
@@ -283,15 +223,6 @@ class ProductController extends Controller
                     }
                 }
             }
-        }
-
-        // Handle AJAX requests
-        if ($request->ajax() || $request->has('ajax')) {
-            $html = view('customer.shop._ajax_products', compact('categories'))->render();
-            return response()->json([
-                'success' => true,
-                'html' => $html
-            ]);
         }
 
         return view("customer.shop.index", compact('categories', 'selectedBranchId'));
@@ -648,6 +579,14 @@ class ProductController extends Controller
     $items = $combo->comboItems->map(function($item) {
         $variant = $item->productVariant;
         $product = $variant->product;
+        
+        // Xử lý ảnh sản phẩm - tìm ảnh chính hoặc ảnh đầu tiên
+        $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+        $imageUrl = null;
+        if ($primaryImage && $primaryImage->img) {
+            $imageUrl = Storage::disk('s3')->url($primaryImage->img);
+        }
+        
         return [
             'product_id' => $product->id,
             'product_name' => $product->name,
@@ -655,7 +594,7 @@ class ProductController extends Controller
             'variant_id' => $variant->id,
             'variant_name' => $variant->variant_description ?? null,
             'quantity' => $item->quantity,
-            'image' => $product->primaryImage ? asset('storage/' . $product->primaryImage->img) : null,
+            'image' => $imageUrl,
             'base_price' => $product->base_price,
             'variant_price' => $variant->price,
             'total_price' => $variant->price * $item->quantity,
@@ -1053,9 +992,9 @@ class ProductController extends Controller
         
         // Redirect về trang tương ứng
         if ($type === 'product') {
-            return redirect()->route('products.show', $item->slug)->with('success', 'Đánh giá của bạn đã được gửi!');
+            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
         } else {
-            return redirect()->route('combos.show', $item->slug)->with('success', 'Đánh giá của bạn đã được gửi!');
+            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi!');
         }
     }
 

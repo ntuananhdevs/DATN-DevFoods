@@ -767,14 +767,15 @@ function loadDistricts(provinceCode) {
     // Show loading state
     districtSelect.innerHTML = '<option value="">Đang tải...</option>';
     
-    fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+    // Sử dụng file JSON thay vì API
+    fetch('/data/hanoi-districts.json')
         .then(response => response.json())
         .then(data => {
             // Clear loading state
             districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
             
             // Add district options
-            if (data && data.districts) {
+            if (data && data.districts && Array.isArray(data.districts)) {
                 data.districts.forEach(district => {
                     const option = document.createElement('option');
                     option.value = district.name;
@@ -782,12 +783,14 @@ function loadDistricts(provinceCode) {
                     option.dataset.code = district.code;
                     districtSelect.appendChild(option);
                 });
+            } else {
+                console.error('Invalid districts data format');
             }
         })
         .catch(error => {
             console.error('Error loading districts:', error);
             districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
-        });
+        });}
 }
 
 // Modal functions

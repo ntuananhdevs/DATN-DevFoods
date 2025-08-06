@@ -147,25 +147,58 @@ if (window.adminOrdersRealtimeInitialized) {
             }
 
             subscribeToPublicChannel() {
+                // Subscribe to branch orders channel for new orders
                 this.publicChannel = this.pusher.subscribe('branch-orders-channel');
                 
                 this.publicChannel.bind('pusher:subscription_succeeded', () => {
-                    // Successfully subscribed
+                    console.log('✅ Successfully subscribed to branch-orders-channel');
                 });
 
                 this.publicChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to branch-orders-channel:', status);
                     this.showNotification('Lỗi kết nối', 'Không thể kết nối kênh thông báo');
                 });
 
                 this.publicChannel.bind('new-order-received', (data) => {
                     // Admin nhận tất cả đơn hàng từ mọi branch
+                    console.log('📦 New order received:', data);
                     this.hasNewOrder = true;
                     this.startNotificationLoop();
                     this.handleNewOrder(data);
                 });
 
+                // Subscribe to admin orders channel for status updates
+                this.subscribeToAdminChannel();
+                
                 // Subscribe to individual order channels for status updates
                 this.subscribeToOrderStatusUpdates();
+            }
+
+            subscribeToAdminChannel() {
+                // Subscribe to admin orders channel for real-time status updates
+                console.log('🔔 Subscribing to admin-orders-channel');
+                this.adminChannel = this.pusher.subscribe('admin-orders-channel');
+                
+                this.adminChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('✅ Successfully subscribed to admin-orders-channel');
+                });
+
+                this.adminChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to admin-orders-channel:', status);
+                    this.showNotification('Lỗi kết nối', 'Không thể kết nối kênh admin');
+                });
+
+                // Listen for order status updates from admin channel
+                this.adminChannel.bind('order-status-updated', (data) => {
+                    console.log('📦 Admin channel - order-status-updated event received:', data);
+                    this.handleOrderStatusUpdate(data);
+                });
+
+                // Listen for OrderStatusUpdated events
+                this.adminChannel.bind('OrderStatusUpdated', (data) => {
+                    console.log('📦 Admin channel - OrderStatusUpdated event received:', data);
+                    this.handleOrderStatusUpdate(data);
+                });
             }
 
             subscribeToOrderStatusUpdates() {

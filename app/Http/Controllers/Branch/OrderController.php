@@ -110,6 +110,13 @@ class OrderController extends Controller
             });
         }
 
+        // Payment status filter
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $query->whereHas('payment', function ($q) use ($request) {
+                $q->where('payment_status', $request->payment_status);
+            });
+        }
+
         // Luôn sắp xếp đơn hàng mới nhất lên đầu
         $query->orderBy('order_date', 'desc');
 
@@ -163,10 +170,19 @@ class OrderController extends Controller
             ['key' => 'balance', 'label' => 'Số dư tài khoản'],
         ];
 
+        // Get payment statuses for filter
+        $paymentStatuses = [
+            ['key' => 'all', 'label' => 'Tất cả'],
+            ['key' => 'pending', 'label' => 'Chờ xử lý'],
+            ['key' => 'completed', 'label' => 'Thành công'],
+            ['key' => 'failed', 'label' => 'Thất bại'],
+            ['key' => 'refunded', 'label' => 'Đã hoàn tiền'],
+        ];
+
         if ($request->ajax()) {
             return response()->view('branch.orders.partials.orders_grid', compact('orders'));
         }
-        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods', 'branch'));
+        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods', 'paymentStatuses', 'branch'));
     }
 
     public function show($id)
@@ -249,7 +265,7 @@ class OrderController extends Controller
         ]);
 
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $oldStatus, $newStatus));
         
         return response()->json([
             'success' => true,
@@ -395,7 +411,7 @@ class OrderController extends Controller
         $freshOrder = $order->fresh();
         
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder));
+        event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), 'cancelled'));
 
         return response()->json([
             'success' => true,
@@ -474,7 +490,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast event để cập nhật realtime
-            event(new OrderStatusUpdated($order));
+            event(new OrderStatusUpdated($order, false, 'awaiting_confirmation', 'confirmed'));
 
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));

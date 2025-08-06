@@ -119,7 +119,7 @@ class OrderController extends Controller
             
             // Sử dụng OrderStatusUpdated với tham số isCancelledByCustomer = true
             // thay thế cho cả OrderCancelledByCustomer và OrderCancelledByCustomerForBranch
-            event(new OrderStatusUpdated($freshOrder, true));
+            event(new OrderStatusUpdated($freshOrder, true, $order->getOriginal('status'), 'cancelled'));
         }
         // Khách hàng xác nhận đã nhận hàng (chỉ khi đơn đã được giao)
         elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
@@ -154,7 +154,7 @@ class OrderController extends Controller
 
         // 5. Broadcast sự kiện cập nhật trạng thái đơn hàng (nếu không phải hủy đơn)
         if ($newStatus !== 'cancelled') {
-            event(new OrderStatusUpdated($freshOrder));
+            event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), $newStatus));
         }
 
         // Trả về kết quả thành công và dữ liệu đơn hàng đã được cập nhật
