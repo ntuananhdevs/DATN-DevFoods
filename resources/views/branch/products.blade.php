@@ -78,7 +78,7 @@
                             </td>
                             <td class="p-4">
                                 <div class="flex items-center gap-2">
-                                    <a class="btn btn-outline btn-sm" title="Xem chi tiết">
+                                    <a href="{{ route('branch.products.show', $product->slug) }}" class="btn btn-outline btn-sm" title="Xem chi tiết">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round">

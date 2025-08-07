@@ -149,4 +149,12 @@ class Product extends Model
     {
         return $this->hasOne(ProductImg::class, 'product_id')->where('is_primary', true);
     }
+
+    /**
+     * Alias for images() relationship for backward compatibility
+     */
+    public function productImages()
+    {
+        return $this->images();
+    }
 }
