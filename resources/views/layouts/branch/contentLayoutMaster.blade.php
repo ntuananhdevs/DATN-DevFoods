@@ -68,6 +68,8 @@
 
     <!-- Pusher for realtime -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    
+
 
     <!-- Order notifications for all branch pages -->
     <script>
@@ -83,7 +85,7 @@
             branchId: window.branchId
         });
     </script>
-    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script>
+    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script></script>
 
     @yield('scripts')
     @stack('scripts')

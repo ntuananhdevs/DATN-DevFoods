@@ -48,6 +48,25 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+        
+        // Helper function for safe date formatting
+        View::share('formatDate', function($date, $format = 'd/m/Y H:i') {
+            if (!$date) return '';
+            
+            if (is_string($date)) {
+                try {
+                    return \Carbon\Carbon::parse($date)->format($format);
+                } catch (\Exception $e) {
+                    return $date;
+                }
+            }
+            
+            if ($date instanceof \Carbon\Carbon || $date instanceof \DateTime) {
+                return $date->format($format);
+            }
+            
+            return $date;
+        });
         Passport::ignoreRoutes();
 
         // Register BranchStock Observer

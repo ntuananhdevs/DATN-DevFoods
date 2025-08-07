@@ -1346,3 +1346,107 @@ document.addEventListener("click", function (e) {
         return;
     }
 });
+
+// Pusher realtime listeners for reply events
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup Pusher for reply realtime updates
+    if (typeof Pusher !== 'undefined' && window.pusherKey && window.comboId) {
+        try {
+            const pusher = new Pusher(window.pusherKey, {
+                cluster: window.pusherCluster,
+                encrypted: true
+            });
+
+            // Subscribe to combo review replies channel
+            const replyChannel = pusher.subscribe('combo-reviews.' + window.comboId);
+
+            // Listen for new replies
+            replyChannel.bind('new-reply', function(data) {
+                console.log('New reply received for combo:', data);
+                
+                if (data.reply && data.reply.is_official) {
+                    // Find the review container
+                    const reviewElement = document.querySelector(`[data-review-id="${data.reply.review_id}"]`);
+                    if (reviewElement) {
+                        // Find replies container within this review
+                        const repliesContainer = reviewElement.querySelector('.replies-container');
+                        if (repliesContainer) {
+                            // Add new reply
+                            const replyHtml = `
+                                <div class="reply-item bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500 mt-3" data-reply-id="${data.reply.id}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center">
+                                            <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center mr-2">
+                                                <i class="fas fa-store text-white text-xs"></i>
+                                            </div>
+                                            <span class="text-sm font-medium text-gray-900">Chi nhánh</span>
+                                            <span class="text-xs text-gray-500 ml-2">${new Date(data.reply.reply_date).toLocaleString('vi-VN')}</span>
+                                        </div>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Phản hồi chính thức
+                                        </span>
+                                    </div>
+                                    <p class="text-gray-900 text-sm">${data.reply.reply}</p>
+                                </div>
+                            `;
+                            repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
+                            
+                            // Update reply count if exists
+                            const replyCountElement = reviewElement.querySelector('.reply-count');
+                            if (replyCountElement) {
+                                const currentCount = parseInt(replyCountElement.textContent) || 0;
+                                replyCountElement.textContent = currentCount + 1;
+                            }
+                        }
+                    }
+                    
+                    // Show notification
+                    if (typeof dtmodalShowToast === 'function') {
+                        dtmodalShowToast('notification', {
+                            title: 'Phản hồi mới',
+                            message: 'Chi nhánh đã phản hồi bình luận!'
+                        });
+                    }
+                }
+            });
+
+            // Listen for deleted replies
+            replyChannel.bind('reply-deleted', function(data) {
+                console.log('Reply deleted for combo:', data);
+                
+                // Remove reply from DOM
+                const replyElement = document.querySelector(`[data-reply-id="${data.reply_id}"]`);
+                if (replyElement) {
+                    // Add fade out animation
+                    replyElement.style.transition = 'opacity 0.3s ease';
+                    replyElement.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        replyElement.remove();
+                        
+                        // Update reply count
+                        const reviewElement = document.querySelector(`[data-review-id="${data.reply.review_id}"]`);
+                        if (reviewElement) {
+                            const replyCountElement = reviewElement.querySelector('.reply-count');
+                            if (replyCountElement) {
+                                const currentCount = Math.max(0, (parseInt(replyCountElement.textContent) || 0) - 1);
+                                replyCountElement.textContent = currentCount;
+                            }
+                        }
+                    }, 300);
+                    
+                    // Show notification
+                    if (typeof dtmodalShowToast === 'function') {
+                        dtmodalShowToast('info', {
+                            title: 'Phản hồi đã xóa',
+                            message: 'Một phản hồi đã bị xóa'
+                        });
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Pusher setup error for combo replies:', error);
+        }
+    }
+});

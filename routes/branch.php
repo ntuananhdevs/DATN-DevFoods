@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Branch\DriverAssignmentController;
 use App\Http\Controllers\Branch\NotificationController;
+use App\Http\Controllers\Branch\ReviewController;
 
 // Branch Authentication Routes
 Route::prefix('branch')->name('branch.')->group(function () {
@@ -89,4 +90,15 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('branch.notifications.read');
+
+    // Branch Review Management Routes
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [ReviewController::class, 'index'])->name('index');
+        Route::get('/{id}', [ReviewController::class, 'show'])->name('show');
+        Route::post('/{id}/reply', [ReviewController::class, 'reply'])->name('reply');
+        Route::delete('/{reviewId}/delete', [ReviewController::class, 'deleteReview'])->name('delete');
+        Route::delete('/reply/{replyId}', [ReviewController::class, 'deleteReply'])->name('reply.delete');
+        Route::get('/reports/list', [ReviewController::class, 'reports'])->name('reports');
+        Route::get('/reports/{id}', [ReviewController::class, 'showReport'])->name('report.show');
+    });
 });

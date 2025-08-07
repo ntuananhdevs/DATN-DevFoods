@@ -884,4 +884,187 @@
         window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
         window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
     </script>
+
+    <!-- Pusher listeners for review and reply events -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent multiple initializations
+        if (window.comboPusherInitialized) {
+            console.log('Combo Pusher already initialized, skipping...');
+            return;
+        }
+        
+        console.log('Combo Pusher setup starting...', {
+            pusherKey: window.pusherKey,
+            comboId: window.comboId
+        });
+        
+        // Setup Pusher for realtime updates
+        if (typeof Pusher !== 'undefined' && window.pusherKey && window.comboId) {
+            try {
+                const pusher = new Pusher(window.pusherKey, {
+                    cluster: window.pusherCluster,
+                    encrypted: true
+                });
+
+                console.log('Pusher initialized for combo:', window.comboId);
+                window.comboPusherInitialized = true;
+
+                // Subscribe to combo reviews channel for review deletion
+                const comboChannel = pusher.subscribe('combo-reviews.' + window.comboId);
+                console.log('Subscribed to combo channel:', 'combo-reviews.' + window.comboId);
+                
+                // Listen for deleted reviews
+                comboChannel.bind('review-deleted', function(data) {
+                    console.log('Review deleted event received for combo:', data);
+                    
+                    // Remove review from DOM
+                    const reviewElement = document.querySelector(`[data-review-id="${data.review_id}"]`);
+                    console.log('Found review element:', reviewElement);
+                    
+                    if (reviewElement) {
+                        // Add fade out animation
+                        reviewElement.style.transition = 'opacity 0.3s ease';
+                        reviewElement.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            reviewElement.remove();
+                            console.log('Review element removed from DOM');
+                            
+                            // Update review count if exists
+                            const reviewCountElement = document.querySelector('.review-count');
+                            if (reviewCountElement) {
+                                const currentCount = Math.max(0, (parseInt(reviewCountElement.textContent) || 0) - 1);
+                                reviewCountElement.textContent = currentCount;
+                                console.log('Updated review count to:', currentCount);
+                            }
+                        }, 300);
+                        
+                        // Show notification
+                        if (typeof dtmodalShowToast === 'function') {
+                            dtmodalShowToast('info', {
+                                title: 'Bình luận đã xóa',
+                                message: 'Một bình luận đã bị xóa bởi chi nhánh'
+                            });
+                        }
+                    } else {
+                        console.log('Review element not found for ID:', data.review_id);
+                    }
+                });
+
+                // Subscribe to reply channels for each review
+                const reviewElements = document.querySelectorAll('[data-review-id]');
+                console.log('Found review elements:', reviewElements.length);
+                
+                // Track subscribed channels to avoid duplicates
+                if (!window.subscribedChannels) {
+                    window.subscribedChannels = new Set();
+                }
+                
+                reviewElements.forEach(reviewElement => {
+                    const reviewId = reviewElement.getAttribute('data-review-id');
+                    if (reviewId) {
+                        const channelName = 'review-replies.' + reviewId;
+                        
+                        // Skip if already subscribed
+                        if (window.subscribedChannels.has(channelName)) {
+                            console.log('Already subscribed to channel:', channelName);
+                            return;
+                        }
+                        
+                        const replyChannel = pusher.subscribe(channelName);
+                        window.subscribedChannels.add(channelName);
+                        console.log('Subscribed to reply channel:', channelName);
+
+                        // Listen for new replies
+                        replyChannel.bind('new-reply', function(data) {
+                            console.log('New reply received for combo review:', reviewId, data);
+                            
+                            if (data.reply && data.reply.is_official) {
+                                // Check if reply already exists to avoid duplicates
+                                const existingReply = document.querySelector(`[data-reply-id="${data.reply.id}"]`);
+                                if (existingReply) {
+                                    console.log('Reply already exists, skipping duplicate');
+                                    return;
+                                }
+                                
+                                // Find replies container within this review
+                                const repliesContainer = reviewElement.querySelector('.replies-list');
+                                if (repliesContainer) {
+                                    // Add new reply
+                                    const replyHtml = `
+                                        <div class="reply-item" data-reply-id="${data.reply.id}">
+                                            <div class="reply-bubble">
+                                                <div class="reply-header">
+                                                    <span class="reply-author">Chi nhánh</span>
+                                                    <span class="reply-time">${new Date(data.reply.reply_date).toLocaleString('vi-VN')}</span>
+                                                </div>
+                                                <div class="reply-content">${data.reply.reply}</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
+                                    console.log('Reply added to DOM via Pusher');
+                                }
+                                
+                                // Show notification only once per reply
+                                if (typeof dtmodalShowToast === 'function') {
+                                    // Track notified replies to avoid duplicates
+                                    if (!window.notifiedReplies) {
+                                        window.notifiedReplies = new Set();
+                                    }
+                                    
+                                    if (!window.notifiedReplies.has(data.reply.id)) {
+                                        window.notifiedReplies.add(data.reply.id);
+                                        dtmodalShowToast('notification', {
+                                            title: 'Phản hồi mới',
+                                            message: 'Chi nhánh đã phản hồi bình luận của bạn!'
+                                        });
+                                        console.log('Notification shown for reply:', data.reply.id);
+                                    } else {
+                                        console.log('Notification already shown for reply:', data.reply.id);
+                                    }
+                                }
+                            }
+                        });
+
+                        // Listen for deleted replies
+                        replyChannel.bind('reply-deleted', function(data) {
+                            console.log('Reply deleted for combo review:', reviewId, data);
+                            
+                            // Remove reply from DOM
+                            const replyElement = document.querySelector(`[data-reply-id="${data.reply_id}"]`);
+                            if (replyElement) {
+                                // Add fade out animation
+                                replyElement.style.transition = 'opacity 0.3s ease';
+                                replyElement.style.opacity = '0';
+                                
+                                setTimeout(() => {
+                                    replyElement.remove();
+                                }, 300);
+                                
+                                // Show notification
+                                if (typeof dtmodalShowToast === 'function') {
+                                    dtmodalShowToast('info', {
+                                        title: 'Phản hồi đã xóa',
+                                        message: 'Một phản hồi đã bị xóa bởi chi nhánh'
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+
+            } catch (error) {
+                console.error('Pusher setup error for combo events:', error);
+            }
+        } else {
+            console.log('Pusher setup skipped:', {
+                pusherAvailable: typeof Pusher !== 'undefined',
+                pusherKey: !!window.pusherKey,
+                comboId: !!window.comboId
+            });
+        }
+    });
+    </script>
 @endsection
