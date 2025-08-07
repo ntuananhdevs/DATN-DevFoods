@@ -73,25 +73,21 @@ class Driver extends Model implements Authenticatable
     //     $this->attributes['password'] = bcrypt($value);
     // }
     
-    // Accessor để kiểm tra xem tài xế có đang online không
-    public function getIsOnlineAttribute()
-    {
-        if (!$this->last_active_at) {
-            return false;
-        }
-        
-        // Tài xế được coi là online nếu đã ping trong vòng 5 phút gần đây
-        return $this->last_active_at->diffInMinutes(now()) <= 5;
-    }
-    
     // Accessor để lấy trạng thái chi tiết của tài xế
     public function getDriverStatusAttribute()
     {
-        if (!$this->is_online) {
-            return 'offline';
+        // Kiểm tra xem tài xế có đơn hàng đang giao không
+        // Chỉ xem là đang giao khi tài xế đã lấy hàng (driver_picked_up) hoặc đang giao (in_transit)
+        $hasActiveDelivery = $this->orders()
+            ->whereIn('status', ['driver_picked_up', 'in_transit'])
+            ->exists();
+            
+        if ($hasActiveDelivery) {
+            return 'delivering';
         }
         
-        return $this->is_available ? 'available' : 'delivering';
+        // Nếu không có đơn hàng đang giao, dựa vào trạng thái is_available
+        return $this->is_available ? 'available' : 'offline';
     }
 
     // Relationships

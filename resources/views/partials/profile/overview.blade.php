@@ -5,7 +5,7 @@
         <div class="bg-white rounded-xl shadow-sm p-6 text-center">
             <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i
                     class="fas fa-shopping-bag text-blue-500"></i></div>
-            <h3 class="text-3xl font-bold mb-1">{{ $user->total_orders }}</h3>
+            <h3 class="text-3xl font-bold mb-1">{{ $orderAll }}</h3>
             <p class="text-gray-500 text-sm">Đơn hàng</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm p-6 text-center">

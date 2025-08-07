@@ -37,7 +37,7 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
                 <div class="flex items-center">
@@ -60,27 +60,11 @@
             <div class="p-5">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="h-6 w-6 bg-blue-500 rounded-full"></div>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Online</dt>
-                            <dd class="text-lg font-medium text-blue-600" x-text="stats.online"></dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
                         <div class="h-6 w-6 bg-green-500 rounded-full"></div>
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Sẵn sàng</dt>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Sẵn sàng nhận đơn</dt>
                             <dd class="text-lg font-medium text-green-600" x-text="stats.available"></dd>
                         </dl>
                     </div>
@@ -137,20 +121,13 @@
                 <div class="sm:w-48">
                     <select x-model="statusFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                         <option value="all">Tất cả trạng thái</option>
-                        <option value="available">Sẵn sàng</option>
+                        <option value="available">Sẵn sàng nhận đơn</option>
                         <option value="delivering">Đang giao</option>
                         <option value="offline">Offline</option>
                     </select>
                 </div>
                 
-                <!-- Online/Offline Filter -->
-                <div class="sm:w-48">
-                    <select x-model="onlineFilter" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                        <option value="all">Tất cả kết nối</option>
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
-                    </select>
-                </div>
+
 
                 <!-- Results count -->
                 <div class="flex items-center text-sm text-gray-500 whitespace-nowrap">
@@ -206,10 +183,6 @@
                                         <div :class="getStatusDotClass(driver.status)" class="w-2 h-2 rounded-full"></div>
                                         <span x-text="getStatusLabel(driver.status)"></span>
                                     </span>
-                                    <span :class="driver.is_online ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-800 border-gray-200'" class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border">
-                                        <div :class="driver.is_online ? 'bg-blue-500' : 'bg-gray-500'" class="w-2 h-2 rounded-full"></div>
-                                        <span x-text="driver.is_online ? 'Online' : 'Offline'"></span>
-                                    </span>
                                 </div>
 
                                 <!-- Driver Info -->
@@ -261,21 +234,56 @@
             </h3>
         </div>
         <div class="px-4 py-5 sm:p-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="selectedDriver">
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Trạng thái</label>
-                    <div class="flex items-center gap-2 mt-1">
-                        <div :class="selectedDriver ? getStatusDotClass(selectedDriver.status) : ''" class="w-3 h-3 rounded-full"></div>
-                        <span class="font-medium" x-text="selectedDriver ? getStatusLabel(selectedDriver.status) : ''"></span>
+            <!-- Thông tin cơ bản -->
+            <div class="mb-6">
+                <h4 class="text-base font-medium text-gray-900 mb-3">Thông tin cơ bản</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="selectedDriver">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Số điện thoại</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver ? selectedDriver.phone : ''"></p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Vị trí hiện tại</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver ? `${selectedDriver.lat.toFixed(4)}, ${selectedDriver.lng.toFixed(4)}` : ''"></p>
                     </div>
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Số điện thoại</label>
-                    <p class="font-medium mt-1" x-text="selectedDriver ? selectedDriver.phone : ''"></p>
+            </div>
+            
+            <!-- Thông tin giấy tờ -->
+            <div class="mb-6">
+                <h4 class="text-base font-medium text-gray-900 mb-3">Thông tin giấy tờ</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="selectedDriver">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Số GPLX</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.license_number : 'Không có'"></p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Hạng GPLX</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.license_class : 'Không có'"></p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Ngày hết hạn GPLX</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.license_expiry : 'Không có'"></p>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-sm font-medium text-gray-500">Vị trí hiện tại</label>
-                    <p class="font-medium mt-1" x-text="selectedDriver ? `${selectedDriver.lat.toFixed(4)}, ${selectedDriver.lng.toFixed(4)}` : ''"></p>
+            </div>
+            
+            <!-- Thông tin phương tiện -->
+            <div>
+                <h4 class="text-base font-medium text-gray-900 mb-3">Thông tin phương tiện</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" x-show="selectedDriver">
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Loại phương tiện</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.vehicle_type : 'Không có'"></p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Màu xe</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.vehicle_color : 'Không có'"></p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Biển số xe</label>
+                        <p class="font-medium mt-1" x-text="selectedDriver && selectedDriver.documents ? selectedDriver.documents.license_plate : 'Không có'"></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -352,9 +360,6 @@ function driverTracking(initialStats = null) {
         },
 
         init() {
-            // Khởi tạo giá trị mặc định cho onlineFilter
-            this.onlineFilter = 'all';
-            
             this.fetchDrivers();
             // Khởi tạo bản đồ
             initMap();
@@ -366,7 +371,6 @@ function driverTracking(initialStats = null) {
             // Watch for filter changes
             this.$watch('searchTerm', () => this.filterDrivers());
             this.$watch('statusFilter', () => this.filterDrivers());
-            this.$watch('onlineFilter', () => this.filterDrivers());
             this.$watch('filteredDrivers', () => {
                 if (this.viewMode === 'map' && map) {
                     this.updateMapMarkers();
@@ -407,7 +411,6 @@ function driverTracking(initialStats = null) {
         updateStats() {
             // Tính toán số lượng tài xế theo trạng thái
             const total = this.drivers.length;
-            const online = this.drivers.filter(driver => driver.is_online === true).length;
             const available = this.drivers.filter(driver => driver.status === 'available').length;
             const delivering = this.drivers.filter(driver => driver.status === 'delivering').length;
             const offline = this.drivers.filter(driver => driver.status === 'offline').length;
@@ -415,7 +418,6 @@ function driverTracking(initialStats = null) {
             // Cập nhật thống kê
             this.stats = {
                 total,
-                online,
                 available,
                 delivering,
                 offline
@@ -438,11 +440,6 @@ function driverTracking(initialStats = null) {
 
             if (this.statusFilter !== 'all') {
                 filtered = filtered.filter(driver => driver.status === this.statusFilter);
-            }
-            
-            if (this.onlineFilter !== 'all') {
-                const isOnline = this.onlineFilter === 'online';
-                filtered = filtered.filter(driver => driver.is_online === isOnline);
             }
 
             this.filteredDrivers = filtered;
@@ -496,12 +493,12 @@ function driverTracking(initialStats = null) {
                                     <div class="w-2 h-2 rounded-full ${this.getStatusDotClass(driver.status)}"></div>
                                     ${this.getStatusLabel(driver.status)}
                                 </span>
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${driver.is_online ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
-                                    <div class="w-2 h-2 rounded-full ${driver.is_online ? 'bg-blue-500' : 'bg-gray-500'}"></div>
-                                    ${driver.is_online ? 'Online' : 'Offline'}
-                                </span>
                             </div>
                             <p class="text-sm text-gray-600 mt-1">${driver.phone}</p>
+                            ${driver.documents ? `
+                            <p class="text-sm text-gray-600 mt-1">Xe: ${driver.documents.vehicle_type || ''} ${driver.documents.vehicle_color || ''}</p>
+                            <p class="text-sm text-gray-600">BKS: ${driver.documents.license_plate || ''}</p>
+                            ` : ''}
                         </div>
                     `);
                 
@@ -578,7 +575,7 @@ function driverTracking(initialStats = null) {
 
         getStatusLabel(status) {
             const labels = {
-                'available': 'Sẵn sàng',
+                'available': 'Sẵn sàng nhận đơn',
                 'delivering': 'Đang giao',
                 'offline': 'Offline'
             };
@@ -621,10 +618,7 @@ function driverTracking(initialStats = null) {
             return colors[status] || colors.offline;
         },
         
-        // Kiểm tra xem tài xế có đang online không
-        isDriverOnline(driver) {
-            return driver.is_online === true;
-        }
+        // Kết thúc các phương thức của component
     }
 }
 
