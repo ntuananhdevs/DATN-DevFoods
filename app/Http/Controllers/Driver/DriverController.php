@@ -168,23 +168,31 @@ class DriverController extends Controller
      */
     // Phương thức để bật/tắt trạng thái
     public function setAvailability(Request $request)
-    { //
-        $driver = Auth::guard('driver')->user(); //
-        if (!$driver) { //
-            return response()->json(['success' => false, 'message' => 'Không tìm thấy tài xế đang đăng nhập'], 404); //
+    { 
+        $driver = Auth::guard('driver')->user(); 
+        if (!$driver) { 
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy tài xế đang đăng nhập'], 404); 
         }
 
-        $request->validate([ //
-            'is_available' => 'required|boolean', //
+        $request->validate([ 
+            'is_available' => 'required|boolean', 
         ]);
 
-        $driver->is_available = $request->is_available; //
-        $driver->save(); //
+        // Lưu trạng thái cũ trước khi cập nhật
+        $oldStatus = $driver->driver_status;
+        
+        // Cập nhật trạng thái
+        $driver->is_available = $request->is_available; 
+        $driver->save(); 
+        
+        // Phát sự kiện cập nhật trạng thái tài xế
+        event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldStatus));
 
-        return response()->json([ //
+        return response()->json([ 
             'success' => true,
-            'is_available' => (bool)$driver->is_available, //
-            'message' => $driver->is_available ? 'Bạn đã Online.' : 'Bạn đã Offline.', //
+            'is_available' => (bool)$driver->is_available, 
+            'status' => $driver->driver_status,
+            'message' => $driver->is_available ? 'Bạn đã sẵn sàng nhận đơn.' : 'Bạn đã ngừng nhận đơn.', 
         ]);
     }
 }
