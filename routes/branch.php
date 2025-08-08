@@ -37,13 +37,16 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
+        
+        // Driver map API routes
+        Route::get('/{id}/available-drivers', [BranchOrderController::class, 'getAvailableDrivers'])->name('available-drivers');
+        Route::get('/{id}/assigned-driver/{driverId}', [BranchOrderController::class, 'getAssignedDriver'])->name('assigned-driver');
 
         // Driver assignment routes
         // Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
-    // Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
+    
     // Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
-        Route::get('/{id}/nearby-drivers', [BranchOrderController::class, 'getNearbyDrivers'])->name('nearby-drivers');
-        Route::post('/{id}/assign-driver', [BranchOrderController::class, 'assignDriver'])->name('assign-driver');
+
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
