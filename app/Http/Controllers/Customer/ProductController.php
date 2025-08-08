@@ -505,6 +505,17 @@ class ProductController extends Controller
                 ->exists();
         }
 
+        // Kiểm tra user đã mua sản phẩm này chưa (để hiển thị form review)
+        $hasPurchased = false;
+        if (Auth::check()) {
+            $hasPurchased = \App\Models\Order::where('customer_id', Auth::id())
+                ->where('status', 'delivered')
+                ->whereHas('orderItems.productVariant', function($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                })
+                ->exists();
+        }
+
         // Tính giá thấp nhất và cao nhất bao gồm cả biến thể (đồng nhất với index)
         $product->min_price = $product->base_price;
         $product->max_price = $product->base_price;
@@ -548,7 +559,8 @@ class ProductController extends Controller
             'product',
             'variantAttributes',
             'relatedProducts',
-            'branches'
+            'branches',
+            'hasPurchased' // thêm biến này
         ));
     }
     public function showComboDetail(Request $request, $slug)

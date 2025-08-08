@@ -27,6 +27,7 @@ class ReviewCreated implements ShouldBroadcastNow
         $this->user_id = $review->user_id;
         $this->review_data = [
             'id' => $review->id,
+            'user_id' => $review->user_id, // Thêm dòng này
             'user' => [
                 'id' => $review->user->id,
                 'name' => $review->user->name,
