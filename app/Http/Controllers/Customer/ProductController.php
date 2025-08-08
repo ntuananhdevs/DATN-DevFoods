@@ -649,7 +649,7 @@ class ProductController extends Controller
     $canReview = false;
     if ($user) {
         $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'item_received'])
             ->whereHas('orderItems', function($q) use ($combo) {
                 $q->where('combo_id', $combo->id);
             })
@@ -909,6 +909,7 @@ class ProductController extends Controller
 
         $user = $request->user();
         $type = $request->input('type');
+        $branchId = $request->input('branch_id');
         $item = null;
         $order = null;
         $itemType = '';
@@ -917,9 +918,10 @@ class ProductController extends Controller
             $item = Product::findOrFail($id);
             $itemType = 'sản phẩm';
             
-            // Kiểm tra user đã mua sản phẩm này chưa
+            // Kiểm tra user đã mua sản phẩm này ở chi nhánh này chưa
             $order = \App\Models\Order::where('customer_id', $user->id)
                 ->where('status', 'delivered')
+                ->where('branch_id', $branchId) // Thêm điều kiện chi nhánh
                 ->whereHas('orderItems.productVariant', function($q) use ($id) {
                     $q->where('product_id', $id);
                 })
@@ -929,9 +931,10 @@ class ProductController extends Controller
             $item = \App\Models\Combo::findOrFail($id);
             $itemType = 'combo';
             
-            // Kiểm tra user đã mua combo này chưa
+            // Kiểm tra user đã mua combo này ở chi nhánh này chưa
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
+                ->where('branch_id', $branchId) // Thêm điều kiện chi nhánh
                 ->whereHas('orderItems', function($q) use ($id) {
                     $q->where('combo_id', $id);
                 })
@@ -941,14 +944,15 @@ class ProductController extends Controller
 
         if (!$order) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua!"], 403);
+                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua tại chi nhánh này!"], 403);
             }
-            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua!");
+            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua tại chi nhánh này!");
         }
 
-        // Kiểm tra xem user đã review item này chưa
+        // Kiểm tra xem user đã review item này ở chi nhánh này chưa
         $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
-            ->where('order_id', $order->id);
+            ->where('order_id', $order->id)
+            ->where('branch_id', $branchId); // Thêm điều kiện chi nhánh
         
         if ($type === 'product') {
             $existingReview->where('product_id', $item->id);
@@ -960,9 +964,9 @@ class ProductController extends Controller
         
         if ($existingReview) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này rồi!"], 409);
+                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này tại chi nhánh này rồi!"], 409);
             }
-            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này rồi!");
+            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này tại chi nhánh này rồi!");
         }
 
         $review = new \App\Models\ProductReview();

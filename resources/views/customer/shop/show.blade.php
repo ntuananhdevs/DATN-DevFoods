@@ -1171,11 +1171,26 @@
 
                     {{-- Form gửi đánh giá hoặc phản hồi --}}
                     @auth
-                        @if($hasPurchased)
+                        @php
+                            $currentBranchId = $currentBranch ? $currentBranch->id : null; // Sử dụng $currentBranch thay vì session
+                            // Kiểm tra user đã mua sản phẩm này ở chi nhánh hiện tại chưa
+                            $hasPurchasedAtBranch = false;
+                            if ($currentBranchId && Auth::user()) {
+                                $hasPurchasedAtBranch = Auth::user()->orders()
+                                    ->whereIn('status', ['delivered', 'item_received']) // Bao gồm cả item_received
+                                    ->where('branch_id', $currentBranchId)
+                                    ->whereHas('orderItems.productVariant', function($q) use ($product) {
+                                        $q->where('product_id', $product->id);
+                                    })
+                                    ->exists();
+                            }
+                        @endphp
+                        
+                        @if($hasPurchasedAtBranch)
                             <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
                                 <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
                                     @csrf
-                                    <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
+                                    <input type="hidden" name="branch_id" value="{{ $currentBranchId }}">
                                     <input type="hidden" name="type" value="product">
                                     <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
                                     <div id="replying-to" class="mb-2 hidden">
@@ -1216,8 +1231,8 @@
                                 </form>
                             </div>
                         @else
-                            <div class="mt-8 p-6 bg-gray-50 rounded-lg border text-center">
-                                <p class="text-gray-600 mb-4">Vui lòng mua hàng để gửi đánh giá cho sản phẩm này.</p>
+                            <div class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-yellow-800 text-center">Bạn chỉ có thể đánh giá sản phẩm đã mua tại chi nhánh này.</p>
                             </div>
                         @endif
                     @else
