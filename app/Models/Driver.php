@@ -145,6 +145,11 @@ class Driver extends Model implements Authenticatable
     {
         return $this->hasOne(\App\Models\DriverLocation::class)->latestOfMany();
     }
+    
+    public function ratings()
+    {
+        return $this->hasMany(DriverRating::class);
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -205,4 +210,20 @@ class Driver extends Model implements Authenticatable
     }
     
     // Các phương thức getIsOnlineAttribute() và getDriverStatusAttribute() đã được định nghĩa ở trên
+    
+    /**
+     * Cập nhật thống kê đánh giá của tài xế
+     * Tính toán lại điểm đánh giá trung bình dựa trên tất cả các đánh giá
+     */
+    public function updateRatingStatistics()
+    {
+        $ratings = $this->ratings()->pluck('rating');
+        
+        if ($ratings->count() > 0) {
+            $this->rating = $ratings->avg();
+            $this->save();
+        }
+        
+        return $this->rating;
+    }
 }

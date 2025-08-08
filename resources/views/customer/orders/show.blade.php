@@ -295,6 +295,74 @@
                                                             </span>
                                                         </div>
                                                     </div>
+                                                    
+                                                    <!-- Đánh giá của bạn về tài xế -->
+                                                    @php
+                                                        $userRating = \App\Models\DriverRating::where('order_id', $order->id)
+                                                            ->where('user_id', Auth::id())
+                                                            ->first();
+                                                    @endphp
+                                                    
+                                                    @if ($userRating)
+                                                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                                        <h4 class="text-sm font-medium text-gray-800 mb-2">Đánh giá của bạn về tài xế</h4>
+                                                        <div class="flex items-center mb-2">
+                                                            <div class="flex">
+                                                                @for ($i = 1; $i <= 5; $i++)
+                                                                    @if ($i <= $userRating->rating)
+                                                                        <svg class="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                                                        </svg>
+                                                                    @else
+                                                                        <svg class="w-4 h-4 text-gray-300" viewBox="0 0 20 20">
+                                                                            <path fill="currentColor" d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                                                        </svg>
+                                                                    @endif
+                                                                @endfor
+                                                            </div>
+                                                            <span class="ml-2 text-sm text-gray-600">
+                                                                @if ($userRating->rating == 1)
+                                                                    Rất không hài lòng
+                                                                @elseif ($userRating->rating == 2)
+                                                                    Không hài lòng
+                                                                @elseif ($userRating->rating == 3)
+                                                                    Bình thường
+                                                                @elseif ($userRating->rating == 4)
+                                                                    Hài lòng
+                                                                @elseif ($userRating->rating == 5)
+                                                                    Rất hài lòng
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                        @if ($userRating->comment)
+                                                            <p class="text-sm text-gray-700 italic">"{{ $userRating->comment }}"</p>
+                                                        @endif
+                                                        <div class="text-xs text-gray-500 mt-1">Đánh giá vào {{ $userRating->rated_at->format('d/m/Y H:i') }}</div>
+                                                    </div>
+                                                    @endif
+                                                    
+                                                    <!-- Nút đánh giá tài xế (chỉ hiển thị khi đơn hàng đã nhận và chưa đánh giá) -->
+                                                    @if ($order->status == 'item_received' && !$userRating)
+                                                        <div class="mt-3">
+                                                            <button type="button" id="rate-driver-btn"
+                                                                class="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                                Đánh giá tài xế
+                                                            </button>
+                                                        </div>
+                                                    @elseif ($order->status == 'item_received' && $userRating)
+                                                        <div class="mt-3">
+                                                            <button type="button" id="rate-driver-btn"
+                                                                class="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                                Chỉnh sửa đánh giá
+                                                            </button>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @else
                                                 <!-- Trường hợp chưa có tài xế -->
@@ -697,6 +765,66 @@
     <div id="toast-message"
         class="fixed top-20 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden transition-all duration-300">
     </div>
+
+    <!-- Modal đánh giá tài xế -->
+    <div id="rate-driver-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="relative mx-auto p-5 border w-96 bg-white rounded-lg shadow-xl">
+            <!-- Close button -->
+            <button type="button" id="rate-driver-close-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center">
+                <h3 class="text-xl font-medium text-gray-900">Đánh giá tài xế</h3>
+                <p class="text-sm text-gray-500 mt-2">Hãy đánh giá trải nghiệm giao hàng của bạn với tài xế</p>
+                
+                <div class="mt-6">
+                    <form id="driver-rating-form" method="POST" action="{{ route('driver.rating.submit', $order->id) }}">
+                        @csrf
+                        <input type="hidden" name="order_id" value="{{ $order->id }}">
+                        <input type="hidden" name="driver_id" value="{{ $order->driver_id }}">
+                        
+                        <!-- Star Rating -->
+                        <div class="mb-6">
+                            <div class="flex justify-center space-x-2">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <label for="star-{{ $i }}" class="cursor-pointer">
+                                        <input type="radio" id="star-{{ $i }}" name="rating" value="{{ $i }}" class="hidden">
+                                        <svg class="w-10 h-10 star-rating" data-rating="{{ $i }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                        </svg>
+                                    </label>
+                                @endfor
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2" id="rating-text">Chọn số sao để đánh giá</div>
+                        </div>
+                        
+                        <!-- Comment -->
+                        <div class="mb-4">
+                            <label for="comment" class="block text-sm font-medium text-gray-700 mb-1 text-left">Nhận xét (không bắt buộc)</label>
+                            <textarea id="comment" name="comment" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Chia sẻ trải nghiệm của bạn với tài xế..."></textarea>
+                        </div>
+                        
+                        <!-- Anonymous Rating -->
+                        <div class="mb-6 flex items-center">
+                            <input type="checkbox" id="is_anonymous" name="is_anonymous" class="h-4 w-4 text-orange-500 focus:ring-orange-400 border-gray-300 rounded">
+                            <label for="is_anonymous" class="ml-2 block text-sm text-gray-700">Đánh giá ẩn danh</label>
+                        </div>
+                        
+                        <div class="flex justify-between gap-3">
+                            <button type="button" id="rate-driver-cancel-btn" class="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="submit" id="rate-driver-submit-btn" class="flex-1 py-2 px-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors" disabled>
+                                Gửi đánh giá
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -724,6 +852,7 @@
             // Biến toàn cục để lưu form và loại hành động
             let formToSubmit = null;
             let modalAction = null;
+            let selectedRating = 0; // Biến lưu số sao đã chọn
         
             // Định nghĩa hàm openActionModal
             function openActionModal(form, actionType) {
@@ -928,6 +1057,165 @@
                         const form = this.closest('form');
                         openActionModal(form, 'cancel');
                     });
+                }
+                
+                // Xử lý modal đánh giá tài xế
+                const rateDriverBtn = document.getElementById('rate-driver-btn');
+                const rateDriverModal = document.getElementById('rate-driver-modal');
+                const rateDriverCloseBtn = document.getElementById('rate-driver-close-btn');
+                const rateDriverCancelBtn = document.getElementById('rate-driver-cancel-btn');
+                const rateDriverSubmitBtn = document.getElementById('rate-driver-submit-btn');
+                const ratingForm = document.getElementById('driver-rating-form');
+                const starRatings = document.querySelectorAll('.star-rating');
+                const ratingText = document.getElementById('rating-text');
+                
+                // Mở modal đánh giá tài xế
+                if (rateDriverBtn) {
+                    rateDriverBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.remove('hidden');
+                    });
+                }
+                
+                // Đóng modal đánh giá tài xế
+                if (rateDriverCloseBtn) {
+                    rateDriverCloseBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.add('hidden');
+                        resetRatingForm();
+                    });
+                }
+                
+                if (rateDriverCancelBtn) {
+                    rateDriverCancelBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.add('hidden');
+                        resetRatingForm();
+                    });
+                }
+                
+                // Xử lý chọn số sao
+                if (starRatings.length > 0) {
+                    starRatings.forEach(star => {
+                        star.addEventListener('click', function() {
+                            const rating = parseInt(this.dataset.rating);
+                            selectedRating = rating;
+                            updateStarDisplay(rating);
+                            rateDriverSubmitBtn.disabled = false;
+                        });
+                        
+                        // Hiệu ứng hover
+                        star.addEventListener('mouseenter', function() {
+                            const rating = parseInt(this.dataset.rating);
+                            highlightStars(rating);
+                        });
+                        
+                        star.addEventListener('mouseleave', function() {
+                            resetStarHighlight();
+                            if (selectedRating > 0) {
+                                updateStarDisplay(selectedRating);
+                            }
+                        });
+                    });
+                }
+                
+                // Xử lý gửi form đánh giá
+                if (ratingForm) {
+                    ratingForm.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        
+                        if (selectedRating === 0) {
+                            showToast('Vui lòng chọn số sao đánh giá', 'error');
+                            return;
+                        }
+                        
+                        const formData = new FormData(this);
+                        
+                        fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            rateDriverModal.classList.add('hidden');
+                            if (data.success) {
+                                showToast(data.message || 'Đánh giá tài xế thành công!', 'success');
+                                // Cập nhật UI hoặc tải lại trang nếu cần
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1300);
+                            } else {
+                                showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            rateDriverModal.classList.add('hidden');
+                            showToast('Có lỗi khi gửi đánh giá!', 'error');
+                            console.error('Lỗi khi gửi đánh giá:', error);
+                        });
+                    });
+                }
+                
+                // Hàm cập nhật hiển thị sao
+                function updateStarDisplay(rating) {
+                    starRatings.forEach(star => {
+                        const starRating = parseInt(star.dataset.rating);
+                        if (starRating <= rating) {
+                            star.classList.add('text-yellow-400');
+                            star.classList.add('fill-current');
+                        } else {
+                            star.classList.remove('text-yellow-400');
+                            star.classList.remove('fill-current');
+                        }
+                    });
+                    
+                    // Cập nhật text hiển thị
+                    const ratingTexts = {
+                        1: 'Rất không hài lòng',
+                        2: 'Không hài lòng',
+                        3: 'Bình thường',
+                        4: 'Hài lòng',
+                        5: 'Rất hài lòng'
+                    };
+                    
+                    ratingText.textContent = ratingTexts[rating] || 'Chọn số sao để đánh giá';
+                }
+                
+                // Hàm highlight sao khi hover
+                function highlightStars(rating) {
+                    starRatings.forEach(star => {
+                        const starRating = parseInt(star.dataset.rating);
+                        if (starRating <= rating) {
+                            star.classList.add('text-yellow-400');
+                        } else {
+                            star.classList.remove('text-yellow-400');
+                        }
+                    });
+                }
+                
+                // Hàm reset highlight sao
+                function resetStarHighlight() {
+                    starRatings.forEach(star => {
+                        star.classList.remove('text-yellow-400');
+                        star.classList.remove('fill-current');
+                    });
+                }
+                
+                // Hàm reset form đánh giá
+                function resetRatingForm() {
+                    if (ratingForm) {
+                        ratingForm.reset();
+                    }
+                    selectedRating = 0;
+                    resetStarHighlight();
+                    ratingText.textContent = 'Chọn số sao để đánh giá';
+                    rateDriverSubmitBtn.disabled = true;
                 }
             });
         </script>
