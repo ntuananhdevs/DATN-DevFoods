@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.customer.fullLayoutMaster')
 
 @section('title', 'FastFood - Trang Chủ')
@@ -41,7 +45,7 @@
     {{-- @foreach ($banners as $index => $banner)
         <div class="banner-slide absolute inset-0 transition-opacity duration-1000 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}">
             <div class="relative h-full w-full">
-                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path :  asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
+                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path : Storage::disk('s3')->url($banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
                 <div class="absolute inset-0 bg-black/30"></div>
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
                     <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{{ $banner->title }}</h2>

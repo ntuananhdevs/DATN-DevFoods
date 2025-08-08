@@ -122,4 +122,14 @@ class Branch extends Model
     {
         return $this->belongsToMany(DiscountCode::class, 'discount_code_branches', 'branch_id', 'discount_code_id');
     }
+
+    /**
+     * Get all combos available at this branch through combo branch stocks
+     */
+    public function combos()
+    {
+        return $this->belongsToMany(Combo::class, 'combo_branch_stock', 'branch_id', 'combo_id')
+            ->withPivot('quantity')
+            ->withTimestamps();
+    }
 }

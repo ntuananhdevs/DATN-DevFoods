@@ -182,6 +182,37 @@
                     </div>
                 </a>
 
+                <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Bình luận">
+                    <button type="button"
+                        class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.reviews.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star">
+                                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Bình luận</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div
+                        class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.reviews.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('branch.reviews.index') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.reviews.index') || request()->routeIs('branch.reviews.show') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Danh sách bình luận</span>
+                        </a>
+                        <a href="{{ route('branch.reviews.reports') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.reviews.reports') || request()->routeIs('branch.reviews.report.show') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Báo cáo vi phạm</span>
+                        </a>
+                    </div>
+                </div>
+
 
             </div>
         </div>

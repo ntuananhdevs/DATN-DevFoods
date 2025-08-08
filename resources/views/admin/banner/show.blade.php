@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
@@ -8,7 +12,7 @@
         {{-- Banner Image --}}
         <div class="banner-card">
             @if ($banner->image_path)
-                <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="banner-image">
+                <img src="{{ Storage::disk('s3')->url($banner->image_path) }}" alt="{{ $banner->title }}" class="banner-image">
             @else
                 <div class="banner-image bg-light d-flex align-items-center justify-content-center">
                     <span>Không có ảnh</span>

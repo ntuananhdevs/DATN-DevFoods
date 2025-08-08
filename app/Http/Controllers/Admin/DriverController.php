@@ -106,7 +106,7 @@ class DriverController extends Controller
                 'processedSearch'
             ));
         } catch (\Exception $e) {
-            \Log::error('Error in listApplications: ' . $e->getMessage(), [
+            Log::error('Error in listApplications: ' . $e->getMessage(), [
                 'request' => $request->all(),
                 'exception' => $e
             ]);
@@ -212,6 +212,10 @@ class DriverController extends Controller
 
             // Gửi email thông báo chấp nhận
             EmailFactory::sendDriverApproval($application, $password);
+
+            // Phát sự kiện cập nhật trạng thái tài xế
+            // Vì đây là tài xế mới, nên trạng thái cũ là null
+            event(new \App\Events\Driver\DriverStatusUpdated($driver, null));
 
             DB::commit();
 
@@ -355,6 +359,10 @@ class DriverController extends Controller
                 'current_latitude' => 0,
                 'current_longitude' => 0,
             ]);
+
+            // Phát sự kiện cập nhật trạng thái tài xế
+            // Vì đây là tài xế mới, nên trạng thái cũ là null
+            event(new \App\Events\Driver\DriverStatusUpdated($driver, null));
 
             session()->flash('toast', [
                 'type' => 'success',
@@ -575,6 +583,10 @@ class DriverController extends Controller
                 'phone_number' => $driver->phone_number,
                 'license_number' => $driver->license_number
             ];
+            
+            // Store old driver status for event
+            $oldDriverStatus = $driver->driver_status;
+            $oldIsAvailable = $driver->is_available;
 
             $driver->update($updateData);
 
@@ -600,6 +612,11 @@ class DriverController extends Controller
                 ]);
             }
 
+            // Dispatch driver status updated event if status or is_available changed
+            if ($oldValues['status'] !== $updateData['status'] || $oldIsAvailable !== $updateData['is_available']) {
+                event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldDriverStatus));
+            }
+            
             DB::commit();
 
             session()->flash('toast', [
@@ -828,6 +845,7 @@ class DriverController extends Controller
 
             $newStatus = $driver->status === 'active' ? 'inactive' : 'active';
             $oldStatus = $driver->status;
+            $oldDriverStatus = $driver->driver_status;
             
             $driver->update([
                 'status' => $newStatus,
@@ -854,12 +872,16 @@ class DriverController extends Controller
                 // You might want to send notification email here
             }
 
+            // Dispatch driver status updated event
+            event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldDriverStatus));
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => $newStatus === 'active' ? 'Kích hoạt tài khoản thành công' : 'Vô hiệu hóa tài khoản thành công',
-                'new_status' => $newStatus
+                'new_status' => $newStatus,
+                'driver_status' => $driver->driver_status
             ]);
 
         } catch (\Exception $e) {
@@ -890,6 +912,9 @@ class DriverController extends Controller
 
             DB::beginTransaction();
 
+            // Store old driver status for event
+            $oldDriverStatus = $driver->driver_status;
+
             $driver->update([
                 'status' => 'locked',
                 'locked_at' => now(),
@@ -911,11 +936,15 @@ class DriverController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
+            // Dispatch driver status updated event
+            event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldDriverStatus));
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Khóa tài khoản tài xế thành công'
+                'message' => 'Khóa tài khoản tài xế thành công',
+                'driver_status' => $driver->driver_status
             ]);
 
         } catch (\Exception $e) {
@@ -945,6 +974,9 @@ class DriverController extends Controller
 
             DB::beginTransaction();
 
+            // Store old driver status for event
+            $oldDriverStatus = $driver->driver_status;
+
             $driver->update([
                 'status' => 'active',
                 'locked_at' => null,
@@ -967,11 +999,15 @@ class DriverController extends Controller
                 'ip_address' => $request->ip()
             ]);
 
+            // Dispatch driver status updated event
+            event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldDriverStatus));
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Mở khóa tài khoản tài xế thành công'
+                'message' => 'Mở khóa tài khoản tài xế thành công',
+                'driver_status' => $driver->driver_status
             ]);
 
         } catch (\Exception $e) {
@@ -1035,12 +1071,18 @@ class DriverController extends Controller
 
             // Auto-lock account for critical violations
             if ($request->severity === 'critical') {
+                // Store old driver status for event
+                $oldDriverStatus = $driver->driver_status;
+                
                 $driver->update([
                     'status' => 'locked',
                     'locked_at' => now(),
                     'locked_by' => auth()->id(),
                     'lock_reason' => 'Vi phạm nghiêm trọng: ' . $request->description
                 ]);
+                
+                // Dispatch driver status updated event
+                event(new \App\Events\Driver\DriverStatusUpdated($driver, $oldDriverStatus));
             }
 
             // Log violation
@@ -1076,5 +1118,38 @@ class DriverController extends Controller
                 'message' => 'Không thể thêm vi phạm: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function tracking()
+    {
+        // Lấy tất cả tài xế active và eager load documents và location
+        $drivers = \App\Models\Driver::where('status', 'active')
+            ->with(['location', 'documents'])
+            ->get();
+        
+        // Tính toán thống kê dựa trên accessor
+        $totalDrivers = $drivers->count();
+        
+        $availableDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'available';
+        })->count();
+        
+        $deliveringDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'delivering';
+        })->count();
+        
+        $offlineDrivers = $drivers->filter(function($driver) {
+            return $driver->driver_status === 'offline';
+        })->count();
+        
+        return view('admin.driver.tracking', [
+            'stats' => [
+                'total' => $totalDrivers,
+                'available' => $availableDrivers,
+                'delivering' => $deliveringDrivers,
+                'offline' => $offlineDrivers
+            ],
+            'drivers' => $drivers
+        ]);
     }
 }

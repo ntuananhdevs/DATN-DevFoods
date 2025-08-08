@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\VariantAttribute;
+use App\Models\VariantValue;
+use App\Models\ProductVariantDetail;
 
 class ProductVariant extends Model
 {
@@ -82,5 +85,21 @@ class ProductVariant extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Get the attributes for this product variant through variant values.
+     */
+    public function attributes()
+    {
+        return $this->belongsToMany(
+            VariantAttribute::class,
+            'product_variant_details',
+            'product_variant_id',
+            'variant_value_id'
+        )->join('variant_values', 'variant_values.id', '=', 'product_variant_details.variant_value_id')
+         ->join('variant_attributes as va', 'va.id', '=', 'variant_values.variant_attribute_id')
+         ->select('va.*')
+         ->distinct();
     }
 }

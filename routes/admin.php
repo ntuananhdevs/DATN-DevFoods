@@ -203,6 +203,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/tracking', [DriverController::class, 'tracking'])->name('tracking');
         Route::get('/create', [DriverController::class, 'create'])->name('create');
         Route::post('/store', [DriverController::class, 'store'])->name('store');
         Route::get('/show/{driver}', [DriverController::class, 'show'])->name('show');
