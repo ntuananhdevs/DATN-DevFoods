@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.branch.contentLayoutMaster')
 @section('title', 'Chi tiết báo cáo vi phạm')
 @section('content')
@@ -66,7 +70,7 @@
                         @if($review->review_image)
                             <div class="mt-4">
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Hình ảnh đính kèm:</h4>
-                                <img src="{{ asset('storage/' . $review->review_image) }}" alt="Review Image" class="max-w-xs rounded-lg shadow-md">
+                                <img src="{{ Storage::disk('s3')->url($review->review_image) }}" alt="Review Image" class="max-w-xs rounded-lg shadow-md">
                             </div>
                         @endif
                     </div>

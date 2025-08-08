@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 <!-- <link href="{{ asset('css/customer/banner.css') }}" rel="stylesheet">
 <style>
     .carousel-slide .slide-content {
@@ -99,7 +103,7 @@
                 @foreach($banners as $key => $banner)
                 <div class="carousel-slide {{ $key === 0 ? 'active' : '' }}" data-link="{{ $banner->link }}">
                     <div class="slide-content" style="cursor: {{ $banner->link ? 'pointer' : 'default' }}">
-                        <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}">
+                        <img src="{{ Storage::disk('s3')->url($banner->image_path) }}" alt="{{ $banner->title }}">
                         <div class="carousel-caption">
                             <h2>{{ $banner->title }}</h2>
                             <p>{{ $banner->description }}</p>
