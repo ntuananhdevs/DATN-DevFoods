@@ -27,6 +27,7 @@ use Illuminate\Support\Str;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Customer\AddressController as CustomerAddressController;
+use App\Http\Controllers\Customer\DriverRatingController;
 use App\Http\Controllers\Customer\ReviewReplyController;
 
 // API Controllers for Customer
@@ -119,6 +120,11 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::post('/reviews/{id}/helpful', [CustomerProductController::class, 'markHelpful'])->name('reviews.helpful');
     Route::delete('/reviews/{id}/helpful', [CustomerProductController::class, 'unmarkHelpful'])->name('reviews.unhelpful');
     Route::post('/reviews/{id}/report', [CustomerProductController::class, 'reportReview'])->name('reviews.report');
+    
+    // Driver Rating routes
+    Route::get('/orders/{order}/rate-driver', [DriverRatingController::class, 'showRatingForm'])->name('driver.rating.show');
+    Route::post('/orders/{order}/rate-driver', [DriverRatingController::class, 'submitRating'])->name('driver.rating.submit');
+    
     // Route để hiển thị trang "Tất cả đơn hàng"
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 

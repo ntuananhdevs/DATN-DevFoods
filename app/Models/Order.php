@@ -134,6 +134,14 @@ class Order extends Model
     {
         return $this->hasMany(ProductReview::class);
     }
+    
+    /**
+     * Get the driver rating for the order.
+     */
+    public function driverRating()
+    {
+        return $this->hasOne(DriverRating::class);
+    }
 
 
     /**
