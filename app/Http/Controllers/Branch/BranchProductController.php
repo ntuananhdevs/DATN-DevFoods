@@ -50,11 +50,11 @@ class BranchProductController extends Controller
         $product = Product::with([
             'category',
             'images',
-            'variants.attributes',
-            'toppings',
-            'branchStocks' => function ($query) use ($branch) {
+            'variants.branchStocks' => function ($query) use ($branch) {
                 $query->where('branch_id', $branch->id);
             },
+            'variants.variantValues.attribute',
+            'toppings',
             'reviews.customer'
         ])->where('slug', $slug)
           ->firstOrFail();
