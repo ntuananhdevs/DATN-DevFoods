@@ -1051,7 +1051,8 @@
                         .setPopup(new mapboxgl.Popup().setHTML(`
                             <div>
                                 <strong>${order.customer_name}</strong><br>
-                                ${order.delivery_address}
+                                ${order.delivery_address}<br>
+                                <small style="color: #888;">Tọa độ: ${order.guest_latitude.toFixed(6)}, ${order.guest_longitude.toFixed(6)}</small>
                             </div>
                         `))
                         .addTo(map);
@@ -1060,7 +1061,7 @@
         }
 
         function getCurrentLocation() {
-            if ("geolocation" in navigator) {
+            if ("geolocation" in navigator) {   
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
                         const { latitude, longitude } = position.coords;

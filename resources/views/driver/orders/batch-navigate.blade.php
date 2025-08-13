@@ -431,6 +431,62 @@
         transform: translateY(-4px);
     }
 
+    .customer-card.collapsed {
+        padding: 12px 20px;
+    }
+
+    .customer-card.collapsed .customer-details,
+    .customer-card.collapsed .order-meta,
+    .customer-card.collapsed .customer-notes,
+    .customer-card.collapsed .customer-actions {
+        display: none;
+    }
+
+    .customer-card.collapsed .customer-avatar {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 8px auto;
+        margin-top: 0;
+        font-size: 16px;
+    }
+
+    .customer-card.collapsed .customer-name {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .customer-card.collapsed .customer-phone {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .customer-card.collapsed .customer-rating {
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .customer-card.collapsed .order-status {
+        margin: 8px 0 0 0;
+        padding: 4px 0 0 0;
+    }
+
+    .expand-indicator {
+        position: absolute;
+        bottom: 8px;
+        right: 12px;
+        color: var(--gray-400);
+        font-size: 12px;
+        transition: var(--transition);
+    }
+
+    .customer-card.collapsed .expand-indicator::after {
+        content: "Nhấn để xem chi tiết";
+    }
+
+    .customer-card:not(.collapsed) .expand-indicator::after {
+        content: "Nhấn để thu gọn";
+    }
+
     .customer-card:focus {
         outline: none;
         border-color: var(--primary-color);
@@ -457,6 +513,14 @@
         font-size: 14px;
         font-weight: 700;
         box-shadow: var(--shadow-md);
+    }
+
+    .customer-card.collapsed .customer-number {
+        position: static;
+        margin: 0 auto 8px auto;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
     }
 
     .customer-avatar {
@@ -509,9 +573,15 @@
 
     .customer-details {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .customer-details {
+            grid-template-columns: 1fr;
+        }
     }
 
     .address-section {
@@ -879,6 +949,110 @@
             transform: rotate(360deg);
         }
     }
+
+    /* Batch Controls Styles */
+    .batch-status-info {
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--border-radius);
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .batch-status-summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .batch-status-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+        font-size: 14px;
+    }
+
+    .batch-status-text {
+        flex: 1;
+    }
+
+    .batch-status-title {
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 4px;
+    }
+
+    .batch-status-description {
+        font-size: 14px;
+        color: var(--gray-600);
+    }
+
+    .batch-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .batch-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        background: white;
+        color: var(--gray-700);
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+        min-width: 160px;
+        justify-content: center;
+    }
+
+    .batch-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .batch-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .batch-btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .batch-btn-success {
+        background: linear-gradient(135deg, var(--success-color) 0%, var(--success-hover) 100%);
+        color: white;
+        border-color: var(--success-color);
+    }
+
+    .batch-btn-warning {
+        background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%);
+        color: white;
+        border-color: var(--warning-color);
+    }
+
+    .batch-btn-danger {
+        background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
+        color: white;
+        border-color: var(--danger-color);
+    }
 </style>
 @endpush
 
@@ -1025,6 +1199,29 @@
         <div class="card-content" id="customerListContent">
             <div class="customer-list" id="customer-list">
                 <!-- Customer items will be dynamically generated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Controls -->
+    <div class="card" id="batch-controls">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="card-title">
+                        <i data-lucide="settings" style="width: 24px; height: 24px; color: var(--primary-color);"></i>
+                        Điều khiển đơn ghép
+                    </h2>
+                    <p class="card-description">Thay đổi trạng thái tất cả đơn hàng trong batch cùng lúc</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-content">
+            <div class="batch-status-info" id="batch-status-info">
+                <!-- Batch status info will be dynamically generated here -->
+            </div>
+            <div class="batch-actions" id="batch-actions">
+                <!-- Batch action buttons will be dynamically generated here -->
             </div>
         </div>
     </div>
@@ -1290,6 +1487,39 @@
 
     // Calculate optimal route using Mapbox Directions API
     async function calculateOptimalRoute() {
+        // Check if any customer is in delivery mode (in_transit or delivered)
+        const deliveringCustomers = customers.filter(customer => customer.orderStatus === 'in_transit' || customer.orderStatus === 'delivered');
+        
+        if (deliveringCustomers.length > 0) {
+            // If any order is in delivery mode, show route to delivery points only
+            return await calculateDeliveryRoute();
+        } else {
+            // Normal route calculation for pickup and delivery
+            return await calculateFullRoute();
+        }
+    }
+    
+    // Calculate route for delivery only (after pickup)
+    async function calculateDeliveryRoute() {
+        // Start from user location
+        const startPoint = userLocation || customers[0].deliveryCoords;
+        
+        // Get delivery points for all orders
+        const deliveryPoints = customers
+            .map(customer => customer.deliveryCoords);
+        
+        if (deliveryPoints.length === 0) {
+            return [startPoint];
+        }
+        
+        // Create waypoints: Start -> D1 -> D2 -> D3...
+        const waypoints = [startPoint, ...deliveryPoints];
+        
+        return await getRouteFromAPI(waypoints);
+    }
+    
+    // Calculate full route (pickup and delivery)
+    async function calculateFullRoute() {
         // Start from user location if available, otherwise use first pickup
         const startPoint = userLocation || customers[0].pickupCoords;
         
@@ -1298,10 +1528,18 @@
         
         // Add pickup and delivery points in order
         customers.forEach(customer => {
-            waypoints.push(customer.pickupCoords);
+            // Only add pickup point if not in delivery mode
+            if (customer.orderStatus !== 'in_transit' && customer.orderStatus !== 'delivered') {
+                waypoints.push(customer.pickupCoords);
+            }
             waypoints.push(customer.deliveryCoords);
         });
         
+        return await getRouteFromAPI(waypoints);
+    }
+    
+    // Helper function to get route from Mapbox API
+    async function getRouteFromAPI(waypoints) {
         // Convert waypoints to string format for API
         const coordinatesString = waypoints.map(coord => coord.join(',')).join(';');
         
@@ -1366,6 +1604,12 @@
             // Add route source and layer
             await addRouteLayer();
             addMarkers();
+            
+            // Show all delivery markers
+            setTimeout(() => {
+                showDeliveryMarkers();
+            }, 100);
+            
             fitAllMarkers();
             
             // Force map resize to ensure proper display
@@ -1378,24 +1622,123 @@
     // Add route layer to map
     async function addRouteLayer() {
         // Remove existing route layers and sources if they exist
-        if (map.getLayer('route-animated')) {
-            map.removeLayer('route-animated');
-        }
-        if (map.getLayer('route')) {
-            map.removeLayer('route');
-        }
-        if (map.getLayer('route-outline')) {
-            map.removeLayer('route-outline');
-        }
-        if (map.getSource('route-animated')) {
-            map.removeSource('route-animated');
-        }
-        if (map.getSource('route')) {
-            map.removeSource('route');
-        }
+        removeExistingRouteLayers();
         
         const route = await calculateOptimalRoute();
         
+        // Check if any customer is in delivery mode
+        const deliveringCustomers = customers.filter(customer => 
+            customer.orderStatus === 'in_transit' || 
+            customer.orderStatus === 'delivered'
+        );
+        
+        if (deliveringCustomers.length > 0) {
+            // Show delivery route only (green color for delivery)
+            addDeliveryRouteLayer(route);
+        } else {
+            // Show full route with segments
+            addFullRouteLayer(route);
+        }
+    }
+    
+    // Remove existing route layers
+    function removeExistingRouteLayers() {
+        const layersToRemove = ['route-animated', 'route', 'route-outline'];
+        const sourcesToRemove = ['route-animated', 'route'];
+        
+        // Remove segment layers
+        for (let i = 1; i <= 10; i++) {
+            layersToRemove.push(`route-segment-${i}`);
+            layersToRemove.push(`route-segment-outline-${i}`);
+            sourcesToRemove.push(`route-segment-${i}`);
+        }
+        
+        layersToRemove.forEach(layerId => {
+            if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+            }
+        });
+        
+        sourcesToRemove.forEach(sourceId => {
+            if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+            }
+        });
+    }
+    
+    // Add delivery route layer (after pickup)
+    function addDeliveryRouteLayer(route) {
+        // Add route source
+        map.addSource('route', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': route
+                }
+            }
+        });
+
+        // Add route layer with green color for delivery
+        map.addLayer({
+            'id': 'route',
+            'type': 'line',
+            'source': 'route',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#10b981', // Green for delivery
+                'line-width': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    10, 4,
+                    15, 7,
+                    18, 10
+                ],
+                'line-opacity': 0.8
+            }
+        });
+
+        // Add route outline
+        map.addLayer({
+            'id': 'route-outline',
+            'type': 'line',
+            'source': 'route',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#ffffff',
+                'line-width': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    10, 6,
+                    15, 9,
+                    18, 12
+                ],
+                'line-opacity': 0.6
+            }
+        }, 'route');
+
+        // Add animated route for visual effect
+        addAnimatedRoute(route);
+        
+        // Hide route legend since we're only showing delivery
+        const routeLegend = document.getElementById('routeLegend');
+        if (routeLegend) {
+            routeLegend.style.display = 'none';
+        }
+    }
+    
+    // Add full route layer with segments
+    function addFullRouteLayer(route) {
         // Add route source
         map.addSource('route', {
             'type': 'geojson',
@@ -1464,6 +1807,12 @@
 
         // Add animated route for visual effect
         addAnimatedRoute(route);
+        
+        // Show route legend for full route
+        const routeLegend = document.getElementById('routeLegend');
+        if (routeLegend) {
+            routeLegend.style.display = 'block';
+        }
     }
 
     // Add animated route effect
@@ -1539,70 +1888,144 @@
 
     // Add markers to map
     function addMarkers() {
+        // Group customers by delivery coordinates to handle overlapping markers
+        const deliveryGroups = {};
+        const pickupGroups = {};
+        
         customers.forEach((customer, index) => {
-            // Pickup marker
-            const pickupEl = document.createElement('div');
-            pickupEl.className = 'marker pickup-marker';
-            pickupEl.innerHTML = `
-                <div style="
-                    width: 32px; 
-                    height: 32px; 
-                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                    font-size: 14px;
-                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-                    border: 2px solid white;
-                ">P${index + 1}</div>
-            `;
+            // Group by delivery coordinates
+            const deliveryKey = `${customer.deliveryCoords[0]}_${customer.deliveryCoords[1]}`;
+            if (!deliveryGroups[deliveryKey]) {
+                deliveryGroups[deliveryKey] = [];
+            }
+            deliveryGroups[deliveryKey].push({...customer, originalIndex: index});
+            
+            // Group by pickup coordinates
+            const pickupKey = `${customer.pickupCoords[0]}_${customer.pickupCoords[1]}`;
+            if (!pickupGroups[pickupKey]) {
+                pickupGroups[pickupKey] = [];
+            }
+            pickupGroups[pickupKey].push({...customer, originalIndex: index});
+        });
+        
+        // Add pickup markers with offset for overlapping locations
+        Object.values(pickupGroups).forEach(group => {
+            group.forEach((customer, groupIndex) => {
+                // Calculate offset for overlapping markers
+                const offsetDistance = 0.0001; // Small offset in degrees
+                const angle = (groupIndex * 360 / group.length) * (Math.PI / 180);
+                const offsetLng = customer.pickupCoords[0] + (Math.cos(angle) * offsetDistance * groupIndex);
+                const offsetLat = customer.pickupCoords[1] + (Math.sin(angle) * offsetDistance * groupIndex);
+                
+                const pickupEl = document.createElement('div');
+                pickupEl.className = 'marker pickup-marker';
+                pickupEl.id = `pickup-marker-${customer.id}`;
+                
+                // Show count if multiple orders at same location
+                const displayText = group.length > 1 ? `P${customer.originalIndex + 1}` : `P${customer.originalIndex + 1}`;
+                const markerSize = group.length > 1 ? '36px' : '32px';
+                
+                pickupEl.innerHTML = `
+                    <div style="
+                        width: ${markerSize}; 
+                        height: ${markerSize}; 
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 14px;
+                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+                        border: 2px solid white;
+                        position: relative;
+                    ">${displayText}
+                    ${group.length > 1 ? `<div style="position: absolute; top: -5px; right: -5px; background: #059669; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">${group.length}</div>` : ''}
+                    </div>
+                `;
 
-            new mapboxgl.Marker(pickupEl)
-                .setLngLat(customer.pickupCoords)
-                .setPopup(new mapboxgl.Popup({ offset: 25 })
-                    .setHTML(`
-                        <div style="padding: 8px;">
-                            <h4 style="margin: 0 0 8px 0; color: #059669;">Điểm lấy hàng</h4>
-                            <p style="margin: 0; font-size: 14px;"><strong>${customer.name}</strong></p>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">${customer.pickupAddress}</p>
-                        </div>
-                    `))
-                .addTo(map);
+                const pickupMarker = new mapboxgl.Marker(pickupEl)
+                    .setLngLat([offsetLng, offsetLat])
+                    .setPopup(new mapboxgl.Popup({ offset: 25 })
+                        .setHTML(`
+                            <div style="padding: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #10b981;">Điểm lấy hàng ${group.length > 1 ? `(${group.length} đơn)` : ''}</h4>
+                                ${group.map(c => `
+                                    <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+                                        <p style="margin: 0; font-size: 14px;"><strong>${c.name}</strong></p>
+                                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">${c.pickupAddress}</p>
+                                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">Tọa độ: ${c.pickupCoords[1].toFixed(6)}, ${c.pickupCoords[0].toFixed(6)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `))
+                    .addTo(map);
+                
+                // Store pickup marker reference
+                pickupEl.markerInstance = pickupMarker;
+            });
+        });
+        
+        // Add delivery markers with offset for overlapping locations
+        Object.values(deliveryGroups).forEach(group => {
+            group.forEach((customer, groupIndex) => {
+                // Calculate offset for overlapping markers
+                const offsetDistance = 0.0001; // Small offset in degrees
+                const angle = (groupIndex * 360 / group.length) * (Math.PI / 180);
+                const offsetLng = customer.deliveryCoords[0] + (Math.cos(angle) * offsetDistance * groupIndex);
+                const offsetLat = customer.deliveryCoords[1] + (Math.sin(angle) * offsetDistance * groupIndex);
+                
+                const deliveryEl = document.createElement('div');
+                deliveryEl.className = 'marker delivery-marker';
+                deliveryEl.id = `delivery-marker-${customer.id}`;
+                
+                // Show count if multiple orders at same location
+                const displayText = group.length > 1 ? `D${customer.originalIndex + 1}` : `D${customer.originalIndex + 1}`;
+                const markerSize = group.length > 1 ? '36px' : '32px';
+                
+                deliveryEl.innerHTML = `
+                    <div style="
+                        width: ${markerSize}; 
+                        height: ${markerSize}; 
+                        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 14px;
+                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                        border: 2px solid white;
+                        position: relative;
+                    ">${displayText}
+                    ${group.length > 1 ? `<div style="position: absolute; top: -5px; right: -5px; background: #dc2626; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">${group.length}</div>` : ''}
+                    </div>
+                `;
 
-            // Delivery marker
-            const deliveryEl = document.createElement('div');
-            deliveryEl.className = 'marker delivery-marker';
-            deliveryEl.innerHTML = `
-                <div style="
-                    width: 32px; 
-                    height: 32px; 
-                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                    font-size: 14px;
-                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-                    border: 2px solid white;
-                ">D${index + 1}</div>
-            `;
-
-            new mapboxgl.Marker(deliveryEl)
-                .setLngLat(customer.deliveryCoords)
-                .setPopup(new mapboxgl.Popup({ offset: 25 })
-                    .setHTML(`
-                        <div style="padding: 8px;">
-                            <h4 style="margin: 0 0 8px 0; color: #dc2626;">Điểm giao hàng</h4>
-                            <p style="margin: 0; font-size: 14px;"><strong>${customer.name}</strong></p>
-                            <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">${customer.deliveryAddress}</p>
-                        </div>
-                    `))
-                .addTo(map);
+                const deliveryMarker = new mapboxgl.Marker(deliveryEl)
+                    .setLngLat([offsetLng, offsetLat])
+                    .setPopup(new mapboxgl.Popup({ offset: 25 })
+                        .setHTML(`
+                            <div style="padding: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #dc2626;">Điểm giao hàng ${group.length > 1 ? `(${group.length} đơn)` : ''}</h4>
+                                ${group.map(c => `
+                                    <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+                                        <p style="margin: 0; font-size: 14px;"><strong>${c.name}</strong></p>
+                                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">${c.deliveryAddress}</p>
+                                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">Tọa độ: ${c.deliveryCoords[1].toFixed(6)}, ${c.deliveryCoords[0].toFixed(6)}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `));
+                
+                // Always add delivery marker to map for all orders
+                deliveryMarker.addTo(map);
+                
+                // Store delivery marker reference
+                deliveryEl.markerInstance = deliveryMarker;
+            });
         });
 
         // Add user location marker if available
@@ -1630,9 +2053,72 @@
             new mapboxgl.Marker(userEl)
                 .setLngLat(userLocation)
                 .setPopup(new mapboxgl.Popup({ offset: 25 })
-                    .setHTML('<div style="padding: 8px;"><h4 style="margin: 0; color: #2563eb;">Vị trí của bạn</h4></div>'))
+                    .setHTML(`<div style="padding: 8px;"><h4 style="margin: 0; color: #2563eb;">Vị trí của bạn</h4><p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">Tọa độ: ${userLocation[1].toFixed(6)}, ${userLocation[0].toFixed(6)}</p></div>`))
                 .addTo(map);
         }
+    }
+
+    // Hide pickup markers when in delivery mode
+    function hidePickupMarkers() {
+        // Check if any customer is in delivery mode
+        const hasDeliveringCustomers = customers.some(customer => 
+            customer.orderStatus === 'in_transit' || customer.orderStatus === 'delivered'
+        );
+        
+        console.log('hidePickupMarkers called, hasDeliveringCustomers:', hasDeliveringCustomers);
+        
+        if (hasDeliveringCustomers) {
+            // Hide all pickup markers when any customer is in delivery mode
+            customers.forEach(customer => {
+                const pickupMarkerEl = document.getElementById(`pickup-marker-${customer.id}`);
+                console.log(`Checking pickup marker for customer ${customer.id}:`, pickupMarkerEl, pickupMarkerEl?.markerInstance);
+                if (pickupMarkerEl && pickupMarkerEl.markerInstance) {
+                    pickupMarkerEl.markerInstance.remove();
+                    console.log(`Removed pickup marker for customer ${customer.id}`);
+                }
+            });
+        }
+    }
+    
+    // Show pickup markers when not in delivery mode
+    function showPickupMarkers() {
+        // Check if no customer is in delivery mode
+        const hasDeliveringCustomers = customers.some(customer => 
+            customer.orderStatus === 'in_transit' || customer.orderStatus === 'delivered'
+        );
+        
+        if (!hasDeliveringCustomers) {
+            // Show all pickup markers when no customer is in delivery mode
+            customers.forEach(customer => {
+                const pickupMarkerEl = document.getElementById(`pickup-marker-${customer.id}`);
+                if (pickupMarkerEl && pickupMarkerEl.markerInstance) {
+                    pickupMarkerEl.markerInstance.addTo(map);
+                }
+            });
+        }
+    }
+
+    // Show delivery markers for all orders
+    function showDeliveryMarkers() {
+        customers.forEach(customer => {
+            const deliveryMarkerEl = document.getElementById(`delivery-marker-${customer.id}`);
+            if (deliveryMarkerEl && deliveryMarkerEl.markerInstance) {
+                deliveryMarkerEl.markerInstance.addTo(map);
+            }
+        });
+    }
+
+    // Hide delivery markers (currently disabled to show all markers)
+    function hideDeliveryMarkers() {
+        // Comment out to always show delivery markers
+        // customers.forEach(customer => {
+        //     if (customer.orderStatus !== 'in_transit' && customer.orderStatus !== 'delivered') {
+        //         const deliveryMarkerEl = document.getElementById(`delivery-marker-${customer.id}`);
+        //         if (deliveryMarkerEl && deliveryMarkerEl.markerInstance) {
+        //             deliveryMarkerEl.markerInstance.remove();
+        //         }
+        //     }
+        // });
     }
 
     // Map control functions
@@ -1677,6 +2163,7 @@
     function toggleRoute() {
         showRoute = !showRoute;
         const btn = document.getElementById('routeToggle');
+        const routeLegend = document.getElementById('routeLegend');
         
         if (showRoute) {
             // Show all route layers
@@ -1689,6 +2176,27 @@
             if (map.getLayer('route-animated')) {
                 map.setLayoutProperty('route-animated', 'visibility', 'visible');
             }
+            
+            // Show segment layers if they exist
+            for (let i = 1; i <= 10; i++) {
+                if (map.getLayer(`route-segment-${i}`)) {
+                    map.setLayoutProperty(`route-segment-${i}`, 'visibility', 'visible');
+                }
+                if (map.getLayer(`route-segment-outline-${i}`)) {
+                    map.setLayoutProperty(`route-segment-outline-${i}`, 'visibility', 'visible');
+                }
+            }
+            
+            // Show route legend based on current state
+            const deliveringCustomers = customers.filter(customer => 
+                customer.orderStatus === 'in_transit' || 
+                customer.orderStatus === 'delivered'
+            );
+            
+            if (routeLegend && deliveringCustomers.length === 0) {
+                routeLegend.style.display = 'block';
+            }
+            
             btn.classList.add('active');
             btn.classList.remove('hidden');
             btn.innerHTML = '<i data-lucide="route" style="width: 18px; height: 18px;"></i><span>Ẩn tuyến đường</span>';
@@ -1703,6 +2211,22 @@
             if (map.getLayer('route-animated')) {
                 map.setLayoutProperty('route-animated', 'visibility', 'none');
             }
+            
+            // Hide segment layers if they exist
+            for (let i = 1; i <= 10; i++) {
+                if (map.getLayer(`route-segment-${i}`)) {
+                    map.setLayoutProperty(`route-segment-${i}`, 'visibility', 'none');
+                }
+                if (map.getLayer(`route-segment-outline-${i}`)) {
+                    map.setLayoutProperty(`route-segment-outline-${i}`, 'visibility', 'none');
+                }
+            }
+            
+            // Hide route legend
+            if (routeLegend) {
+                routeLegend.style.display = 'none';
+            }
+            
             btn.classList.remove('active');
             btn.classList.add('hidden');
             btn.innerHTML = '<i data-lucide="route" style="width: 18px; height: 18px;"></i><span>Hiện tuyến đường</span>';
@@ -1727,6 +2251,12 @@
         map.once('styledata', async () => {
             await addRouteLayer();
             addMarkers();
+            
+            // Apply marker visibility logic after style change
+            setTimeout(() => {
+                hideDeliveryMarkers();
+                showDeliveryMarkers();
+            }, 100);
         });
         
         lucide.createIcons();
@@ -1776,20 +2306,20 @@
         
         customers.forEach((customer, index) => {
             const customerItem = document.createElement('div');
-            customerItem.className = 'customer-item';
+            customerItem.className = 'customer-card collapsed';
+            customerItem.setAttribute('data-customer-id', customer.id);
+            customerItem.onclick = () => toggleCustomerDetails(customer.id);
             customerItem.innerHTML = `
-                <div class="customer-header">
-                    <div class="customer-info">
-                        <div class="customer-name">${customer.name}</div>
-                        <div class="customer-phone">
-                            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-                            ${customer.phone}
-                        </div>
-                    </div>
-                    <div class="customer-rating">
-                        <i data-lucide="star" style="width: 14px; height: 14px; fill: currentColor;"></i>
-                        ${customer.rating}
-                    </div>
+                <div class="customer-number">${index + 1}</div>
+                <div class="customer-avatar">${customer.name.charAt(0).toUpperCase()}</div>
+                <div class="customer-name">${customer.name}</div>
+                <div class="customer-phone">
+                    <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
+                    ${customer.phone}
+                </div>
+                <div class="customer-rating">
+                    <i data-lucide="star" style="width: 14px; height: 14px; fill: currentColor;"></i>
+                    ${customer.rating}
                 </div>
                 
                 <div class="customer-details">
@@ -1845,18 +2375,27 @@
                     </button>
                     ${getStatusButtons(customer.id, customer.orderStatus)}
                 </div>
+                <div class="expand-indicator"></div>
             `;
             
             customerListContainer.appendChild(customerItem);
         });
         
         // Recreate icons after adding HTML
-        lucide.createIcons();
+        setTimeout(() => lucide.createIcons(), 10);
     }
     
     // Call customer function
     function callCustomer(phone) {
         window.location.href = `tel:${phone}`;
+    }
+
+    // Toggle customer details
+    function toggleCustomerDetails(customerId) {
+        const customerCard = document.querySelector(`[data-customer-id="${customerId}"]`);
+        if (customerCard) {
+            customerCard.classList.toggle('collapsed');
+        }
     }
     
 
@@ -1880,6 +2419,22 @@
     // Get status buttons based on current status
     function getStatusButtons(orderId, currentStatus) {
         let buttons = '';
+        
+        // Check if all orders have the same status (for batch control)
+        const allStatuses = customers.map(c => c.orderStatus);
+        const uniqueStatuses = [...new Set(allStatuses)];
+        const allSameStatus = uniqueStatuses.length === 1;
+        
+        // For statuses before 'in_transit', if all orders have same status, don't show individual buttons
+        const batchControlStatuses = ['awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'];
+        if (allSameStatus && batchControlStatuses.includes(currentStatus)) {
+            buttons = `
+                <div style="padding: 8px; text-align: center; color: var(--gray-600); font-size: 12px; font-style: italic;">
+                    Sử dụng "Điều khiển đơn ghép" ở trên để cập nhật tất cả đơn cùng lúc
+                </div>
+            `;
+            return buttons ? `<div class="status-actions">${buttons}</div>` : '';
+        }
         
         switch (currentStatus) {
             case 'awaiting_driver':
@@ -2100,6 +2655,30 @@
 
                 // Re-render customer list to update UI
                 renderCustomerList();
+                renderBatchControls();
+                
+                // Update route and markers when status changes
+                if (newStatus === 'in_transit' || newStatus === 'delivered') {
+                    // Re-calculate and update route based on new status
+                    setTimeout(async () => {
+                        if (map && map.isStyleLoaded()) {
+                            await addRouteLayer();
+                            // Hide pickup markers when in delivery mode
+                            hidePickupMarkers();
+                            // Show delivery markers when in delivery mode
+                            showDeliveryMarkers();
+                        }
+                    }, 500);
+                } else {
+                    // Show pickup markers when not in delivery mode
+                    setTimeout(() => {
+                        if (map && map.isStyleLoaded()) {
+                            showPickupMarkers();
+                            // Hide delivery markers when not in delivery mode
+                            hideDeliveryMarkers();
+                        }
+                    }, 500);
+                }
 
                 // Show success toast
                 showToast('success', {
@@ -2123,11 +2702,276 @@
 
 
 
+    // Batch control functions
+    function getBatchStatus() {
+        const statuses = customers.map(c => c.orderStatus);
+        const uniqueStatuses = [...new Set(statuses)];
+        
+        if (uniqueStatuses.length === 1) {
+            return uniqueStatuses[0];
+        } else {
+            // Mixed statuses - find the most common one or earliest stage
+            const statusOrder = ['awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up', 'in_transit', 'delivered', 'delivery_failed', 'item_received', 'cancelled'];
+            for (let status of statusOrder) {
+                if (statuses.includes(status)) {
+                    return status;
+                }
+            }
+        }
+        return 'mixed';
+    }
+
+    function renderBatchControls() {
+        const batchStatusInfo = document.getElementById('batch-status-info');
+        const batchActions = document.getElementById('batch-actions');
+        
+        if (!batchStatusInfo || !batchActions) return;
+        
+        const currentBatchStatus = getBatchStatus();
+        const statuses = customers.map(c => c.orderStatus);
+        const uniqueStatuses = [...new Set(statuses)];
+        
+        // Render status info
+        let statusIcon, statusTitle, statusDescription, iconColor;
+        
+        if (uniqueStatuses.length === 1) {
+            switch (currentBatchStatus) {
+                case 'awaiting_driver':
+                    statusIcon = 'clock';
+                    statusTitle = 'Chờ xác nhận';
+                    statusDescription = 'Tất cả đơn hàng đang chờ tài xế xác nhận';
+                    iconColor = 'var(--warning-color)';
+                    break;
+                case 'driver_confirmed':
+                    statusIcon = 'check-circle';
+                    statusTitle = 'Đã xác nhận';
+                    statusDescription = 'Tất cả đơn hàng đã được xác nhận';
+                    iconColor = 'var(--success-color)';
+                    break;
+                case 'waiting_driver_pick_up':
+                    statusIcon = 'navigation';
+                    statusTitle = 'Đang di chuyển';
+                    statusDescription = 'Đang di chuyển đến điểm lấy hàng';
+                    iconColor = 'var(--primary-color)';
+                    break;
+                case 'driver_picked_up':
+                    statusIcon = 'package';
+                    statusTitle = 'Đã lấy hàng';
+                    statusDescription = 'Đã lấy tất cả hàng, sẵn sàng giao';
+                    iconColor = 'var(--purple-color)';
+                    break;
+                case 'in_transit':
+                    statusIcon = 'truck';
+                    statusTitle = 'Đang giao hàng';
+                    statusDescription = 'Đang giao hàng cho từng khách hàng';
+                    iconColor = 'var(--warning-color)';
+                    break;
+                default:
+                    statusIcon = 'info';
+                    statusTitle = 'Trạng thái khác';
+                    statusDescription = 'Đơn hàng ở trạng thái: ' + getStatusText(currentBatchStatus);
+                    iconColor = 'var(--gray-500)';
+            }
+        } else {
+            statusIcon = 'layers';
+            statusTitle = 'Trạng thái hỗn hợp';
+            statusDescription = `Có ${uniqueStatuses.length} trạng thái khác nhau trong batch`;
+            iconColor = 'var(--gray-500)';
+        }
+        
+        batchStatusInfo.innerHTML = `
+            <div class="batch-status-summary">
+                <div class="batch-status-icon" style="background: ${iconColor};">
+                    <i data-lucide="${statusIcon}" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="batch-status-text">
+                    <div class="batch-status-title">${statusTitle}</div>
+                    <div class="batch-status-description">${statusDescription}</div>
+                </div>
+            </div>
+        `;
+        
+        // Render action buttons
+        let actionButtons = '';
+        
+        if (uniqueStatuses.length === 1) {
+            switch (currentBatchStatus) {
+                case 'awaiting_driver':
+                    actionButtons = `
+                        <button class="batch-btn batch-btn-success" onclick="updateBatchStatus('driver_confirmed')">
+                            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                            Xác nhận tất cả đơn
+                        </button>
+                        <button class="batch-btn batch-btn-danger" onclick="updateBatchStatus('cancelled')">
+                            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                            Từ chối batch
+                        </button>
+                    `;
+                    break;
+                case 'driver_confirmed':
+                    actionButtons = `
+                        <button class="batch-btn batch-btn-primary" onclick="updateBatchStatus('waiting_driver_pick_up')">
+                            <i data-lucide="navigation" style="width: 16px; height: 16px;"></i>
+                            Bắt đầu di chuyển lấy hàng
+                        </button>
+                    `;
+                    break;
+                case 'waiting_driver_pick_up':
+                    actionButtons = `
+                        <button class="batch-btn batch-btn-success" onclick="updateBatchStatus('driver_picked_up')">
+                            <i data-lucide="package" style="width: 16px; height: 16px;"></i>
+                            Xác nhận đã lấy tất cả hàng
+                        </button>
+                    `;
+                    break;
+                case 'driver_picked_up':
+                    actionButtons = `
+                        <button class="batch-btn batch-btn-warning" onclick="updateBatchStatus('in_transit')">
+                            <i data-lucide="truck" style="width: 16px; height: 16px;"></i>
+                            Bắt đầu giao hàng
+                        </button>
+                    `;
+                    break;
+            }
+        } else {
+            actionButtons = `
+                <div style="padding: 12px; text-align: center; color: var(--gray-600); font-size: 14px;">
+                    <i data-lucide="info" style="width: 16px; height: 16px; margin-right: 8px;"></i>
+                    Các đơn hàng có trạng thái khác nhau. Vui lòng cập nhật từng đơn riêng lẻ.
+                </div>
+            `;
+        }
+        
+        batchActions.innerHTML = actionButtons;
+        
+        // Re-create icons
+        setTimeout(() => lucide.createIcons(), 10);
+    }
+
+    async function updateBatchStatus(newStatus) {
+        const statusMessages = {
+            'driver_confirmed': {
+                title: 'Xác nhận nhận batch',
+                message: 'Bạn có chắc chắn muốn xác nhận nhận tất cả đơn hàng trong batch này?',
+                successMessage: 'Đã xác nhận nhận tất cả đơn hàng trong batch!'
+            },
+            'waiting_driver_pick_up': {
+                title: 'Bắt đầu di chuyển',
+                message: 'Bạn có chắc chắn muốn bắt đầu di chuyển đến điểm lấy hàng?',
+                successMessage: 'Đã bắt đầu di chuyển đến điểm lấy hàng!'
+            },
+            'driver_picked_up': {
+                title: 'Xác nhận lấy hàng',
+                message: 'Bạn có chắc chắn đã lấy tất cả hàng trong batch này?',
+                successMessage: 'Đã xác nhận lấy tất cả hàng!'
+            },
+            'in_transit': {
+                title: 'Bắt đầu giao hàng',
+                message: 'Bạn có chắc chắn muốn bắt đầu giao hàng? Sau bước này, bạn sẽ giao hàng cho từng khách hàng riêng lẻ.',
+                successMessage: 'Đã bắt đầu giao hàng! Bây giờ bạn có thể giao hàng cho từng khách hàng.'
+            },
+            'cancelled': {
+                title: 'Từ chối batch',
+                message: 'Bạn có chắc chắn muốn từ chối toàn bộ batch này?',
+                successMessage: 'Đã từ chối batch!'
+            }
+        };
+        
+        const config = statusMessages[newStatus];
+        if (!config) return;
+        
+        // Show confirmation modal
+        const confirmed = await new Promise((resolve) => {
+            showModal(config.title, config.message, () => resolve(true), {
+                icon: 'fas fa-question',
+                iconColor: 'blue',
+                confirmColor: 'blue',
+                confirmText: 'Xác nhận',
+                onCancel: () => resolve(false)
+            });
+        });
+        
+        if (!confirmed) return;
+        
+        try {
+            // Update UI to show loading
+            const batchActions = document.getElementById('batch-actions');
+            if (batchActions) {
+                batchActions.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: var(--gray-600);">
+                        <i data-lucide="loader-2" style="width: 20px; height: 20px; animation: spin 1s linear infinite; margin-right: 8px;"></i>
+                        Đang cập nhật trạng thái...
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+            
+            // Use the first order ID for the batch update
+            const firstOrderId = customers[0].id.toString().replace('ORD', '');
+            
+            const response = await fetch(`/driver/orders/batch/{{ $batchId }}/${firstOrderId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update all customer statuses
+                customers.forEach(customer => {
+                    customer.orderStatus = newStatus;
+                });
+                
+                // Re-render everything
+                renderCustomerList();
+                renderBatchControls();
+                
+                // Update map if needed
+                if (newStatus === 'in_transit') {
+                    setTimeout(async () => {
+                        if (map && map.isStyleLoaded()) {
+                            await addRouteLayer();
+                            hidePickupMarkers();
+                        }
+                    }, 500);
+                }
+                
+                showToast('success', {
+                    message: config.successMessage,
+                    duration: 3000
+                });
+            } else {
+                throw new Error(result.message || 'Có lỗi xảy ra');
+            }
+        } catch (error) {
+            console.error('Error updating batch status:', error);
+            showToast('error', {
+                message: 'Không thể cập nhật trạng thái batch: ' + error.message,
+                duration: 5000
+            });
+            
+            // Restore original controls
+            renderBatchControls();
+        }
+    }
+
     // Initialize everything when page loads
     document.addEventListener('DOMContentLoaded', () => {
-        lucide.createIcons();
         initMap();
         renderCustomerList();
+        renderBatchControls();
+        setTimeout(() => lucide.createIcons(), 100);
     });
 
     // Handle window resize

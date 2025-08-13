@@ -148,12 +148,7 @@
                             Xác nhận nhận đơn
                         </button>
 
-                        {{-- Nút Từ chối --}}
-                        <button data-action="reject-order"
-                            class="w-full bg-red-600 text-white mt-2 py-3 rounded-lg font-medium shadow-sm hover:bg-red-700 flex items-center justify-center">
-                            <i class="fas fa-times w-4 h-4 mr-2"></i>
-                            Từ chối nhận đơn
-                        </button>
+                     
                     @break
 
                     @case('driver_confirmed')
