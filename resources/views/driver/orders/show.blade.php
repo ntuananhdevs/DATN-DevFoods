@@ -163,7 +163,6 @@
                             <i class="fas fa-location-arrow w-4 h-4 mr-2"></i>
                             Bắt đầu di chuyển đến điểm lấy hàng
                         </button>
-                        {{-- Nút "Xem bản đồ lớn" --}}
                     @break
 
                     @case('waiting_driver_pick_up')
@@ -172,12 +171,6 @@
                             class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center">
                             <i class="fas fa-box w-4 h-4 mr-2"></i>
                             Xác nhận đã lấy hàng
-                        </button>
-                        {{-- Nút "Xem bản đồ lớn" --}}
-                        <button onclick="DriverOrderDetailPage.navigateAction('branch')"
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center mt-2">
-                            <i class="fas fa-route w-4 h-4 mr-2"></i>
-                            Xem bản đồ lớn
                         </button>
                     @break
 
@@ -197,17 +190,31 @@
                             <i class="fas fa-check-circle w-4 h-4 mr-2"></i>
                             Đã giao hàng thành công
                         </button>
-                        {{-- Nút "Xem bản đồ lớn" --}}
-                        <button data-action="navigate"
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center mt-2">
-                            <i class="fas fa-route w-4 h-4 mr-2"></i> {{-- Using a direct fas icon for route map --}}
-                            Xem bản đồ lớn
-                        </button>
+
                     @break
 
                     @default
                         {{-- Các trạng thái delivered/item_received/... không hiển thị nút --}}
                 @endSwitch
+
+                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn --}}
+                @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
+                    @if(is_null($order->batch_id))
+                        {{-- Đơn lẻ: hiển thị nút xem bản đồ lớn --}}
+                        <button data-action="view-large-map"
+                            class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
+                            <i class="fas fa-map w-4 h-4 mr-2"></i>
+                            Xem bản đồ lớn
+                        </button>
+                    @else
+                        {{-- Đơn ghép: hiển thị nút xem ghép đơn --}}
+                        <a href="{{ route('driver.orders.batch.navigate', $order->batch_id) }}"
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
+                            <i class="fas fa-route w-4 h-4 mr-2"></i>
+                            Xem ghép đơn
+                        </a>
+                    @endif
+                @endif
 
                 @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
                     <button data-action="call-customer"
@@ -414,11 +421,12 @@
                         case 'reject-order':
                             DriverOrderDetailPage.rejectAction(orderId);
                             break;
-                        case 'navigate':
-                            DriverOrderDetailPage.navigateAction();
-                            break;
+
                         case 'call-customer':
                             DriverOrderDetailPage.callCustomerAction();
+                            break;
+                        case 'view-large-map':
+                            DriverOrderDetailPage.viewLargeMapAction();
                             break;
                     }
 
@@ -723,23 +731,7 @@
                     );
                 },
 
-                navigateAction: function(type) {
-                    const orderDetailsCard = document.getElementById('order-details-card');
-                    const orderId = orderDetailsCard ? orderDetailsCard.dataset.orderId : null;
-                    const orderStatus = orderDetailsCard ? orderDetailsCard.dataset.orderStatus : null;
 
-                    if (orderId) {
-                        let url = `/driver/orders/${orderId}/navigate`;
-                        if (type === 'branch' || orderStatus === 'waiting_driver_pick_up') {
-                            url += '?type=branch';
-                        }
-                        window.location.href = url;
-                    } else {
-                        showToast('error', {
-                            message: 'Không thể xác định đơn hàng để điều hướng.'
-                        });
-                    }
-                },
 
                 callCustomerAction: function() {
                     // Get phone from HTML attribute if available, or from a JS variable set by Blade
@@ -760,7 +752,17 @@
                             message: 'Không có số điện thoại khách hàng.'
                         });
                     }
-                }
+                },
+
+                viewLargeMapAction: function() {
+                    const orderDetailsCard = document.getElementById('order-details-card');
+                    const orderId = orderDetailsCard.dataset.orderId;
+                    
+                    // Chuyển sang trang navigate
+                    window.location.href = `/driver/orders/${orderId}/navigate`;
+                },
+
+
             };
 
             // Initialize the page logic
