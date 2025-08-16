@@ -1063,10 +1063,13 @@
         const toggleBtn = document.getElementById('toggleSearchHeader');
         const searchHeaderWrapper = document.getElementById('searchHeaderWrapper');
         let isVisible = true;
-        if (toggleBtn && searchHeaderWrapper) {
+        if (toggleBtn) {
             toggleBtn.addEventListener('click', function() {
                 isVisible = !isVisible;
-                searchHeaderWrapper.style.display = isVisible ? 'block' : 'none';
+                const headerElement = searchHeaderWrapper || document.querySelector('.search-header, .filter-section');
+                if (headerElement) {
+                    headerElement.style.display = isVisible ? 'block' : 'none';
+                }
                 toggleBtn.textContent = isVisible ? 'Ẩn tìm kiếm' : 'Hiện tìm kiếm';
             });
         }
@@ -1078,9 +1081,15 @@
 
 <!-- Thêm biến Pusher cho JS -->
 <script>
-    window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
-    window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    // Chỉ set pusher config nếu chưa có
+    if (typeof window.pusherKey === 'undefined') {
+        window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
+        window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    }
 </script>
+@if(!isset($chatScriptLoaded))
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
+@php $chatScriptLoaded = true; @endphp
+@endif
 @endsection
