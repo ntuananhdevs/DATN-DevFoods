@@ -599,9 +599,10 @@ class ProductController extends Controller
 
         // Kiểm tra user đã mua sản phẩm này chưa (để hiển thị form review)
         $hasPurchased = false;
-        if (Auth::check()) {
+        if (Auth::check() && $selectedBranchId) {
             $hasPurchased = \App\Models\Order::where('customer_id', Auth::id())
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
+                ->where('branch_id', $selectedBranchId)
                 ->whereHas('orderItems.productVariant', function($q) use ($product) {
                     $q->where('product_id', $product->id);
                 })
@@ -1012,7 +1013,7 @@ class ProductController extends Controller
             
             // Kiểm tra user đã mua sản phẩm này ở chi nhánh này chưa
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
                 ->where('branch_id', $branchId) // Thêm điều kiện chi nhánh
                 ->whereHas('orderItems.productVariant', function($q) use ($id) {
                     $q->where('product_id', $id);
@@ -1203,14 +1204,14 @@ class ProductController extends Controller
         $hasPurchased = false;
         if ($review->product_id) {
             $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
                 ->whereHas('orderItems.productVariant', function($q) use ($review) {
                     $q->where('product_id', $review->product_id);
                 })
                 ->exists();
         } elseif ($review->combo_id) {
             $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
                 ->whereHas('orderItems', function($q) use ($review) {
                     $q->where('combo_id', $review->combo_id);
                 })
