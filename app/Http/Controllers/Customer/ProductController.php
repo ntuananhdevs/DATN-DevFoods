@@ -39,12 +39,62 @@ class ProductController extends Controller
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+        
+        // Override branch_id if provided in request (for AJAX)
+        if ($request->has('branch_id') && $request->branch_id) {
+            $selectedBranchId = $request->branch_id;
+        }
+        
+        // Get filter parameters
+        $searchTerm = $request->get('search', '');
+        $sortBy = $request->get('sort', 'popular');
+        $categoryFilter = $request->get('category', '');
 
         // Lấy tất cả categories để hiển thị filter và lazy load
-        $categories = Category::where('status', true)
-            ->with(['products' => function($query) use ($selectedBranchId) {
-                $query->where('status', 'selling')
-                    ->with([
+        $categoriesQuery = Category::where('status', true);
+        
+        // Filter by category if specified
+        if ($categoryFilter) {
+            $categoriesQuery->where('id', $categoryFilter);
+        }
+        
+        $categories = $categoriesQuery
+            ->with(['products' => function($query) use ($selectedBranchId, $searchTerm, $sortBy) {
+                $query->where('status', 'selling');
+                
+                // Apply search filter
+                if ($searchTerm) {
+                    $query->where(function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%')
+                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+                
+                // Apply sorting
+                switch ($sortBy) {
+                    case 'name-asc':
+                        $query->orderBy('name', 'asc');
+                        break;
+                    case 'name-desc':
+                        $query->orderBy('name', 'desc');
+                        break;
+                    case 'price-asc':
+                        $query->orderBy('base_price', 'asc');
+                        break;
+                    case 'price-desc':
+                        $query->orderBy('base_price', 'desc');
+                        break;
+                    case 'newest':
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                    case 'popular':
+                    default:
+                        $query->orderBy('favorite_count', 'desc')
+                              ->orderBy('created_at', 'desc');
+                        break;
+                }
+                
+                $query->with([
                         'category',
                         'combos', // Thêm dòng này để eager load combos
                         'images' => function($q) { $q->orderBy('is_primary', 'desc'); },
@@ -63,10 +113,42 @@ class ProductController extends Controller
                     });
                 }
                 // Không phân trang
-            }, 'combos' => function($query) use ($selectedBranchId) {
+            }, 'combos' => function($query) use ($selectedBranchId, $searchTerm, $sortBy) {
                 $query->where('status', 'selling')
-                    ->where('active', true)
-                    ->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
+                    ->where('active', true);
+                
+                // Apply search filter for combos
+                if ($searchTerm) {
+                    $query->where(function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%')
+                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+                
+                // Apply sorting for combos
+                switch ($sortBy) {
+                    case 'name-asc':
+                        $query->orderBy('name', 'asc');
+                        break;
+                    case 'name-desc':
+                        $query->orderBy('name', 'desc');
+                        break;
+                    case 'price-asc':
+                        $query->orderBy('price', 'asc');
+                        break;
+                    case 'price-desc':
+                        $query->orderBy('price', 'desc');
+                        break;
+                    case 'newest':
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                    case 'popular':
+                    default:
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                }
+                
+                $query->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
                         if ($selectedBranchId) {
                             $q->where('branch_id', $selectedBranchId);
                         }
@@ -223,6 +305,16 @@ class ProductController extends Controller
                     }
                 }
             }
+        }
+
+        // Xử lý AJAX request
+        if ($request->ajax() || $request->has('ajax')) {
+            // Render partial view cho AJAX
+            $html = view('customer.shop._ajax_products', compact('categories', 'selectedBranchId'))->render();
+            return response()->json([
+                'success' => true,
+                'html' => $html
+            ]);
         }
 
         return view("customer.shop.index", compact('categories', 'selectedBranchId'));

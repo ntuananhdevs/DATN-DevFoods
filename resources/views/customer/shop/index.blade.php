@@ -456,6 +456,7 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
                     <option value="price-asc" {{ request('sort') == 'price-asc' ? 'selected' : '' }}>Giá: Thấp đến cao</option>
                     <option value="price-desc" {{ request('sort') == 'price-desc' ? 'selected' : '' }}>Giá: Cao đến thấp</option>
                     <option value="name-asc" {{ request('sort') == 'name-asc' ? 'selected' : '' }}>Tên: A-Z</option>
+                    <option value="name-desc" {{ request('sort') == 'name-desc' ? 'selected' : '' }}>Tên: Z-A</option>
                 </select>
             </div>
         </div>
