@@ -390,3 +390,27 @@ function updateSelectedBannerStatus(status) {
         },
     });
 }
+
+// Hàm xác nhận trạng thái đơn hàng cho tài xế
+function dtmodalConfirmOrderStatus(options) {
+    const {
+        orderCode = "",
+        newStatusText = "Cập nhật trạng thái",
+        message = "Bạn có chắc chắn muốn thực hiện hành động này?",
+        confirmText = "Xác nhận",
+        cancelText = "Hủy bỏ",
+        onConfirm = null,
+        onCancel = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "warning",
+        title: `${newStatusText} - Đơn hàng #${orderCode}`,
+        subtitle: "Xác nhận hành động",
+        message: message,
+        confirmText: confirmText,
+        cancelText: cancelText,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
+    });
+}

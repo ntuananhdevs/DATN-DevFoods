@@ -168,6 +168,11 @@ class CheckoutController extends Controller
                     $item->variant->product->primary_image = $item->variant->product->images
                         ->where('is_primary', true)
                         ->first() ?? $item->variant->product->images->first();
+                    
+                    // Thêm S3 URL cho primary image
+                    if ($item->variant->product->primary_image && $item->variant->product->primary_image->img) {
+                        $item->variant->product->primary_image->s3_url = \Storage::disk('s3')->url($item->variant->product->primary_image->img);
+                    }
                 }
                 // Xử lý cho combo (nếu cần)
                 elseif ($item->combo) {

@@ -16,6 +16,8 @@ class Order extends Model
         'customer_id',
         'branch_id',
         'driver_id',
+        'batch_id',
+        'batch_order',
         'address_id',
         'discount_code_id',
         'payment_id', // Thêm payment_id vào fillable
@@ -520,5 +522,73 @@ class Order extends Model
         return Attribute::make(
             get: fn() => $this->calculatedSubtotal + $this->delivery_fee - $this->discount_amount
         );
+    }
+
+    /**
+     * Get all orders in the same batch
+     */
+    public function batchOrders()
+    {
+        return $this->where('batch_id', $this->batch_id)
+                   ->where('batch_id', '!=', null)
+                   ->orderBy('batch_order');
+    }
+
+    /**
+     * Check if this order is part of a batch
+     */
+    public function isPartOfBatch(): bool
+    {
+        return !empty($this->batch_id);
+    }
+
+    /**
+     * Get the next order in the batch
+     */
+    public function nextBatchOrder()
+    {
+        return $this->where('batch_id', $this->batch_id)
+                   ->where('batch_order', '>', $this->batch_order)
+                   ->orderBy('batch_order')
+                   ->first();
+    }
+
+    /**
+     * Get the previous order in the batch
+     */
+    public function previousBatchOrder()
+    {
+        return $this->where('batch_id', $this->batch_id)
+                   ->where('batch_order', '<', $this->batch_order)
+                   ->orderBy('batch_order', 'desc')
+                   ->first();
+    }
+
+    /**
+     * Check if this is the first order in the batch
+     */
+    public function isFirstInBatch(): bool
+    {
+        if (!$this->isPartOfBatch()) return false;
+        
+        $firstOrder = $this->where('batch_id', $this->batch_id)
+                          ->orderBy('batch_order')
+                          ->first();
+        
+        return $firstOrder && $firstOrder->id === $this->id;
+    }
+
+    /**
+     * Check if this is the last order in the batch
+     */
+    public function isLastInBatch(): bool
+    {
+        if (!$this->isPartOfBatch()) return false;
+        
+        $lastOrder = $this->where('batch_id', $this->batch_id)
+                         ->orderBy('batch_order', 'desc')
+                         ->first();
+        
+        return $lastOrder && $lastOrder->id === $this->id;
     }
 }
