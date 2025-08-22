@@ -1,7 +1,9 @@
 <!-- Floating Chat Button -->
 <button id="chatToggleBtn"
     class="fixed bottom-6 right-6 w-16 h-16 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 group">
-    <i class="fas fa-comments text-2xl group-hover:scale-110 transition-transform"></i>
+    <svg class="w-8 h-8 group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 0C5.373 0 0 4.975 0 11.111c0 3.497 1.745 6.616 4.472 8.652V24l4.086-2.242c1.09.301 2.246.464 3.442.464 6.627 0 12-4.974 12-11.111C24 4.975 18.627 0 12 0zm1.193 14.963l-3.056-3.259-5.963 3.259L10.732 8.1l3.13 3.259L19.825 8.1l-6.632 6.863z"/>
+    </svg>
 
     <!-- Notification badge -->
     <div id="chatBadge"

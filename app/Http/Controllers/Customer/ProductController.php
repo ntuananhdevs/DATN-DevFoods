@@ -140,7 +140,7 @@ class ProductController extends Controller
                 $product->reviews_count = $product->reviews->count();
                 $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                 if ($product->primary_image) {
-                    $product->primary_image->s3_url = asset('storage/' . $product->primary_image->img);
+                    $product->primary_image->s3_url = \Illuminate\Support\Facades\Storage::disk('s3')->url($product->primary_image->img);
                 }
                 $product->is_favorite = in_array($product->id, $favorites);
                 // Tính toán has_stock dựa trên branch hiện tại
@@ -273,7 +273,7 @@ class ProductController extends Controller
 
         // Add S3 URLs to all product images
         foreach ($product->images as $image) {
-            $image->s3_url = asset('storage/' . $image->img);
+            $image->s3_url = \Illuminate\Support\Facades\Storage::disk('s3')->url($image->img);
         }
 
         // Check if the product has stock
@@ -448,7 +448,7 @@ class ProductController extends Controller
                                     ?? $relatedProduct->images->first();
 
             if ($relatedProduct->primary_image) {
-                $relatedProduct->primary_image->s3_url = asset('storage/' . $relatedProduct->primary_image->img);
+                $relatedProduct->primary_image->s3_url = \Illuminate\Support\Facades\Storage::disk('s3')->url($relatedProduct->primary_image->img);
             }
 
             // Tính giá thấp nhất và cao nhất bao gồm cả biến thể

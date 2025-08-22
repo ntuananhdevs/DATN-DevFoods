@@ -314,96 +314,11 @@
                 </div>
             </div>
 
-            <!-- Order Action Buttons -->
-            @if($order->status == 'awaiting_confirmation')
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">Thao tác đơn hàng</h3>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <button id="confirm-order-btn" 
-                                class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Xác nhận đơn hàng
-                        </button>
-                        <button id="cancel-order-btn" 
-                                class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            Hủy đơn hàng
-                        </button>
-                    </div>
-                </div>
-            </div>
-            @endif
 
-            <!-- Driver Search Map -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-bold text-gray-900">Bản đồ tài xế</h3>
-                        <div class="flex items-center space-x-4">
-                            @if(in_array($order->status, ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up', 'in_transit']))
-                                <div class="flex items-center text-sm text-green-600">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                    <span>Đang cập nhật vị trí</span>
-                                </div>
-                            @endif
-                            <button id="refresh-map-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                <i class="fas fa-sync-alt mr-1"></i>
-                                Làm mới
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Map Container -->
-                    <div id="driver-search-map" class="w-full h-96 rounded-lg border border-gray-200 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                            <div class="text-center">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
-                                <p class="text-gray-600 text-sm">Đang tải bản đồ...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Map Legend -->
-                    <div class="mt-4 flex flex-wrap gap-4 text-sm">
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-                            <span class="text-gray-600">Nhà hàng</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
-                            <span class="text-gray-600">Khách hàng</span>
-                        </div>
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-gray-600">Tài xế khả dụng</span>
-                        </div>
-                        @if($order->driver_id)
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
-                            <span class="text-gray-600">Tài xế được gán</span>
-                        </div>
-                        @endif
-                    </div>
-                    
-                    <!-- Driver Search Status -->
-                    @if(in_array($order->status, ['awaiting_driver']))
-                    <div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                        <div class="flex items-center">
-                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500 mr-3"></div>
-                            <div>
-                                <p class="text-orange-800 font-medium">Đang tìm kiếm tài xế...</p>
-                                <p class="text-orange-600 text-sm mt-1">Hệ thống đang tự động tìm kiếm tài xế phù hợp trong khu vực</p>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
+
+
+
+
 
             <!-- Progress Tracker -->
             @if ($currentStepIndex > -1)
@@ -565,15 +480,15 @@
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-start gap-3 flex-1">
                                         {{-- Hình ảnh sản phẩm --}}
-                                        <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
-                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}"
-                                                    alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}"
-                                                    class="w-full h-full object-cover">
-                                            @elseif ($item->combo && $item->combo->image)
-                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}"
-                                                    alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}"
-                                                    class="w-full h-full object-cover">
+                        <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
+                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
+                                <img src="{{ Storage::disk('s3')->url($item->productVariant->product->images->first()->img) }}"
+                                    alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}"
+                                    class="w-full h-full object-cover">
+                            @elseif ($item->combo && $item->combo->image)
+                                <img src="{{ Storage::disk('s3')->url($item->combo->image) }}"
+                                    alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}"
+                                    class="w-full h-full object-cover">
                                             @else
                                                 <div class="w-full h-full bg-gray-300 flex items-center justify-center">
                                                     <svg class="w-6 h-6 text-gray-500" fill="none"
@@ -661,6 +576,72 @@
 
 
 
+            <!-- Driver Search Map -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-gray-900">Bản đồ tài xế</h3>
+                        <div class="flex items-center space-x-4">
+                            @if(in_array($order->status, ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up', 'in_transit']))
+                                <div class="flex items-center text-sm text-green-600">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                                    <span>Đang cập nhật vị trí</span>
+                                </div>
+                            @endif
+                            <button id="refresh-map-btn" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                <i class="fas fa-sync-alt mr-1"></i>
+                                Làm mới
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Map Container -->
+                    <div id="driver-search-map" class="w-full h-96 rounded-lg border border-gray-200 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-2"></div>
+                                <p class="text-gray-600 text-sm">Đang tải bản đồ...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Map Legend -->
+                    <div class="mt-4 flex flex-wrap gap-4 text-sm">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
+                            <span class="text-gray-600">Nhà hàng</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
+                            <span class="text-gray-600">Khách hàng</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+                            <span class="text-gray-600">Tài xế khả dụng</span>
+                        </div>
+                        @if($order->driver_id)
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-yellow-500 rounded-full mr-2"></div>
+                            <span class="text-gray-600">Tài xế được gán</span>
+                        </div>
+                        @endif
+                    </div>
+                    
+                    <!-- Driver Search Status -->
+                    @if(in_array($order->status, ['awaiting_driver']))
+                    <div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500 mr-3"></div>
+                            <div>
+                                <p class="text-orange-800 font-medium">Đang tìm kiếm tài xế...</p>
+                                <p class="text-orange-600 text-sm mt-1">Hệ thống đang tự động tìm kiếm tài xế phù hợp trong khu vực</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
             <!-- Payment & Order Details -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Payment Information -->
@@ -696,6 +677,40 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Order Action Buttons -->
+                @if($order->status == 'awaiting_confirmation')
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg border border-blue-100">
+                    <div class="p-6">
+                        <div class="text-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">Thao tác đơn hàng</h3>
+                            <p class="text-sm text-gray-600">Vui lòng chọn hành động cho đơn hàng này</p>
+                        </div>
+                        <div class="flex gap-4 justify-center max-w-md mx-auto">
+                            <button id="confirm-order-btn" 
+                                    data-quick-action="confirm"
+                                    data-order-id="{{ $order->id }}"
+                                    class="group relative bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center min-w-[120px]">
+                                <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="relative z-10">Xác nhận</span>
+                                <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity duration-300"></div>
+                            </button>
+                            <button id="cancel-order-btn" 
+                                    data-quick-action="cancel"
+                                    data-order-id="{{ $order->id }}"
+                                    class="group relative bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center min-w-[120px]">
+                                <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                <span class="relative z-10">Hủy bỏ</span>
+                                <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 rounded-xl transition-opacity duration-300"></div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <!-- Order Details -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -796,25 +811,7 @@
             animation-delay: 2s !important;
         }
         
-        /* Driver marker animations */
-        .driver-marker {
-            animation: fadeInBounce 0.6s ease-out;
-        }
-        
-        @keyframes fadeInBounce {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.3) translateY(-20px);
-            }
-            50% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1.1) translateY(-5px);
-            }
-            100% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1) translateY(0);
-            }
-        }
+        /* Driver marker animations - REMOVED */
         
         /* Route animation */
         #delivery-route {
@@ -856,57 +853,13 @@
             box-shadow: 0 8px 25px rgba(22, 163, 74, 0.6) !important;
         }
         
-        .driver-marker:hover {
-            transform: scale(1.2) !important;
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6) !important;
-        }
+
         
-        /* Marker pulse effect */
-        .marker-pulse {
-            position: relative;
-        }
+        /* Marker pulse effect - REMOVED */
         
-        .marker-pulse::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: inherit;
-            transform: translate(-50%, -50%);
-            animation: markerPulse 2s infinite;
-            opacity: 0.6;
-            z-index: -1;
-        }
-        
-        @keyframes markerPulse {
-            0% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.6;
-            }
-            70% {
-                transform: translate(-50%, -50%) scale(1.8);
-                opacity: 0;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1.8);
-                opacity: 0;
-            }
-        }
-        
-        /* Enhanced driver list styling */
+        /* Enhanced driver list styling - REMOVED */
         .driver-item {
-            transition: all 0.3s ease;
             border-left: 4px solid transparent;
-        }
-        
-        .driver-item:hover {
-            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-            border-left-color: #3b82f6;
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         
         /* Status indicator animations */
@@ -1007,6 +960,9 @@
                 // Add customer marker
                 addCustomerMarker(orderData.customer);
                 
+                // Always show route from restaurant to customer
+                drawRestaurantToCustomerRoute();
+                
                 // Load and display available drivers
                 loadAvailableDrivers();
                 
@@ -1033,11 +989,16 @@
         function addRestaurantMarker(restaurant) {
             const el = document.createElement('div');
             el.className = 'marker-pulse';
+            el.innerHTML = '🏪';
             el.style.cssText = `
                 width: 30px;
                 height: 30px;
-                background-color: #ef4444;
-                border: 3px solid white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                background-color: white;
+                border: 2px solid #ef4444;
                 border-radius: 50%;
                 box-shadow: 0 2px 10px rgba(0,0,0,0.3);
                 cursor: pointer;
@@ -1131,16 +1092,10 @@
                         border-radius: 50%;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                         cursor: pointer;
-                        transition: transform 0.2s;
+
                     `;
                     
-                    el.addEventListener('mouseenter', () => {
-                        el.style.transform = 'scale(1.2)';
-                    });
-                    
-                    el.addEventListener('mouseleave', () => {
-                        el.style.transform = 'scale(1)';
-                    });
+
                     
                     const marker = new mapboxgl.Marker(el)
                         .setLngLat([lng, lat])
@@ -1170,10 +1125,10 @@
                 assignedDriverMarker.remove();
             }
             
-            // Clear route if exists
-            if (driverSearchMap.getSource('route')) {
-                driverSearchMap.removeLayer('route');
-                driverSearchMap.removeSource('route');
+            // Clear delivery route if exists (keep restaurant-customer route)
+            if (driverSearchMap.getSource('delivery-route')) {
+                driverSearchMap.removeLayer('delivery-route');
+                driverSearchMap.removeSource('delivery-route');
             }
             
             // Hide driver search loading when assigned driver is displayed
@@ -1282,18 +1237,115 @@
             }
         }
         
-        function drawDeliveryRoute(driverLng, driverLat) {
+        function drawRestaurantToCustomerRoute() {
             const restaurantLng = orderData.restaurant.lng;
             const restaurantLat = orderData.restaurant.lat;
             const customerLng = orderData.customer.lng;
             const customerLat = orderData.customer.lat;
             
             // Remove existing route if any
-            if (driverSearchMap.getLayer('route')) {
-                driverSearchMap.removeLayer('route');
+            if (driverSearchMap.getLayer('restaurant-customer-route')) {
+                driverSearchMap.removeLayer('restaurant-customer-route');
             }
-            if (driverSearchMap.getSource('route')) {
-                driverSearchMap.removeSource('route');
+            if (driverSearchMap.getSource('restaurant-customer-route')) {
+                driverSearchMap.removeSource('restaurant-customer-route');
+            }
+            
+            // Create waypoints for the route: Restaurant -> Customer
+            const waypoints = `${restaurantLng},${restaurantLat};${customerLng},${customerLat}`;
+            
+            // Use Mapbox Directions API to get actual route
+            const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${waypoints}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+            
+            fetch(directionsUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        
+                        // Add route source and layer
+                        driverSearchMap.addSource('restaurant-customer-route', {
+                            'type': 'geojson',
+                            'data': {
+                                'type': 'Feature',
+                                'properties': {},
+                                'geometry': route.geometry
+                            }
+                        });
+                        
+                        driverSearchMap.addLayer({
+                            'id': 'restaurant-customer-route',
+                            'type': 'line',
+                            'source': 'restaurant-customer-route',
+                            'layout': {
+                                'line-join': 'round',
+                                'line-cap': 'round'
+                            },
+                            'paint': {
+                                'line-color': '#10b981',
+                                'line-width': 4,
+                                'line-opacity': 0.8
+                            }
+                        });
+                    } else {
+                        console.error('No route found');
+                        // Fallback to straight line if API fails
+                        drawStraightLineRoute(restaurantLng, restaurantLat, customerLng, customerLat);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching route:', error);
+                    // Fallback to straight line if API fails
+                    drawStraightLineRoute(restaurantLng, restaurantLat, customerLng, customerLat);
+                });
+        }
+        
+        function drawStraightLineRoute(restaurantLng, restaurantLat, customerLng, customerLat) {
+            const routeCoordinates = [
+                [restaurantLng, restaurantLat],
+                [customerLng, customerLat]
+            ];
+            
+            driverSearchMap.addSource('restaurant-customer-route', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'properties': {},
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': routeCoordinates
+                    }
+                }
+            });
+            
+            driverSearchMap.addLayer({
+                'id': 'restaurant-customer-route',
+                'type': 'line',
+                'source': 'restaurant-customer-route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#10b981',
+                    'line-width': 4,
+                    'line-opacity': 0.8
+                }
+            });
+        }
+        
+        function drawDeliveryRoute(driverLng, driverLat) {
+            const restaurantLng = orderData.restaurant.lng;
+            const restaurantLat = orderData.restaurant.lat;
+            const customerLng = orderData.customer.lng;
+            const customerLat = orderData.customer.lat;
+            
+            // Remove existing delivery route if any
+            if (driverSearchMap.getLayer('delivery-route')) {
+                driverSearchMap.removeLayer('delivery-route');
+            }
+            if (driverSearchMap.getSource('delivery-route')) {
+                driverSearchMap.removeSource('delivery-route');
             }
             
             // Create waypoints for the route: Driver -> Restaurant -> Customer
@@ -1308,8 +1360,8 @@
                     if (data.routes && data.routes.length > 0) {
                         const route = data.routes[0];
                         
-                        // Add route source and layer
-                        driverSearchMap.addSource('route', {
+                        // Add delivery route source and layer
+                        driverSearchMap.addSource('delivery-route', {
                             'type': 'geojson',
                             'data': {
                                 'type': 'Feature',
@@ -1319,9 +1371,9 @@
                         });
                         
                         driverSearchMap.addLayer({
-                            'id': 'route',
+                            'id': 'delivery-route',
                             'type': 'line',
-                            'source': 'route',
+                            'source': 'delivery-route',
                             'layout': {
                                 'line-join': 'round',
                                 'line-cap': 'round'
@@ -1355,7 +1407,7 @@
                         [customerLng, customerLat]
                     ];
                     
-                    driverSearchMap.addSource('route', {
+                    driverSearchMap.addSource('delivery-route', {
                         'type': 'geojson',
                         'data': {
                             'type': 'Feature',
@@ -1368,9 +1420,9 @@
                     });
                     
                     driverSearchMap.addLayer({
-                        'id': 'route',
+                        'id': 'delivery-route',
                         'type': 'line',
-                        'source': 'route',
+                        'source': 'delivery-route',
                         'layout': {
                             'line-join': 'round',
                             'line-cap': 'round'
@@ -1384,6 +1436,84 @@
                 });
         }
         
+        // Handle order action buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmBtn = document.getElementById('confirm-order-btn');
+            const cancelBtn = document.getElementById('cancel-order-btn');
+            
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    confirmOrder(orderId);
+                });
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    // Show cancel modal or directly cancel
+                    if (typeof openCancelModal === 'function') {
+                        openCancelModal(orderId);
+                    } else {
+                        cancelOrder(orderId);
+                    }
+                });
+            }
+        });
+        
+        function confirmOrder(orderId) {
+            if (confirm('Bạn có chắc chắn muốn xác nhận đơn hàng này?')) {
+                fetch(`/branch/orders/${orderId}/confirm`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi khi kết nối!');
+                });
+            }
+        }
+        
+        function cancelOrder(orderId) {
+            if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                fetch(`/branch/orders/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        reason: 'Hủy từ giao diện quản lý'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Có lỗi khi kết nối!');
+                });
+            }
+        }
 
     </script>
+    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}" defer></script>
 @endpush

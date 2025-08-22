@@ -48,7 +48,7 @@ class CheckoutController extends Controller
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
                     $variant = \App\Models\ProductVariant::with([
-                        'product',
+                        'product.images',
                         'variantValues.attribute'
                     ])->find($buyNow['variant_id']);
                 }
@@ -75,6 +75,14 @@ class CheckoutController extends Controller
                         $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
                     }
                     $item->combo = null;
+                    
+                    // Set primary image for buy now product
+                    if ($item->variant && $item->variant->product) {
+                        $item->variant->product->primary_image = $item->variant->product->images
+                            ->where('is_primary', true)
+                            ->first() ?? $item->variant->product->images->first();
+                    }
+                    
                     $cartItems->push($item);
                 }
             } elseif ($buyNow['type'] === 'combo') {

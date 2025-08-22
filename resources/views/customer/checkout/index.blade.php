@@ -499,6 +499,9 @@
                                         class="text-orange-500 hover:underline">điều khoản và điều kiện</a> của website
                                 </label>
                             </div>
+                            <div id="terms-error" class="text-red-500 text-xs mt-1 hidden">
+                                Vui lòng đồng ý với điều khoản và điều kiện để tiếp tục
+                            </div>
                             <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg">
                                 Đặt Hàng
                             </button>
@@ -3441,5 +3444,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         })();
+        
+        // Terms checkbox validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('checkout-form');
+            const termsCheckbox = document.getElementById('terms');
+            const termsError = document.getElementById('terms-error');
+            
+            if (form && termsCheckbox && termsError) {
+                form.addEventListener('submit', function(e) {
+                    if (!termsCheckbox.checked) {
+                        e.preventDefault();
+                        termsError.classList.remove('hidden');
+                        termsCheckbox.focus();
+                        return false;
+                    }
+                    termsError.classList.add('hidden');
+                });
+                
+                // Hide error when checkbox is checked
+                termsCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        termsError.classList.add('hidden');
+                    }
+                });
+            }
+        });
     </script>
 @endsection

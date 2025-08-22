@@ -1,0 +1,214 @@
+# 6.2. Test Case
+
+## Bảng Test Case và Kết Quả
+
+| STT | Chức năng | Test Case | Dữ liệu đầu vào | Kết quả mong đợi | Kết quả thực tế | Trạng thái |
+|-----|-----------|-----------|-----------------|------------------|-----------------|------------|
+| 1 | Đăng nhập Admin | Đăng nhập với tài khoản admin hợp lệ | Email: admin@devfoods.com<br>Password: password | Đăng nhập thành công, chuyển đến dashboard admin | Đăng nhập thành công | ✅ Pass |
+| 2 | Đăng nhập Driver | Đăng nhập với tài khoản driver hợp lệ | Email: driver1@test.com<br>Password: 123456 | Đăng nhập thành công, chuyển đến dashboard driver | Đăng nhập thành công | ✅ Pass |
+| 3 | Đăng ký khách hàng | Đăng ký tài khoản mới | Họ tên: Nguyễn Văn A<br>Email: test@example.com<br>Password: 123456 | Đăng ký thành công, gửi email xác thực | Đăng ký thành công | ✅ Pass |
+| 4 | Thêm sản phẩm vào giỏ hàng | Thêm burger vào giỏ hàng | Sản phẩm: Burger Bò<br>Số lượng: 2 | Sản phẩm được thêm vào giỏ hàng | Thêm thành công | ✅ Pass |
+| 5 | Thanh toán đơn hàng | Thanh toán bằng VNPay | Tổng tiền: 200,000 VNĐ<br>Phương thức: VNPay | Chuyển đến trang thanh toán VNPay | Chuyển hướng thành công | ✅ Pass |
+| 6 | Quản lý kho chi nhánh | Cập nhật số lượng tồn kho | Sản phẩm: Pizza Hải Sản<br>Số lượng: 50 | Cập nhật thành công | Cập nhật thành công | ✅ Pass |
+| 7 | Theo dõi đơn hàng realtime | Cập nhật trạng thái đơn hàng | Trạng thái: Đang giao | Khách hàng nhận thông báo realtime | Thông báo realtime hoạt động | ✅ Pass |
+| 8 | Chat hỗ trợ | Gửi tin nhắn hỗ trợ | Nội dung: "Tôi cần hỗ trợ đơn hàng" | Tin nhắn được gửi và nhận phản hồi | Chat hoạt động bình thường | ✅ Pass |
+| 9 | Tìm kiếm sản phẩm | Tìm kiếm theo từ khóa | Từ khóa: "burger" | Hiển thị danh sách sản phẩm burger | Tìm kiếm chính xác | ✅ Pass |
+| 10 | Đánh giá sản phẩm | Đánh giá và bình luận | Rating: 5 sao<br>Bình luận: "Rất ngon" | Đánh giá được lưu và hiển thị | Đánh giá thành công | ✅ Pass |
+| 11 | Áp dụng mã giảm giá | Sử dụng coupon | Mã: WELCOME10<br>Giảm: 10% | Giảm giá được áp dụng | Áp dụng thành công | ✅ Pass |
+| 12 | Quản lý địa chỉ giao hàng | Thêm địa chỉ mới | Địa chỉ: "123 Nguyễn Trãi, Hà Nội" | Địa chỉ được lưu thành công | Lưu thành công | ✅ Pass |
+| 13 | Tính phí giao hàng | Tính phí theo khoảng cách | Khoảng cách: 5km | Phí giao hàng: 25,000 VNĐ | Tính toán chính xác | ✅ Pass |
+| 14 | Backup dữ liệu | Sao lưu cơ sở dữ liệu | Lệnh backup | File backup được tạo | Backup thành công | ✅ Pass |
+| 15 | Load testing | Test tải với 100 user đồng thời | 100 concurrent users | Hệ thống phản hồi < 3s | Phản hồi trung bình 2.1s | ✅ Pass |
+
+## Kết Quả Tổng Quan
+- **Tổng số test case**: 15
+- **Số test case pass**: 15
+- **Số test case fail**: 0
+- **Tỷ lệ thành công**: 100%
+
+---
+
+# 6.3. Hướng Dẫn Cài Đặt
+
+## Triển Khai Lên Hosting
+
+### Yêu Cầu Hosting
+- **PHP**: >= 8.2
+- **MySQL**: >= 8.0
+- **Node.js**: >= 18.0
+- **Composer**: Latest version
+- **SSL Certificate**: Bắt buộc
+- **Storage**: Tối thiểu 5GB
+
+### Các Bước Triển Khai
+
+#### 1. Chuẩn Bị Code
+```bash
+# Clone repository
+git clone https://github.com/your-repo/DATN-DevFoods.git
+cd DATN-DevFoods
+
+# Cài đặt dependencies
+composer install --optimize-autoloader --no-dev
+npm install
+npm run production
+```
+
+#### 2. Cấu Hình Environment
+```bash
+# Copy file environment
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+```
+
+#### 3. Cấu Hình Database
+```env
+DB_CONNECTION=mysql
+DB_HOST=your-database-host
+DB_PORT=3306
+DB_DATABASE=datn_devfoods
+DB_USERNAME=your-username
+DB_PASSWORD=your-password
+```
+
+#### 4. Migration và Seeding
+```bash
+# Chạy migration
+php artisan migrate
+
+# Seed dữ liệu mẫu
+php artisan db:seed --class=FastFoodSeeder
+php artisan db:seed --class=DriverSeeder
+```
+
+#### 5. Cấu Hình Storage
+```bash
+# Tạo symbolic link cho storage
+php artisan storage:link
+
+# Set permissions
+chmod -R 755 storage
+chmod -R 755 bootstrap/cache
+```
+
+#### 6. Cấu Hình Queue Workers
+```bash
+# Chạy queue workers (sử dụng supervisor trên production)
+php artisan queue:work database --sleep=3 --tries=3
+```
+
+## Địa Chỉ Website
+
+### Production URL
+- **Website chính**: https://devfoods.polycrispywings.asia
+- **Admin Panel**: https://devfoods.polycrispywings.asia/admin
+- **Driver App**: https://devfoods.polycrispywings.asia/driver
+- **API Endpoint**: https://devfoods.polycrispywings.asia/api
+
+### Development URL (Local)
+- **Website**: http://127.0.0.1:8000
+- **Admin Panel**: http://127.0.0.1:8000/admin
+- **Driver App**: http://127.0.0.1:8000/driver
+
+## Danh Sách Tài Khoản Dùng Thử
+
+### Tài Khoản Admin
+| Loại | Email | Mật khẩu | Quyền |
+|------|-------|----------|-------|
+| Super Admin | admin@devfoods.com | password | Toàn quyền hệ thống |
+| Branch Manager | manager@branch1.com | password | Quản lý chi nhánh |
+
+### Tài Khoản Driver (Tài Xế)
+| STT | Họ Tên | Email | Mật khẩu | Trạng thái |
+|-----|--------|-------|----------|------------|
+| 1 | Nguyễn Văn A | driver1@test.com | 123456 | Hoạt động |
+| 2 | Nguyễn Văn B | driver2@test.com | 123456 | Hoạt động |
+| 3 | Nguyễn Văn C | driver3@test.com | 123456 | Hoạt động |
+| 4 | Trần Văn D | driver4@test.com | 123456 | Hoạt động |
+| 5 | Lê Thị E | driver5@test.com | 123456 | Hoạt động |
+| 6 | Phạm Văn F | driver6@test.com | 123456 | Hoạt động |
+| 7 | Hoàng Thị G | driver7@test.com | 123456 | Hoạt động |
+| 8 | Vũ Văn H | driver8@test.com | 123456 | Hoạt động |
+| 9 | Đặng Thị I | driver9@test.com | 123456 | Hoạt động |
+| 10 | Bùi Văn K | driver10@test.com | 123456 | Hoạt động |
+
+### Tài Khoản Customer (Khách Hàng)
+| STT | Họ Tên | Email | Mật khẩu | Cấp độ |
+|-----|--------|-------|----------|--------|
+| 1 | Nguyễn Thị Lan | customer1@test.com | 123456 | Đồng |
+| 2 | Trần Văn Nam | customer2@test.com | 123456 | Bạc |
+| 3 | Lê Thị Hoa | customer3@test.com | 123456 | Vàng |
+| 4 | Phạm Văn Đức | customer4@test.com | 123456 | Kim Cương |
+| 5 | Hoàng Thị Mai | customer5@test.com | 123456 | Đồng |
+
+### Thông Tin Thanh Toán Test
+
+#### VNPay Sandbox
+- **Số thẻ**: 9704198526191432198
+- **Tên chủ thẻ**: NGUYEN VAN A
+- **Ngày hết hạn**: 07/15
+- **Mật khẩu OTP**: 123456
+
+#### Thông Tin Dịch Vụ
+- **Firebase Project**: polycrispywings
+- **Pusher App ID**: 1989431
+- **Mapbox API**: Đã cấu hình sẵn
+- **AWS S3**: Bucket datnsum2025
+
+## Cấu Hình Bảo Mật
+
+### SSL Certificate
+```bash
+# Cài đặt Let's Encrypt (nếu sử dụng)
+certbot --nginx -d yourdomain.com
+```
+
+### Firewall Rules
+```bash
+# Mở port cần thiết
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 22
+```
+
+### Backup Schedule
+```bash
+# Thêm vào crontab
+0 2 * * * /path/to/backup-script.sh
+```
+
+## Monitoring và Logs
+
+### Log Files
+- **Application Logs**: `storage/logs/laravel.log`
+- **Web Server Logs**: `/var/log/nginx/access.log`
+- **Error Logs**: `/var/log/nginx/error.log`
+
+### Performance Monitoring
+- **Queue Status**: `php artisan queue:monitor`
+- **Cache Status**: `php artisan cache:status`
+- **Database Connections**: Monitor via admin panel
+
+## Troubleshooting
+
+### Các Lỗi Thường Gặp
+1. **500 Internal Server Error**: Kiểm tra file permissions và .env
+2. **Queue Jobs Failed**: Restart queue workers
+3. **Database Connection**: Kiểm tra thông tin database trong .env
+4. **Storage Issues**: Chạy `php artisan storage:link`
+
+### Commands Hữu Ích
+```bash
+# Clear cache
+php artisan cache:clear
+php artisan config:clear
+php artisan view:clear
+
+# Restart queue
+php artisan queue:restart
+
+# Check application status
+php artisan about
+```
