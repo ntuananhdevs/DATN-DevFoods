@@ -219,96 +219,153 @@
                 @endauth
             @endif
             @if(!$userAddresses || $userAddresses->count() === 0)
-                @php
-                    $user = Auth::user();
-                @endphp
-                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                            <input type="text" id="full_name" name="full_name" 
-                                class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror"
-                                value="{{ old('full_name', $user ? $user->full_name : '') }}"
-                                placeholder="Nhập họ và tên">
-                            @error('full_name')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                @auth
+                    <!-- Beautiful notification for users without addresses -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-200">
+                        <div class="text-center py-8">
+                            <!-- Icon -->
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 mb-4">
+                                <svg class="h-8 w-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Title -->
+                            <h2 class="text-xl font-bold text-gray-900 mb-2">Bạn chưa có địa chỉ giao hàng</h2>
+                            
+                            <!-- Description -->
+                            <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                                Để tiếp tục đặt hàng, vui lòng thêm địa chỉ giao hàng của bạn. 
+                                Địa chỉ sẽ được lưu để sử dụng cho các đơn hàng tiếp theo.
+                            </p>
+                            
+                            <!-- Add Address Button -->
+                            <button type="button" id="add-address-btn" 
+                                class="inline-flex items-center px-6 py-3 bg-orange-600 border border-transparent text-base font-medium rounded-lg text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
+                                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Thêm địa chỉ giao hàng
+                            </button>
                         </div>
-                        <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" 
-                                class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror"
-                                value="{{ old('phone', $user ? $user->phone : '') }}"
-                                placeholder="Nhập số điện thoại">
-                            @error('phone')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" id="email" name="email" 
-                                class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror"
-                                value="{{ old('email', $user ? $user->email : '') }}"
-                                placeholder="Nhập email">
-                            @error('email')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
-                            <select id="city" name="city" class="w-full px-3 py-2 border rounded-lg @error('city') border-red-500 @enderror">
-                                <option value="Hà Nội" selected>Hà Nội</option>
-                            </select>
-                            @error('city')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="district" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
-                            <select id="district" name="district" class="w-full px-3 py-2 border rounded-lg @error('district') border-red-500 @enderror">
-                                <option value="">-- Chọn Quận/Huyện --</option>
-                            </select>
-                            @error('district')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-1">
-                            <label for="ward" class="block text-sm font-medium text-gray-700 mb-1">Xã/Phường</label>
-                            <select id="ward" name="ward" class="w-full px-3 py-2 border rounded-lg @error('ward') border-red-500 @enderror">
-                                <option value="">-- Chọn Xã/Phường --</option>
-                            </select>
-                            @error('ward')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-1 relative">
-                            <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, đường</label>
-                            <input type="text" id="address" name="address" 
-                                class="w-full px-3 py-2 border rounded-lg @error('address') border-red-500 @enderror"
-                                value="{{ old('address') }}" autocomplete="off"
-                                placeholder="Nhập số nhà, tên đường">
-                            <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
-                            @error('address')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <!-- MAP PICKER -->
-                        <div class="md:col-span-2 relative mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Chọn vị trí trên bản đồ <span class="text-xs text-gray-500">(bắt buộc để giao hàng)</span></label>
-                            <div id="checkout-map" style="height: 300px; border-radius: 8px; margin-bottom: 8px; z-index: 1000; position: relative;"></div>
-                            <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
-                            <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
-                            <div class="text-xs text-gray-500">Nhấn vào bản đồ để chọn vị trí giao hàng chính xác.</div>
-                            @error('latitude')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                            @error('longitude')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                        
+                        <!-- Error messages if any -->
+                        @if($errors->any())
+                            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-red-800">Có lỗi xảy ra khi xử lý thông tin địa chỉ:</h3>
+                                        <div class="mt-2 text-sm text-red-700">
+                                            <ul class="list-disc list-inside space-y-1">
+                                                @foreach($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    @php
+                        $user = Auth::user();
+                    @endphp
+                    <!-- Keep the original form for guest users -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                                <input type="text" id="full_name" name="full_name" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror"
+                                    value="{{ old('full_name', $user ? $user->full_name : '') }}"
+                                    placeholder="Nhập họ và tên">
+                                @error('full_name')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                                <input type="tel" id="phone" name="phone" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror"
+                                    value="{{ old('phone', $user ? $user->phone : '') }}"
+                                    placeholder="Nhập số điện thoại">
+                                @error('phone')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" id="email" name="email" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror"
+                                    value="{{ old('email', $user ? $user->email : '') }}"
+                                    placeholder="Nhập email">
+                                @error('email')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
+                                <select id="city" name="city" class="w-full px-3 py-2 border rounded-lg @error('city') border-red-500 @enderror">
+                                    <option value="Hà Nội" selected>Hà Nội</option>
+                                </select>
+                                @error('city')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="district" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
+                                <select id="district" name="district" class="w-full px-3 py-2 border rounded-lg @error('district') border-red-500 @enderror">
+                                    <option value="">-- Chọn Quận/Huyện --</option>
+                                </select>
+                                @error('district')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-1">
+                                <label for="ward" class="block text-sm font-medium text-gray-700 mb-1">Xã/Phường</label>
+                                <select id="ward" name="ward" class="w-full px-3 py-2 border rounded-lg @error('ward') border-red-500 @enderror">
+                                    <option value="">-- Chọn Xã/Phường --</option>
+                                </select>
+                                @error('ward')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-1 relative">
+                                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, đường</label>
+                                <input type="text" id="address" name="address" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('address') border-red-500 @enderror"
+                                    value="{{ old('address') }}" autocomplete="off"
+                                    placeholder="Nhập số nhà, tên đường">
+                                <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
+                                @error('address')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <!-- MAP PICKER -->
+                            <div class="md:col-span-2 relative mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Chọn vị trí trên bản đồ <span class="text-xs text-gray-500">(bắt buộc để giao hàng)</span></label>
+                                <div id="checkout-map" style="height: 300px; border-radius: 8px; margin-bottom: 8px; z-index: 1000; position: relative;"></div>
+                                <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                                <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
+                                <div class="text-xs text-gray-500">Nhấn vào bản đồ để chọn vị trí giao hàng chính xác.</div>
+                                @error('latitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                                @error('longitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endauth
             @endif
 
                     <!-- Order Notes -->
@@ -462,7 +519,7 @@
 
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Phí giao hàng</span>
-                                <span id="shipping-fee-display" data-value="{{ $shipping }}">Đang tính...</span>
+                                <span id="shipping-fee-display" class="text-sm font-medium text-orange-600" data-value="{{ $shipping }}">Nhập địa chỉ để tính toán</span>
                             </div>
                             
                             <div class="flex justify-between items-center">
@@ -807,9 +864,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const city = citySelect.value;
         const district = districtSelect.value;
         const ward = wardSelect.value;
-        const address = document.getElementById('address').value;
+        const address = document.getElementById('address').value.trim();
         
-        if (!district || !ward) return;
+        // Check if all required fields are filled
+        if (!city || !district || !ward || !address) {
+            updateShippingFeeUI(-1); // Address is incomplete, reset shipping
+            return;
+        }
         
         let fullAddress = '';
         if (address) fullAddress += address + ', ';
@@ -892,17 +953,72 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Check delivery distance for guest checkout
                         checkGuestDeliveryDistance(lat, lng);
+                    } else {
+                        // Even if geocoding doesn't find exact location, still check with current coordinates
+                        const currentLat = document.getElementById('latitude').value;
+                        const currentLng = document.getElementById('longitude').value;
+                        if (currentLat && currentLng) {
+                            checkGuestDeliveryDistance(parseFloat(currentLat), parseFloat(currentLng));
+                        }
                     }
                 }
             })
             .catch(error => {
-                // Silent error handling
+                // Silent error handling - still try to check with existing coordinates
+                const currentLat = document.getElementById('latitude').value;
+                const currentLng = document.getElementById('longitude').value;
+                if (currentLat && currentLng) {
+                    checkGuestDeliveryDistance(parseFloat(currentLat), parseFloat(currentLng));
+                }
             });
     }
     
-    // Add event listeners for address changes (district already handled above)
-    wardSelect.addEventListener('change', geocodeAndUpdateMap);
-    document.getElementById('address').addEventListener('blur', geocodeAndUpdateMap);
+    // Function to check if all address fields are filled
+    function isAddressComplete() {
+        const city = citySelect.value;
+        const district = districtSelect.value;
+        const ward = wardSelect.value;
+        const address = document.getElementById('address').value.trim();
+        
+        return city && district && ward && address;
+    }
+    
+    // Add event listeners for address changes
+    citySelect.addEventListener('change', function() {
+        // Existing city change logic is already handled above
+        // Check if address is complete after city change
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
+    
+    wardSelect.addEventListener('change', function() {
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
+    
+    // Add listeners for the address input field with debounce to avoid too many API calls
+    const addressInput = document.getElementById('address');
+    let geocodeTimeout;
+    
+    addressInput.addEventListener('input', function() {
+        clearTimeout(geocodeTimeout);
+        geocodeTimeout = setTimeout(() => {
+            if (isAddressComplete()) {
+                geocodeAndUpdateMap();
+            } else {
+                // Reset shipping display if address is incomplete
+                updateShippingFeeUI(-1);
+            }
+        }, 500); // Wait 500ms after user stops typing
+    });
+    
+    addressInput.addEventListener('blur', function() {
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
 });
         // --- SHIPPING CONFIG ---
         const shippingConfig = {
@@ -1257,7 +1373,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentDeliveryDistance = distance;
                 updateDeliveryTimeDisplay(distance);
 
-                if (shippingFee >= 0) {
+                if (distance <= 0) {
+                    // No address selected or invalid distance
+                    shippingFeeEl.dataset.value = 0;
+                    shippingFeeEl.textContent = 'Nhập địa chỉ để tính toán';
+                    shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
+                } else if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;
                     shippingFeeEl.textContent = shippingFee > 0 ? formatCurrency(shippingFee) : 'Miễn phí';
                     shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
@@ -1383,8 +1504,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if ({{ Auth::check() ? 'true' : 'false' }} && addressLabels.length === 0) {
                     updateShippingFeeUI(-1); // Logged in but no addresses
                     document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
+                    toggleCheckoutButton(false, 'Vui lòng thêm địa chỉ giao hàng để tiếp tục');
                 } else if (!{{ Auth::check() ? 'true' : 'false' }}) {
-                    document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ';
+                    document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ để tính toán';
                     document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 }
 
@@ -1725,10 +1847,44 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     
                     // Also trigger geocoding after district selection
-                    geocodeNewAddress();
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
                 });
-                newWardSelect.addEventListener('change', geocodeNewAddress);
-                document.getElementById('new_address_line').addEventListener('blur', geocodeNewAddress);
+                
+                newWardSelect.addEventListener('change', function() {
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
+                
+                // Add listener for city select
+                newCitySelect.addEventListener('change', function() {
+                    // City change logic is already handled above
+                    // Check if address is complete after city change
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
+                
+                // Add listeners for the new address input field with debounce
+                const newAddressInput = document.getElementById('new_address_line');
+                let newGecodeTimeout;
+                
+                newAddressInput.addEventListener('input', function() {
+                    clearTimeout(newGecodeTimeout);
+                    newGecodeTimeout = setTimeout(() => {
+                        if (isNewAddressComplete()) {
+                            geocodeNewAddress();
+                        }
+                    }, 500); // Wait 500ms after user stops typing
+                });
+                
+                newAddressInput.addEventListener('blur', function() {
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
             }
             
             // Function to update map location with marker
@@ -1848,14 +2004,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // Function to check if all new address fields are filled
+            function isNewAddressComplete() {
+                const city = document.getElementById('new_city').value;
+                const district = document.getElementById('new_district').value;
+                const ward = document.getElementById('new_ward').value;
+                const address = document.getElementById('new_address_line').value.trim();
+                
+                return city && district && ward && address;
+            }
+
             // Geocode new address and update map
             function geocodeNewAddress() {
                 const city = document.getElementById('new_city').value;
                 const district = document.getElementById('new_district').value;
                 const ward = document.getElementById('new_ward').value;
-                const address = document.getElementById('new_address_line').value;
+                const address = document.getElementById('new_address_line').value.trim();
                 
-                if (!district || !ward) return;
+                // Check if all required fields are filled
+                if (!city || !district || !ward || !address) {
+                    // Address is incomplete, do not proceed with geocoding
+                    return;
+                }
                 
                 let fullAddress = '';
                 if (address) fullAddress += address + ', ';
@@ -2030,6 +2200,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Open modal for adding new address
             if (openAddAddressModalBtn) {
                 openAddAddressModalBtn.addEventListener('click', function() {
+                    openAddressModal('add');
+                });
+            }
+            
+            // Connect new "Add Address" button from notification to modal
+            const addAddressBtn = document.getElementById('add-address-btn');
+            if (addAddressBtn) {
+                addAddressBtn.addEventListener('click', function() {
                     openAddressModal('add');
                 });
             }
@@ -2891,13 +3069,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             closeModal();
                         }, 500);
                         
-                        // Handle first address scenario
-                        const addressComponent = document.getElementById('address-component');
-                        if (addressComponent && addressComponent.style.display === 'none') {
-                            addressComponent.style.display = 'block';
-                            const manualForm = document.querySelector('.bg-white.rounded-lg.shadow-sm.p-6.mb-6:has(#full_name)');
-                            if (manualForm) {
-                                manualForm.style.display = 'none';
+                        // Handle first address scenario - refresh page to show proper address UI
+                        const userHasAddresses = {{ ($userAddresses && $userAddresses->count() > 0) ? 'true' : 'false' }};
+                        if (!userHasAddresses && !isEdit) {
+                            // This is the first address being added, refresh the page to show proper address selection UI
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // Normal address update/addition handling
+                            const addressComponent = document.getElementById('address-component');
+                            if (addressComponent && addressComponent.style.display === 'none') {
+                                addressComponent.style.display = 'block';
+                                const manualForm = document.querySelector('.bg-white.rounded-lg.shadow-sm.p-6.mb-6:has(#full_name)');
+                                if (manualForm) {
+                                    manualForm.style.display = 'none';
+                                }
                             }
                         }
                         
@@ -3468,6 +3655,169 @@ document.addEventListener('DOMContentLoaded', function() {
                         termsError.classList.add('hidden');
                     }
                 });
+            }
+        });
+        // ========== CHECKOUT FORM VALIDATION ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkoutForm = document.getElementById('checkout-form');
+            const checkoutBtn = document.querySelector('#checkout-form button[type="submit"]');
+            
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Always prevent default first
+                    
+                    // Check if user is authenticated
+                    const isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
+                    
+                    if (isAuthenticated) {
+                        // For authenticated users, check if address is selected
+                        const hasUserAddresses = {{ ($userAddresses && $userAddresses->count() > 0) ? 'true' : 'false' }};
+                        
+                        if (!hasUserAddresses) {
+                            // No addresses saved - show notification to add address
+                            showAddressRequiredNotification();
+                            return false;
+                        }
+                        
+                        // Check if an address is selected
+                        const selectedAddressInput = document.getElementById('hidden_address_id');
+                        const selectedAddressRadio = document.querySelector('input[name="selected_address_option"]:checked');
+                        
+                        if (!selectedAddressInput?.value && !selectedAddressRadio?.value) {
+                            // No address selected - show notification
+                            showAddressSelectionNotification();
+                            return false;
+                        }
+                    } else {
+                        // For guest users, validate address fields
+                        const requiredFields = ['full_name', 'phone', 'email', 'city', 'district', 'ward', 'address', 'latitude', 'longitude'];
+                        const missingFields = [];
+                        
+                        requiredFields.forEach(fieldName => {
+                            const field = document.getElementById(fieldName);
+                            if (!field || !field.value.trim()) {
+                                missingFields.push(fieldName);
+                            }
+                        });
+                        
+                        if (missingFields.length > 0) {
+                            showGuestFieldsRequiredNotification(missingFields);
+                            return false;
+                        }
+                    }
+                    
+                    // Check terms acceptance
+                    const termsCheckbox = document.getElementById('terms');
+                    if (!termsCheckbox?.checked) {
+                        showTermsRequiredNotification();
+                        return false;
+                    }
+                    
+                    // All validations passed - submit the form
+                    checkoutForm.submit();
+                });
+            }
+            
+            // Show notification for users without any addresses
+            function showAddressRequiredNotification() {
+                showEnhancedToast(
+                    'Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-map-marker-alt',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight the add address button
+                const addAddressBtn = document.getElementById('add-address-btn');
+                if (addAddressBtn) {
+                    addAddressBtn.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        addAddressBtn.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for users who haven't selected an address
+            function showAddressSelectionNotification() {
+                showEnhancedToast(
+                    'Vui lòng chọn địa chỉ giao hàng để tiếp tục đặt hàng', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-map-marker-alt',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight the address component
+                const addressComponent = document.getElementById('address-component');
+                if (addressComponent) {
+                    addressComponent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    addressComponent.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        addressComponent.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for guest users with missing fields
+            function showGuestFieldsRequiredNotification(missingFields) {
+                const fieldNames = {
+                    'full_name': 'Họ và tên',
+                    'phone': 'Số điện thoại',
+                    'email': 'Email',
+                    'city': 'Tỉnh/Thành phố',
+                    'district': 'Quận/Huyện', 
+                    'ward': 'Xã/Phường',
+                    'address': 'Số nhà, đường',
+                    'latitude': 'Tọa độ',
+                    'longitude': 'Tọa độ'
+                };
+                
+                const missingFieldNames = missingFields.map(field => fieldNames[field] || field).join(', ');
+                
+                showEnhancedToast(
+                    `Vui lòng điền đầy đủ thông tin: ${missingFieldNames}`, 
+                    'warning', 
+                    {
+                        icon: 'fas fa-exclamation-triangle',
+                        duration: 7000
+                    }
+                );
+                
+                // Highlight first missing field
+                const firstMissingField = document.getElementById(missingFields[0]);
+                if (firstMissingField) {
+                    firstMissingField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstMissingField.focus();
+                    firstMissingField.classList.add('border-red-500', 'animate-pulse');
+                    setTimeout(() => {
+                        firstMissingField.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for missing terms acceptance
+            function showTermsRequiredNotification() {
+                showEnhancedToast(
+                    'Vui lòng đồng ý với điều khoản và điều kiện để tiếp tục', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-file-contract',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight terms checkbox
+                const termsCheckbox = document.getElementById('terms');
+                if (termsCheckbox) {
+                    termsCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    termsCheckbox.parentElement.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        termsCheckbox.parentElement.classList.remove('animate-pulse');
+                    }, 3000);
+                }
             }
         });
     </script>

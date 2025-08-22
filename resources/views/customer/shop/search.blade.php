@@ -12,80 +12,14 @@
 <x-customer-container>
 <style>
     .container {
-        max-width: 1280px;
+        width: 100%;
         margin: 0 auto;
         padding: 0 1rem;
     }
 
-    /* Header */
-    .header {
-        background: white;
-        border-bottom: 1px solid #e5e7eb;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
+    /* Search specific styles */
 
-    .header-content {
-        padding: 1.5rem 0;
-    }
 
-    .header h1 {
-        color: #1f2937;
-        font-size: 2rem;
-        font-weight: bold;
-        margin-bottom: 1.5rem;
-    }
-
-    .search-container {
-        position: relative;
-        margin-bottom: 1.5rem;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 0.75rem 1rem 0.75rem 2.5rem;
-        font-size: 1.1rem;
-        border: 2px solid #d1d5db;
-        border-radius: 0.5rem;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-
-    .search-input:focus {
-        border-color: #f97316;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #f97316;
-    }
-
-    .header-controls {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .results-count {
-        color: #6b7280;
-    }
-
-    .results-count strong {
-        color: #1f2937;
-    }
-
-    .sort-select {
-        padding: 0.5rem 1rem;
-        border: 2px solid #d1d5db;
-        border-radius: 0.5rem;
-        background: white;
-        color: #1f2937;
-        outline: none;
-    }
 
     /* Main Layout */
     .main-content {
@@ -216,7 +150,7 @@
 
     .food-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
     }
 
@@ -389,48 +323,16 @@
         .food-grid {
             grid-template-columns: 1fr;
         }
+    }
 
-        .header-controls {
-            flex-direction: column;
-            align-items: stretch;
+    @media (max-width: 1024px) and (min-width: 769px) {
+        .food-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 </style>
 
-<!-- Header -->
-<header class="header">
-    <div class="container">
-        <div id="searchHeaderWrapper">
-            <div class="header-content">
-                <h1>Tìm kiếm món ăn</h1>
-                <div id="searchFormWrapper">
-                    <form action="{{ route('customer.search') }}" method="GET" id="searchForm">
-                        <div class="search-container">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" id="searchInput" name="search" class="search-input" placeholder="Tìm kiếm món ăn, nhà hàng..." value="{{ $search ?? '' }}">
-                            <button type="submit" class="search-submit-btn" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #f97316; cursor: pointer; padding: 0.5rem;">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="header-controls">
-                    <div class="results-count">
-                        Tìm thấy <strong id="resultsCount">{{ (isset($products) ? $products->count() : 0) + (isset($combos) ? $combos->count() : 0) }}</strong> kết quả
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <select id="sortSelect" class="sort-select">
-                            <option value="rating">Đánh giá cao nhất</option>
-                            <option value="reviews">Nhiều đánh giá nhất</option>
-                            <option value="price-low">Giá thấp đến cao</option>
-                            <option value="price-high">Giá cao đến thấp</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</header>
+<!-- Search controls will be handled by included header -->
 
 <!-- Main Content -->
 <main class="container">
@@ -489,6 +391,46 @@
 
         <!-- Results -->
         <div class="results-container">
+            <!-- Search and Sort Controls -->
+            <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border">
+                <div class="flex flex-col md:flex-row gap-4 items-center">
+                    <!-- Search Input -->
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." 
+                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                   value="{{ request('search') }}">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Type Filter -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">Loại:</label>
+                        <select id="typeSelect" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option value="all">Tất cả</option>
+                            <option value="product">Sản phẩm</option>
+                            <option value="combo">Combo</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort Select -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-medium text-gray-700">Sắp xếp:</label>
+                        <select id="sortSelect" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                            <option value="rating">Đánh giá cao</option>
+                            <option value="price-low">Giá thấp đến cao</option>
+                            <option value="price-high">Giá cao đến thấp</option>
+                            <option value="reviews">Nhiều đánh giá</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Results Count -->
+                    <div class="text-sm text-gray-600">
+                        <span id="resultsCount">{{ (isset($products) ? $products->count() : 0) + (isset($combos) ? $combos->count() : 0) }}</span> kết quả
+                    </div>
+                </div>
+            </div>
             @if(isset($products) && $products->count() == 0 && isset($notice))
                 <div id="categoryNotice" class="text-orange-600 text-base font-semibold block mb-2">
                     {!! $notice !!}
@@ -507,8 +449,8 @@
                             data-category="{{ $combo->category_id }}">
                             <div class="relative">
                                 <a href="{{ route('combos.show', $combo->slug) }}" class="block relative h-48 overflow-hidden">
-                                    @if($combo->primary_image)
-                                        <img src="{{ $combo->primary_image }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                    @if($combo->image_url)
+                                        <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                                     @else
                                         <img src="{{ asset('images/default-placeholder.png') }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                                     @endif
@@ -657,14 +599,24 @@
                         </div>
                     </div>
                 </div>
+                
                     @endforeach
                 </div>
             @endif
+            
+            <!-- No Results Message -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <div class="no-results-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Không tìm thấy kết quả</h3>
+                <p>Hãy thử tìm kiếm với từ khóa khác hoặc điều chỉnh bộ lọc</p>
+            </div>
+            
             @if(isset($products) && $products instanceof \Illuminate\Pagination\LengthAwarePaginator)
             <div class="mt-8 flex justify-center">
                 {{ $products->appends(request()->query())->links() }}
             </div>
-
             @endif
         </div>
     </div>
@@ -682,11 +634,11 @@
 
         // Apply filters and sorting
         function applyFilters() {
-            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const searchQuery = document.getElementById('searchInput')?.value?.toLowerCase() || '';
             const selectedCategory = document.querySelector('input[name="category"]:checked')?.value || 'Tất cả';
-            const maxPrice = parseInt(document.getElementById('priceRange').value) * 1000;
-            const minRating = parseFloat(document.getElementById('ratingFilter').value);
-            const sortBy = document.getElementById('sortSelect').value;
+            const maxPrice = parseInt(document.getElementById('priceRange')?.value || 500) * 1000;
+            const minRating = parseFloat(document.getElementById('ratingFilter')?.value || 0);
+            const sortBy = document.getElementById('sortSelect')?.value || 'rating';
             const selectedType = document.getElementById('typeSelect')?.value || 'all';
 
             const foodCards = document.querySelectorAll('.food-card');
@@ -1111,10 +1063,13 @@
         const toggleBtn = document.getElementById('toggleSearchHeader');
         const searchHeaderWrapper = document.getElementById('searchHeaderWrapper');
         let isVisible = true;
-        if (toggleBtn && searchHeaderWrapper) {
+        if (toggleBtn) {
             toggleBtn.addEventListener('click', function() {
                 isVisible = !isVisible;
-                searchHeaderWrapper.style.display = isVisible ? 'block' : 'none';
+                const headerElement = searchHeaderWrapper || document.querySelector('.search-header, .filter-section');
+                if (headerElement) {
+                    headerElement.style.display = isVisible ? 'block' : 'none';
+                }
                 toggleBtn.textContent = isVisible ? 'Ẩn tìm kiếm' : 'Hiện tìm kiếm';
             });
         }
@@ -1126,9 +1081,15 @@
 
 <!-- Thêm biến Pusher cho JS -->
 <script>
-    window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
-    window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    // Chỉ set pusher config nếu chưa có
+    if (typeof window.pusherKey === 'undefined') {
+        window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
+        window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    }
 </script>
+@if(!isset($chatScriptLoaded))
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
+@php $chatScriptLoaded = true; @endphp
+@endif
 @endsection
