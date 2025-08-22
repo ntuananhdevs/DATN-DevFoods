@@ -157,4 +157,16 @@ class Product extends Model
     {
         return $this->images();
     }
+
+    /**
+     * Get the total sold count for this product
+     */
+    public function getSoldCountAttribute()
+    {
+        return $this->variants()
+            ->join('order_items', 'product_variants.id', '=', 'order_items.product_variant_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereIn('orders.status', ['delivered', 'item_received'])
+            ->sum('order_items.quantity');
+    }
 }

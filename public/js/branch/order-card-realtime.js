@@ -13,7 +13,7 @@ class BranchOrderCardRealtime {
             // Get config from window object
             const pusherKey = window.pusherKey;
             const pusherCluster = window.pusherCluster;
-            
+
             if (!pusherKey || !pusherCluster) {
                 this.setupPollingFallback();
                 return;
@@ -50,19 +50,19 @@ class BranchOrderCardRealtime {
                 this.subscribeToOrderChannel(orderId);
             }
         });
-        
+
         // Subscribe to branch orders channel for general updates
         this.subscribeToBranchOrdersChannel();
-        
+
         // Subscribe to order status updates channel for additional coverage
         this.subscribeToOrderStatusUpdatesChannel();
     }
 
     subscribeToOrderChannel(orderId) {
         if (!this.pusher) return;
-        
+
         const channelName = `private-order.${orderId}`;
-        
+
         try {
             const channel = this.pusher.subscribe(channelName);
             this.channels.set(orderId, channel);
@@ -79,7 +79,7 @@ class BranchOrderCardRealtime {
 
     subscribeToBranchOrdersChannel() {
         if (!this.pusher) return;
-        
+
         try {
             const branchChannel = this.pusher.subscribe('branch-orders-channel');
             this.channels.set('branch-orders', branchChannel);
@@ -97,7 +97,7 @@ class BranchOrderCardRealtime {
 
     subscribeToOrderStatusUpdatesChannel() {
         if (!this.pusher) return;
-        
+
         try {
             const statusUpdatesChannel = this.pusher.subscribe('order-status-updates');
             this.channels.set('order-status-updates', statusUpdatesChannel);
@@ -158,7 +158,7 @@ class BranchOrderCardRealtime {
             'payment_received': 'bg-green-700 text-white',
             'order_failed': 'bg-red-600 text-white',
         };
-        
+
         const statusTexts = {
             'awaiting_confirmation': 'Chờ xác nhận',
             'confirmed': 'Đã xác nhận',
@@ -199,7 +199,7 @@ class BranchOrderCardRealtime {
         } else {
             // Use regular status badge with optional icon
             const iconHtml = statusIcon ? `${statusIcon} ` : '';
-            
+
             statusContainer.innerHTML = `
                 <span class="px-2 py-1 text-xs font-medium rounded-md status-badge ${statusClass}">
                     ${iconHtml}${statusText}
@@ -228,16 +228,7 @@ class BranchOrderCardRealtime {
             `;
         } else if (newStatus === 'confirmed') {
             actionContainer.innerHTML = `
-                <div class="flex w-full gap-2">
-                    <button type="button" class="flex-1 px-3 py-2 text-sm rounded-md bg-gray-200 text-gray-700 flex items-center gap-2 cursor-default" disabled>
-                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M12 2a10 10 0 0 1 10 10h-4a6 6 0 0 0-6-6V2z"></path>
-                        </svg>
-                        Đang tìm tài xế
-                    </button>
-                    <a href="/branch/orders/${orderCard.dataset.orderId}" class="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 text-center">Chi tiết</a>
-                </div>
+                <a href="/branch/orders/${orderCard.dataset.orderId}" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 text-center">Chi tiết</a>
             `;
         } else {
             actionContainer.innerHTML = `
@@ -249,7 +240,7 @@ class BranchOrderCardRealtime {
     updateDeliveryTime(orderCard, actualDeliveryTime) {
         // Find the delivery time element in the order details
         const deliveryTimeElements = orderCard.querySelectorAll('.flex.justify-between');
-        
+
         deliveryTimeElements.forEach(element => {
             const label = element.querySelector('.text-gray-500');
             if (label && (label.textContent.includes('Dự kiến giao') || label.textContent.includes('Thực tế giao'))) {
@@ -278,7 +269,7 @@ class BranchOrderCardRealtime {
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);
         }
-        
+
         this.pollingInterval = setInterval(() => {
             // Simple polling implementation - could be enhanced with AJAX calls
             // to check for order updates from server
@@ -300,13 +291,13 @@ class BranchOrderCardRealtime {
             }
         });
         this.channels.clear();
-        
+
         // Disconnect Pusher
         if (this.pusher) {
             this.pusher.disconnect();
             this.pusher = null;
         }
-        
+
         // Clear polling interval
         if (this.pollingInterval) {
             clearInterval(this.pollingInterval);

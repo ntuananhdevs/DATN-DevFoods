@@ -57,17 +57,17 @@ const calculateTotalAmount = (items) => {
 
 const calculateShippingFee = (distanceKm) => {
     if (distanceKm <= 0) return 0;
-    
+
     // Theo spec mới:
     // - Phí km đầu: 10,000đ (cho 1 km đầu tiên)
     // - Giá/km tiếp theo: 5,000đ/km
     const firstKmFee = 10000;
     const additionalKmFee = 5000;
-    
+
     if (distanceKm <= 1) {
         return firstKmFee;
     }
-    
+
     // Round up distance for fair pricing
     const additionalKm = Math.ceil(distanceKm - 1);
     return firstKmFee + (additionalKm * additionalKmFee);
@@ -929,10 +929,10 @@ window.DriverApp = {
                     `).join("")
                 } <
                 span class = "ml-1" > ($ {
-                        entry.rating
-                    }) < /span> <
-                    /div>
-                ` : ""}
+                    entry.rating
+                }) < /span> < /
+                div >
+                    ` : ""}
                 ${entry.customerFeedback ? `
                   <p class="text-xs italic text-muted-foreground flex items-start">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3 mr-1 mt-0.5 flex-shrink-0"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> "${entry.customerFeedback}"
