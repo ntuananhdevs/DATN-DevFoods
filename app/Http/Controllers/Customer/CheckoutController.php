@@ -48,7 +48,7 @@ class CheckoutController extends Controller
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
                     $variant = \App\Models\ProductVariant::with([
-                        'product',
+                        'product.images',
                         'variantValues.attribute'
                     ])->find($buyNow['variant_id']);
                 }
@@ -75,6 +75,14 @@ class CheckoutController extends Controller
                         $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
                     }
                     $item->combo = null;
+                    
+                    // Set primary image for buy now product
+                    if ($item->variant && $item->variant->product) {
+                        $item->variant->product->primary_image = $item->variant->product->images
+                            ->where('is_primary', true)
+                            ->first() ?? $item->variant->product->images->first();
+                    }
+                    
                     $cartItems->push($item);
                 }
             } elseif ($buyNow['type'] === 'combo') {
@@ -519,6 +527,15 @@ class CheckoutController extends Controller
                 $order->guest_district = $request->district;
                 $order->guest_ward = $request->ward;
                 $order->guest_city = $request->city;
+                $order->guest_latitude = $request->latitude;
+                $order->guest_longitude = $request->longitude;
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Setting guest coordinates for order', [
+                    'order_code' => $order->order_code,
+                    'guest_latitude' => $request->latitude,
+                    'guest_longitude' => $request->longitude
+                ]);
             }
             
             $order->branch_id = $branchId;

@@ -144,7 +144,7 @@ use Illuminate\Support\Facades\Storage;
                         </a>
                         <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
                         <div class="flex items-center justify-between">
-                            <div class="flex flex-col">
+                            <div class="flex flex-row items-center gap-2">
                                 @if($combo->original_price && $combo->original_price > $combo->price)
                                     <span class="font-bold text-lg text-black-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
                                     <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
@@ -236,16 +236,23 @@ use Illuminate\Support\Facades\Storage;
                     <div class="p-4">
                         <div class="flex items-center gap-1 mb-2">
                             {{-- Rating Stars --}}
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                @else
-                                    <i class="far fa-star text-yellow-400"></i> {{-- or text-gray-300 for empty --}}
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                            @if(isset($product->average_rating) && $product->average_rating > 0)
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($product->average_rating))
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @elseif($i - 0.5 <= $product->average_rating)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300"></i>
+                                    @endif
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
+                            @else
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="far fa-star text-gray-300"></i>
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">(0)</span>
+                            @endif
                         </div>
 
                         <a href="{{ route('products.show', $product->slug) }}">
@@ -319,16 +326,24 @@ use Illuminate\Support\Facades\Storage;
 
                     <div class="p-4">
                         <div class="flex items-center gap-1 mb-2">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                @else
-                                    <i class="far fa-star text-yellow-400"></i>
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                            {{-- Rating Stars --}}
+                            @if(isset($product->average_rating) && $product->average_rating > 0)
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($product->average_rating))
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @elseif($i - 0.5 <= $product->average_rating)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300"></i>
+                                    @endif
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
+                            @else
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="far fa-star text-gray-300"></i>
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">(0)</span>
+                            @endif
                         </div>
 
                         <a href="{{ route('products.show', $product->slug) }}">

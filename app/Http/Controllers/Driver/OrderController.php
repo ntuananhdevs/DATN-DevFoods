@@ -95,7 +95,7 @@ class OrderController extends Controller
                     $q->where('order_code', 'like', '%' . $search . '%')
                         ->orWhere('delivery_address', 'like', '%' . $search . '%')
                         ->orWhereHas('customer', function ($subQ) use ($search) {
-                            $subQ->where('name', 'like', '%' . $search . '%')
+                            $subQ->where('full_name', 'like', '%' . $search . '%')
                                 ->orWhere('phone', 'like', '%' . $search . '%');
                         });
                 });
@@ -152,7 +152,7 @@ class OrderController extends Controller
                 $query->where('order_code', 'like', '%' . $search . '%')
                     ->orWhere('delivery_address', 'like', '%' . $search . '%')
                     ->orWhereHas('customer', function ($q) use ($search) {
-                        $q->where('name', 'like', '%' . $search . '%')
+                        $q->where('full_name', 'like', '%' . $search . '%')
                             ->orWhere('phone', 'like', '%' . $search . '%');
                     });
             });

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Branch;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\DriverLocation;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\Order\OrderStatusUpdated;
@@ -74,7 +76,7 @@ class OrderController extends Controller
                     ->orWhere('guest_name', 'like', "%{$search}%")
                     ->orWhere('guest_phone', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', "%{$search}%")
+                        $customerQuery->where('full_name', 'like', "%{$search}%")
                             ->orWhere('phone', 'like', "%{$search}%");
                     });
             });
@@ -203,7 +205,23 @@ class OrderController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        return view('branch.orders.show', compact('order'));
+        // Get branch coordinates
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+        
+        // Get customer coordinates
+        $customerLat = null;
+        $customerLng = null;
+        
+        if ($order->address) {
+            $customerLat = $order->address->latitude;
+            $customerLng = $order->address->longitude;
+        } else {
+            $customerLat = $order->guest_latitude;
+            $customerLng = $order->guest_longitude;
+        }
+
+        return view('branch.orders.show',  compact('order', 'branchLat', 'branchLng', 'customerLat', 'customerLng'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -520,6 +538,8 @@ class OrderController extends Controller
 
 
 
+
+
     /**
      * Trả về HTML partial card cho 1 order (dùng cho realtime)
      */
@@ -530,5 +550,161 @@ class OrderController extends Controller
             ->where('branch_id', $branch->id)
             ->findOrFail($id);
         return view('branch.orders.partials.order_card', compact('order'));
+    }
+
+    /**
+     * Lấy danh sách tài xế khả dụng cho bản đồ
+     */
+    public function getAvailableDrivers($orderId)
+    {
+        try {
+            $branch = Auth::guard('manager')->user()->branch;
+            $order = Order::where('branch_id', $branch->id)->findOrFail($orderId);
+            
+            // Lấy tọa độ giao hàng
+            $deliveryLat = $order->address->latitude ?? $order->guest_latitude;
+            $deliveryLng = $order->address->longitude ?? $order->guest_longitude;
+            
+            if (!$deliveryLat || !$deliveryLng) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có thông tin tọa độ giao hàng',
+                    'drivers' => []
+                ]);
+            }
+            
+            // Truy vấn tài xế khả dụng với vị trí hiện tại từ driver_locations
+            $drivers = DB::table('drivers')
+                ->join('driver_locations', function($join) {
+                    $join->on('drivers.id', '=', 'driver_locations.driver_id')
+                         ->whereRaw('driver_locations.id = (
+                             SELECT MAX(id) FROM driver_locations dl 
+                             WHERE dl.driver_id = drivers.id
+                         )');
+                })
+                ->select(
+                    'drivers.id',
+                    'drivers.full_name',
+                    'drivers.phone_number',
+                    'drivers.is_available',
+                    'driver_locations.latitude',
+                    'driver_locations.longitude',
+                    'driver_locations.updated_at as location_updated_at',
+                    DB::raw('(
+                        6371 * acos(
+                            cos(radians(' . $deliveryLat . '))
+                            * cos(radians(driver_locations.latitude))
+                            * cos(radians(driver_locations.longitude) - radians(' . $deliveryLng . '))
+                            + sin(radians(' . $deliveryLat . '))
+                            * sin(radians(driver_locations.latitude))
+                        )
+                    ) AS distance')
+                )
+                ->where('drivers.is_available', true)
+                ->where('drivers.status', 'active')
+                ->whereNotNull('driver_locations.latitude')
+                ->whereNotNull('driver_locations.longitude')
+                ->whereRaw('(
+                    6371 * acos(
+                        cos(radians(' . $deliveryLat . '))
+                        * cos(radians(driver_locations.latitude))
+                        * cos(radians(driver_locations.longitude) - radians(' . $deliveryLng . '))
+                        + sin(radians(' . $deliveryLat . '))
+                        * sin(radians(driver_locations.latitude))
+                    )
+                ) <= 10') // Trong bán kính 10km
+                ->orderBy('distance')
+                ->limit(20)
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'drivers' => $drivers
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy danh sách tài xế khả dụng', [
+                'order_id' => $orderId,
+                'message' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi lấy danh sách tài xế',
+                'drivers' => []
+            ], 500);
+        }
+    }
+    
+    /**
+     * Lấy thông tin tài xế được gán cho đơn hàng
+     */
+    public function getAssignedDriver($orderId, $driverId)
+    {
+        try {
+            $branch = Auth::guard('manager')->user()->branch;
+            $order = Order::where('branch_id', $branch->id)->findOrFail($orderId);
+            
+            // Kiểm tra tài xế có được gán cho đơn hàng này không
+            if ($order->driver_id != $driverId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tài xế không được gán cho đơn hàng này',
+                    'driver' => null
+                ]);
+            }
+            
+            // Lấy tọa độ giao hàng
+            $deliveryLat = $order->address->latitude ?? $order->guest_latitude;
+            $deliveryLng = $order->address->longitude ?? $order->guest_longitude;
+            
+            // Lấy thông tin tài xế với vị trí hiện tại từ driver_locations
+            $driver = DB::table('drivers')
+                ->join('driver_locations', function($join) {
+                    $join->on('drivers.id', '=', 'driver_locations.driver_id')
+                         ->whereRaw('driver_locations.id = (
+                             SELECT MAX(id) FROM driver_locations dl 
+                             WHERE dl.driver_id = drivers.id
+                         )');
+                })
+                ->select(
+                    'drivers.id',
+                    'drivers.full_name',
+                    'drivers.phone_number',
+                    'drivers.is_available',
+                    'driver_locations.latitude',
+                    'driver_locations.longitude',
+                    'driver_locations.updated_at as location_updated_at'
+                )
+                ->where('drivers.id', $driverId)
+                ->first();
+            
+            if ($driver && $deliveryLat && $deliveryLng && $driver->latitude && $driver->longitude) {
+                // Tính khoảng cách
+                $distance = $this->calculateDistance(
+                    $deliveryLat, $deliveryLng,
+                    $driver->latitude, $driver->longitude
+                );
+                $driver->distance = $distance;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'driver' => $driver
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy thông tin tài xế được gán', [
+                'order_id' => $orderId,
+                'driver_id' => $driverId,
+                'message' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi lấy thông tin tài xế',
+                'driver' => null
+            ], 500);
+        }
     }
 }

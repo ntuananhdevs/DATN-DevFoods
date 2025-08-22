@@ -85,7 +85,7 @@
             branchId: window.branchId
         });
     </script>
-    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script></script>
+    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script>
 
     @yield('scripts')
     @stack('scripts')

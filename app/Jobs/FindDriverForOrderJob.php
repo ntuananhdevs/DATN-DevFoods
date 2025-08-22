@@ -144,40 +144,119 @@ class FindDriverForOrderJob implements ShouldQueue
                        (6371 * acos(cos(radians(?)) * cos(radians(dl.latitude)) * 
                        cos(radians(dl.longitude) - radians(?)) + 
                        sin(radians(?)) * sin(radians(dl.latitude)))) AS distance,
-                       COALESCE(order_counts.current_orders, 0) as current_orders
+                       COALESCE(order_counts.current_orders, 0) as current_orders,
+                       COALESCE(delivering_orders.delivering_count, 0) as delivering_orders
                 FROM drivers d
                 INNER JOIN driver_locations dl ON d.id = dl.driver_id
                 LEFT JOIN (
                     SELECT driver_id, COUNT(*) as current_orders
                     FROM orders 
-                    WHERE status IN ('awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit')
+                    WHERE status IN ('awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up')
                     GROUP BY driver_id
                 ) order_counts ON d.id = order_counts.driver_id
+                LEFT JOIN (
+                    SELECT driver_id, COUNT(*) as delivering_count
+                    FROM orders 
+                    WHERE status IN ('in_transit')
+                    GROUP BY driver_id
+                ) delivering_orders ON d.id = delivering_orders.driver_id
                 WHERE d.status = 'active' 
                     AND d.is_available = 1
                     AND COALESCE(order_counts.current_orders, 0) < ?
+                    AND COALESCE(delivering_orders.delivering_count, 0) = 0
                     AND d.id NOT IN ({$excludeDriversStr})
                 HAVING distance <= ?
                 ORDER BY distance ASC, RAND()
                 LIMIT 15
             ", [$lat, $lng, $lat, $maxOrders, $searchRadius]);
+            
+            // Lọc tài xế phù hợp dựa trên khu vực đơn hàng hiện tại
+            $suitableDrivers = [];
+            $maxDistanceBetweenOrders = 5; // km - khoảng cách tối đa giữa các đơn hàng của cùng tài xế
+            
+            Log::info('Bắt đầu lọc tài xế theo khu vực:', [
+                'total_drivers_found' => count($drivers),
+                'max_distance_between_orders' => $maxDistanceBetweenOrders
+            ]);
+            
+            foreach ($drivers as $driver) {
+                if ($driver->current_orders == 0) {
+                    // Tài xế chưa có đơn nào, có thể gán
+                    $suitableDrivers[] = $driver;
+                    Log::info('Tài xế không có đơn hiện tại:', ['driver_id' => $driver->id]);
+                } else {
+                    // Kiểm tra khoảng cách với các đơn hàng hiện tại của tài xế
+                    $isInSameArea = $this->checkDriverOrdersInSameArea($driver->id, $lat, $lng, $maxDistanceBetweenOrders);
+                    if ($isInSameArea) {
+                        $suitableDrivers[] = $driver;
+                        Log::info('Tài xế phù hợp với khu vực:', [
+                            'driver_id' => $driver->id,
+                            'current_orders' => $driver->current_orders
+                        ]);
+                    } else {
+                        Log::info('Tài xế không phù hợp với khu vực:', [
+                            'driver_id' => $driver->id,
+                            'current_orders' => $driver->current_orders
+                        ]);
+                    }
+                }
+            }
+            
+            Log::info('Kết quả lọc tài xế:', [
+                'suitable_drivers_count' => count($suitableDrivers),
+                'original_drivers_count' => count($drivers)
+            ]);
+            
+            $drivers = $suitableDrivers;
+            
+            // Nếu không tìm được tài xế phù hợp sau khi lọc theo khu vực
+            if (empty($drivers)) {
+                Log::warning('Không tìm được tài xế phù hợp trong khu vực lân cận', [
+                    'order_id' => $this->order->id,
+                    'pickup_coordinates' => [$lat, $lng],
+                    'max_distance_between_orders' => $maxDistanceBetweenOrders
+                ]);
+                
+                // Có thể thử lại với bán kính tìm kiếm lớn hơn hoặc bỏ qua ràng buộc khu vực
+                // Ở đây ta sẽ tiếp tục với danh sách rỗng để job thất bại và retry
+            }
         
-            Log::info('Tìm được tài xế phù hợp:', [
+            Log::info('Tìm được tài xế phù hợp (không đang giao hàng):', [
                 'count' => count($drivers),
                 'search_radius_km' => $searchRadius,
                 'max_orders' => $maxOrders,
                 'excluded_drivers' => count($excludeDriverIds)
             ]);
+            
+            // Log thông tin về việc lọc tài xế theo trạng thái giao hàng
+            foreach ($drivers as $driver) {
+                Log::info('Tài xế được chọn:', [
+                    'driver_id' => $driver->id,
+                    'current_orders' => $driver->current_orders,
+                    'delivering_orders' => $driver->delivering_orders,
+                    'distance_km' => round($driver->distance, 2)
+                ]);
+            }
 
             $driver = !empty($drivers) ? $drivers[0] : null;
             
             if (!$driver) {
+                // Thống kê chi tiết về tài xế
+                $totalActiveDrivers = \App\Models\Driver::where('status', 'active')->count();
+                $availableDrivers = \App\Models\Driver::where('status', 'active')->where('is_available', true)->count();
+                $deliveringDrivers = \App\Models\Driver::where('status', 'active')
+                    ->whereHas('orders', function($query) {
+                        $query->where('status', 'in_transit');
+                    })->count();
+                
                 Log::info('Không tìm thấy tài xế phù hợp cho đơn hàng', [
                     'order_id' => $order->id,
-                    'total_drivers_checked' => \App\Models\Driver::where('status', 'active')->count(),
-                    'available_drivers' => \App\Models\Driver::where('status', 'active')->where('is_available', true)->count(),
+                    'total_active_drivers' => $totalActiveDrivers,
+                    'available_drivers' => $availableDrivers,
+                    'drivers_currently_delivering' => $deliveringDrivers,
                     'attempt' => $attempt,
-                    'excluded_drivers' => count($excludeDriverIds)
+                    'excluded_drivers' => count($excludeDriverIds),
+                    'search_radius_km' => $searchRadius
                 ]);
                 
                 if ($attempt < $maxAttempts) {
@@ -213,8 +292,18 @@ class FindDriverForOrderJob implements ShouldQueue
                         throw new \Exception('Driver không còn available');
                     }
                     
+                    // Kiểm tra tài xế không đang giao hàng
+                    $deliveringOrders = \App\Models\Order::where('driver_id', $driver->id)
+                        ->where('status', 'in_transit')
+                        ->count();
+                        
+                    if ($deliveringOrders > 0) {
+                        throw new \Exception('Driver đang giao hàng, không thể gán đơn mới');
+                    }
+                    
+                    // Đếm các đơn hàng hiện tại (chỉ các trạng thái được phép)
                     $currentOrders = \App\Models\Order::where('driver_id', $driver->id)
-                        ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
+                        ->whereIn('status', ['awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
                         ->count();
                         
                     if ($currentOrders >= $maxOrders) {
@@ -361,5 +450,65 @@ class FindDriverForOrderJob implements ShouldQueue
             sin($lngDelta / 2) * sin($lngDelta / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return round($earthRadius * $c, 2);
+    }
+
+    /**
+     * Kiểm tra xem đơn hàng mới có nằm trong khu vực lân cận với các đơn hàng hiện tại của tài xế
+     */
+    private function checkDriverOrdersInSameArea($driverId, $newOrderLat, $newOrderLng, $maxDistance)
+    {
+        // Lấy tọa độ của các đơn hàng hiện tại của tài xế (loại trừ đơn đang giao)
+        $currentOrders = DB::select("
+            SELECT o.id, o.pickup_latitude, o.pickup_longitude, o.delivery_latitude, o.delivery_longitude
+            FROM orders o
+            WHERE o.driver_id = ?
+                AND o.status IN ('awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up')
+        ", [$driverId]);
+
+        Log::info('Kiểm tra khu vực đơn hàng cho tài xế:', [
+            'driver_id' => $driverId,
+            'current_orders_count' => count($currentOrders),
+            'new_order_coordinates' => [$newOrderLat, $newOrderLng],
+            'max_distance' => $maxDistance
+        ]);
+
+        if (empty($currentOrders)) {
+            Log::info('Tài xế không có đơn hàng hiện tại, có thể gán');
+            return true; // Không có đơn hàng hiện tại, có thể gán
+        }
+
+        // Kiểm tra khoảng cách với từng đơn hàng hiện tại
+        foreach ($currentOrders as $order) {
+            // Kiểm tra khoảng cách với điểm lấy hàng
+            $distanceToPickup = $this->haversine(
+                $newOrderLat, $newOrderLng,
+                $order->pickup_latitude, $order->pickup_longitude
+            );
+
+            // Kiểm tra khoảng cách với điểm giao hàng
+            $distanceToDelivery = $this->haversine(
+                $newOrderLat, $newOrderLng,
+                $order->delivery_latitude, $order->delivery_longitude
+            );
+
+            Log::info('Kiểm tra khoảng cách với đơn hàng hiện tại:', [
+                'current_order_id' => $order->id,
+                'distance_to_pickup' => $distanceToPickup,
+                'distance_to_delivery' => $distanceToDelivery,
+                'max_distance' => $maxDistance
+            ]);
+
+            // Nếu đơn mới nằm trong khu vực lân cận (gần điểm lấy hoặc giao của đơn hiện tại)
+            if ($distanceToPickup <= $maxDistance || $distanceToDelivery <= $maxDistance) {
+                Log::info('Đơn hàng mới nằm trong khu vực lân cận', [
+                    'suitable' => true,
+                    'reason' => $distanceToPickup <= $maxDistance ? 'gần điểm lấy hàng' : 'gần điểm giao hàng'
+                ]);
+                return true;
+            }
+        }
+
+        Log::info('Đơn hàng mới không nằm trong khu vực lân cận', ['suitable' => false]);
+        return false; // Đơn mới không nằm trong khu vực lân cận
     }
 }

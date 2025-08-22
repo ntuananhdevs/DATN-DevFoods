@@ -128,7 +128,7 @@
                                class="w-full border border-gray-200 rounded-xl px-4 py-2 text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" />
                     </div>
                     
-                    <div class="flex items-end gap-2 md:col-span-2">
+                    <div class="flex items-end gap-2 md:col-span-1">
                         <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
