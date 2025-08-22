@@ -1617,7 +1617,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let bgColor = 'bg-green-500';
                 if (type === 'error') bgColor = 'bg-red-500';
                 
-                toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-50 ${bgColor}`;
+                toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-[9999] ${bgColor}`;
                 toast.textContent = message;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 4000);
@@ -1636,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let bgColor = 'bg-green-500';
             if (type === 'error') bgColor = 'bg-red-500';
             
-            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white ${bgColor}`;
+            toast.className = `fixed top-4 right-4 z-[9999] px-6 py-3 rounded-lg shadow-lg text-white ${bgColor}`;
             toast.textContent = message;
             
             // Add to page
@@ -2868,8 +2868,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Enhanced toast notification function
-            function showEnhancedToast(message, type = 'info', options = {}) {
+            // Enhanced toast notification function - Make it globally accessible
+            window.showEnhancedToast = function(message, type = 'info', options = {}) {
                 const {
                     icon = type === 'success' ? 'fas fa-check-circle' : 
                           type === 'error' ? 'fas fa-times-circle' : 
@@ -2886,7 +2886,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 const toast = document.createElement('div');
-                toast.className = `fixed ${position === 'top-right' ? 'top-4 right-4' : 'bottom-4 right-4'} ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg border-l-4 max-w-sm z-50 transform transition-all duration-300 translate-x-full opacity-0`;
+                toast.className = `fixed ${position === 'top-right' ? 'top-4 right-4' : 'bottom-4 right-4'} ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg border-l-4 max-w-sm z-[9999] transform transition-all duration-300 translate-x-full opacity-0`;
                 
                 toast.innerHTML = `
                     <div class="flex items-center">
@@ -2929,6 +2929,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(removeToast, duration);
                 
                 return toast;
+            };
+            
+            // Also create a local reference for backward compatibility
+            function showEnhancedToast(message, type = 'info', options = {}) {
+                return window.showEnhancedToast(message, type, options);
             }
             
             // Enhanced error display function
