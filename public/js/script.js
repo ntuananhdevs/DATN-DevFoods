@@ -739,13 +739,13 @@ window.DriverApp = {
                 actionButtonsContainer.innerHTML = buttonsHtml;
 
                 // Re-attach event listeners after updating innerHTML
-                document.getElementById("btn-accept-order") ? .addEventListener("click", () => {
+                document.getElementById("btn-accept-order")?.addEventListener("click", () => {
                     updateOrderStatus(order.id, "Đang giao");
                 });
-                document.getElementById("btn-complete-order") ? .addEventListener("click", () => {
+                document.getElementById("btn-complete-order")?.addEventListener("click", () => {
                     updateOrderStatus(order.id, "Đã hoàn thành");
                 });
-                document.getElementById("btn-report-issue") ? .addEventListener("click", () => {
+                document.getElementById("btn-report-issue")?.addEventListener("click", () => {
                     updateOrderStatus(order.id, "Đã hủy");
                 });
             }
@@ -838,12 +838,12 @@ window.DriverApp = {
         };
 
         // Attach event listeners
-        document.getElementById("toggle-edit-profile") ? .addEventListener("click", () => {
+        document.getElementById("toggle-edit-profile")?.addEventListener("click", () => {
             isEditing = !isEditing;
             renderProfileSection();
         });
 
-        document.getElementById("driver-status") ? .addEventListener("click", () => {
+        document.getElementById("driver-status")?.addEventListener("click", () => {
             driver.isActive = !driver.isActive;
             DriverApp.mockDriverProfile.isActive = driver.isActive; // Update global mock
             DriverApp.showToast({
@@ -854,13 +854,13 @@ window.DriverApp = {
             renderProfileSection();
         });
 
-        document.getElementById("name") ? .addEventListener("input", (e) => driver.name = e.target.value);
-        document.getElementById("phone") ? .addEventListener("input", (e) => driver.phone = e.target.value);
-        document.getElementById("bankName") ? .addEventListener("input", (e) => driver.bankAccount.bankName = e.target.value);
-        document.getElementById("accountNumber") ? .addEventListener("input", (e) => driver.bankAccount.accountNumber = e.target.value);
-        document.getElementById("accountHolderName") ? .addEventListener("input", (e) => driver.bankAccount.accountHolderName = e.target.value);
-
-        document.getElementById("save-profile-changes") ? .addEventListener("click", () => {
+        document.getElementById("name")?.addEventListener("input", (e) => driver.name = e.target.value);
+        document.getElementById("phone")?.addEventListener("input", (e) => driver.phone = e.target.value);
+        document.getElementById("bankName")?.addEventListener("input", (e) => driver.bankAccount.bankName = e.target.value);
+        document.getElementById("accountNumber")?.addEventListener("input", (e) => driver.bankAccount.accountNumber = e.target.value);
+        document.getElementById("accountHolderName")?.addEventListener("input", (e) => driver.bankAccount.accountHolderName = e.target.value);
+        
+        document.getElementById("save-profile-changes")?.addEventListener("click", () => {
             Object.assign(DriverApp.mockDriverProfile, driver); // Persist changes to global mock
             isEditing = false;
             DriverApp.showToast({
@@ -950,7 +950,7 @@ window.DriverApp = {
     }
 };
 
-document.getElementById("history-filter") ? .addEventListener("change", (e) => {
+document.getElementById("history-filter")?.addEventListener("change", (e) => {
     filter = e.target.value;
     renderHistoryList();
 });
@@ -1049,7 +1049,7 @@ initNotificationsPage: function() {
         });
     };
 
-    document.getElementById("mark-all-read") ? .addEventListener("click", () => {
+    document.getElementById("mark-all-read")?.addEventListener("click", () => {
         notifications.forEach(n => n.read = true);
         DriverApp.showToast({
             title: "Đã đánh dấu tất cả là đã đọc."
@@ -1057,11 +1057,11 @@ initNotificationsPage: function() {
         renderNotificationsSection();
     });
 
-    document.getElementById("feedback") ? .addEventListener("input", (e) => {
+    document.getElementById("feedback")?.addEventListener("input", (e) => {
         feedbackText = e.target.value;
     });
 
-    document.getElementById("submit-feedback") ? .addEventListener("click", () => {
+    document.getElementById("submit-feedback")?.addEventListener("click", () => {
         if (feedbackText.trim() === "") {
             DriverApp.showToast({
                 title: "Vui lòng nhập nội dung phản hồi.",

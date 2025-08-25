@@ -72,7 +72,7 @@ if (window.ordersRealtimeInitialized) {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]') ? .getAttribute('content') || ''
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                         },
                         body: JSON.stringify({
                             subscription: subscription,
@@ -579,8 +579,8 @@ if (window.ordersRealtimeInitialized) {
                 const totalAmount = order.total_amount || 0;
 
                 // Payment method and status
-                const paymentMethod = order.payment ? .payment_method || 'cod';
-                const paymentStatus = order.payment ? .payment_status || 'pending';
+                const paymentMethod = order.payment?.payment_method || 'cod';
+                const paymentStatus = order.payment?.payment_status || 'pending';
 
                 // Get total quantity from items_count or calculate from orderItems
                 const totalQuantity = order.items_count ||
