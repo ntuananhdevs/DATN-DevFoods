@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Branch;
 use App\Models\Combo;
 use App\Models\Topping;
+use App\Models\Product;
 
 class BranchProductController extends Controller
 {
@@ -32,5 +33,58 @@ class BranchProductController extends Controller
         $branch = $manager ? $manager->branch : null;
         $toppings = $branch ? $branch->toppings()->get() : collect();
         return view('branch.toppings', compact('toppings', 'branch'));
+    }
+
+    /**
+     * Display the specified product.
+     */
+    public function show($slug)
+    {
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+
+        if (!$branch) {
+            return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
+        }
+
+        $product = Product::with([
+            'category',
+            'images',
+            'variants.branchStocks' => function ($query) use ($branch) {
+                $query->where('branch_id', $branch->id);
+            },
+            'variants.variantValues.attribute',
+            'toppings',
+            'reviews.customer'
+        ])->where('slug', $slug)
+          ->firstOrFail();
+
+        return view('branch.products.show', compact('product', 'branch'));
+    }
+
+    /**
+     * Display the specified combo.
+     */
+    public function showCombo($slug)
+    {
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+
+        if (!$branch) {
+            return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
+        }
+
+        $combo = Combo::with([
+            'category',
+            'comboItems.productVariant.product.images',
+            'comboItems.productVariant.variantValues.attribute',
+            'comboBranchStocks' => function ($query) use ($branch) {
+                $query->where('branch_id', $branch->id);
+            },
+            'reviews.user'
+        ])->where('slug', $slug)
+          ->firstOrFail();
+
+        return view('branch.combos.show', compact('combo', 'branch'));
     }
 }

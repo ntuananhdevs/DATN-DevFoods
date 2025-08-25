@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.customer.fullLayoutMaster')
 
 @section('title', 'FastFood - Danh Sách Yêu Thích')
@@ -161,7 +165,7 @@
                             ? ($item->product->image_url ?? asset('images/default-combo.png'))
                             : (
                                 $item->product->images->where('is_primary', true)->first()
-                                    ? asset('storage/' . $item->product->images->where('is_primary', true)->first()->img)
+                                    ? Storage::disk('s3')->url($item->product->images->where('is_primary', true)->first()->img)
                                     : '/placeholder.svg?height=400&width=400'
                             );
                         $name = $item->product->name;

@@ -20,6 +20,14 @@ class ReviewReply extends Model
         'report_count',
     ];
 
+    protected $casts = [
+        'reply_date' => 'datetime',
+        'is_official' => 'boolean',
+        'is_hidden' => 'boolean',
+        'helpful_count' => 'integer',
+        'report_count' => 'integer',
+    ];
+
     public function review()
     {
         return $this->belongsTo(ProductReview::class, 'review_id');

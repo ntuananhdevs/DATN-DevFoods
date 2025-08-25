@@ -47,6 +47,14 @@ class ProductReview extends Model
     }
 
     /**
+     * Get the customer who wrote the review (alias for user).
+     */
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
      * Get the product being reviewed.
      */
     public function product()
