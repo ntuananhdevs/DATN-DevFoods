@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse; // Add this import
 
-
 class OrderController extends Controller
 {
     /**
@@ -36,10 +35,18 @@ class OrderController extends Controller
             'all' => 'Tất cả',
             'awaiting_confirmation' => 'Chờ xác nhận',
             'confirmed' => 'Đã xác nhận',
+            'awaiting_driver' => 'Chờ tài xế nhận đơn',
+            'driver_confirmed' => 'Tài xế đã xác nhận đơn',
+            'waiting_driver_pick_up' => 'Tài xế đang chờ đơn',
+            'driver_picked_up' => 'Tài xế đã nhận đơn',
             'in_transit' => 'Đang giao',
             'delivered' => 'Đã giao',
             'item_received' => 'Đã nhận hàng',
-            'cancelled' => 'Đã hủy'
+            'cancelled' => 'Đã hủy',
+            'refunded' => 'Đã hoàn tiền',
+            'payment_failed' => 'Thanh toán thất bại',
+            'payment_received' => 'Đã nhận thanh toán',
+            'order_failed' => 'Đơn hàng thất bại'
         ];
 
         return view('customer.orders.index', compact('orders', 'statuses'));
@@ -165,25 +172,7 @@ class OrderController extends Controller
         ]);
     }
 
-    /**
-     * Trả về partial danh sách đơn hàng cho AJAX reload.
-     * Hỗ trợ lọc theo trạng thái.
-     */
-    public function listPartial(Request $request)
-    {
-        $query = Order::where('customer_id', Auth::id());
-        
-        // Lọc theo trạng thái nếu có
-        if ($request->has('status') && $request->status != 'all') {
-            $query->where('status', $request->status);
-        }
-        
-        $orders = $query->latest()
-            ->paginate(10)
-            ->withQueryString(); // Giữ lại các tham số query khi phân trang
-            
-        return view('customer.orders.partials.list', compact('orders'))->render();
-    }
+    // Phương thức listPartial đã được xóa vì không còn cần thiết cho AJAX filtering
 
     /**
      * Hiển thị form nhập mã đơn hàng để theo dõi.
