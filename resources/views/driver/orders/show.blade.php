@@ -192,8 +192,8 @@
                         {{-- Các trạng thái delivered/item_received/... không hiển thị nút --}}
                 @endSwitch
 
-                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn --}}
-                @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
+                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn - chỉ hiển thị khi đã bắt đầu di chuyển --}}
+                @if (in_array($order->status, ['waiting_driver_pick_up', 'in_transit']))
                     @if(is_null($order->batch_id))
                         {{-- Đơn lẻ: hiển thị nút xem bản đồ lớn --}}
                         <button data-action="view-large-map"

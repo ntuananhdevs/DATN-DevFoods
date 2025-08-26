@@ -211,6 +211,17 @@ class OrderController extends Controller
         $notes = $order->notes;
 
         $type = $request->query('type');
+        
+        // Tự động xác định type dựa trên trạng thái đơn hàng
+        if (!$type) {
+            // Nếu đơn hàng chưa được lấy (pickup), thì type = 'branch'
+            // Nếu đơn hàng đã được lấy và đang giao, thì type = 'delivery'
+            if (in_array($order->status, ['driver_confirmed', 'waiting_driver_pick_up'])) {
+                $type = 'branch';
+            } else {
+                $type = 'delivery';
+            }
+        }
 
         $branchName = $order->branch->name ?? '';
         $branchPhone = $order->branch->phone ?? '';
@@ -396,46 +407,24 @@ class OrderController extends Controller
             abort(403, 'Bạn không có quyền thực hiện hành động này.');
         }
 
-        // Lấy tọa độ của đơn hàng hiện tại
+        // Sử dụng phương thức mới từ Model
+        $batchableOrders = $currentOrder->getBatchableOrders();
+        
+        // Thêm thông tin khoảng cách cho mỗi đơn hàng
         $currentLat = $currentOrder->address->latitude ?? $currentOrder->guest_latitude ?? null;
         $currentLng = $currentOrder->address->longitude ?? $currentOrder->guest_longitude ?? null;
-
-        // Tìm các đơn hàng có thể ghép
-        $potentialOrders = Order::with([
-            'customer', 
-            'address', 
-            'branch',
-            'orderItems.productVariant.product',
-            'orderItems.combo',
-            'orderItems.toppings'
-        ])
-            ->where('driver_id', $driverId)
-            ->where('id', '!=', $currentOrderId)
-            ->whereIn('status', ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
-            ->whereNull('batch_id') // Chưa được ghép
-            ->get();
-
-        // Lọc các đơn hàng trong bán kính 7km
-        $batchableOrders = collect();
         
         if ($currentLat && $currentLng) {
-            foreach ($potentialOrders as $order) {
+            $batchableOrders = $batchableOrders->map(function ($order) use ($currentLat, $currentLng) {
                 $orderLat = $order->address->latitude ?? $order->guest_latitude ?? null;
                 $orderLng = $order->address->longitude ?? $order->guest_longitude ?? null;
                 
                 if ($orderLat && $orderLng) {
-                    $distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
-                    
-                    // Chỉ thêm vào danh sách nếu khoảng cách <= 7km
-                    if ($distance <= 7) {
-                        $order->distance = $distance; // Thêm thuộc tính distance để hiển thị
-                        $batchableOrders->push($order);
-                    }
+                    $order->distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
                 }
-            }
-        } else {
-            // Nếu không có tọa độ của đơn hiện tại, không cho phép ghép đơn
-            $batchableOrders = collect();
+                
+                return $order;
+            });
         }
 
         return view('driver.orders.batchable', compact('currentOrder', 'batchableOrders'));
@@ -475,69 +464,47 @@ class OrderController extends Controller
 
         // Lấy đơn hàng hiện tại để kiểm tra khoảng cách
         $currentOrder = $orders->firstWhere('id', $currentOrderId);
-        $currentLat = $currentOrder->address->latitude ?? $currentOrder->guest_latitude ?? null;
-        $currentLng = $currentOrder->address->longitude ?? $currentOrder->guest_longitude ?? null;
-
-        if (!$currentLat || !$currentLng) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không thể xác định vị trí của đơn hàng hiện tại.'
-            ], 400);
-        }
-
-        // Kiểm tra khoảng cách của các đơn hàng được chọn
-        $invalidOrders = [];
-        foreach ($orders as $order) {
-            if ($order->id == $currentOrderId) continue; // Bỏ qua đơn hiện tại
-            
-            $orderLat = $order->address->latitude ?? $order->guest_latitude ?? null;
-            $orderLng = $order->address->longitude ?? $order->guest_longitude ?? null;
-            
-            if (!$orderLat || !$orderLng) {
-                $invalidOrders[] = $order->order_code . ' (không có tọa độ)';
-                continue;
-            }
-            
-            $distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
-            
-            if ($distance > 7) {
-                $invalidOrders[] = $order->order_code . ' (cách ' . number_format($distance, 1) . 'km)';
-            }
-        }
-
-        if (!empty($invalidOrders)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Các đơn hàng sau không thể ghép vì vượt quá 7km: ' . implode(', ', $invalidOrders)
-            ], 400);
-        }
-
-        // Tạo batch ID mới
-        $batchId = 'BATCH_' . $driverId . '_' . time();
+        $batchableOrders = $currentOrder->getBatchableOrders();
         
-        // Cập nhật tất cả đơn hàng với batch_id và batch_order
-        foreach ($orders as $index => $order) {
-            $order->batch_id = $batchId;
-            $order->batch_order = $index + 1;
+        // Kiểm tra các đơn hàng được chọn có trong danh sách có thể ghép không
+        $validSelectedIds = $batchableOrders->pluck('id')->toArray();
+        $invalidSelectedIds = array_diff($selectedOrderIds, $validSelectedIds);
+        
+        if (!empty($invalidSelectedIds)) {
+            $invalidOrders = Order::whereIn('id', $invalidSelectedIds)->pluck('order_code')->toArray();
+            return response()->json([
+                'success' => false,
+                'message' => 'Các đơn hàng sau không thể ghép: ' . implode(', ', $invalidOrders)
+            ], 400);
+        }
+
+        // Tạo batch group ID
+        $batchGroupId = $currentOrder->getBatchGroupId();
+        
+        // Đánh dấu các đơn hàng đã được ghép bằng cách cập nhật updated_at cùng thời điểm
+        $batchTime = now();
+        foreach ($orders as $order) {
+            $order->updated_at = $batchTime;
             $order->save();
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Đã ghép ' . count($allOrderIds) . ' đơn hàng thành công!',
-            'batch_id' => $batchId,
-            'redirect_url' => route('driver.orders.batch.navigate', ['batchId' => $batchId])
+            'batch_group_id' => $batchGroupId,
+            'redirect_url' => route('driver.orders.batch.navigate', ['batchGroupId' => $batchGroupId])
         ]);
     }
 
     /**
      * Hiển thị trang điều hướng cho batch
      */
-    public function navigateBatch($batchId)
+    public function navigateBatch($batchGroupId)
     {
         $driverId = Auth::guard('driver')->id();
         
-        $batchOrders = Order::with([
+        // Tìm đơn hàng đầu tiên trong batch để lấy thông tin
+        $currentOrder = Order::with([
             'customer.driverRatings', 
             'address', 
             'branch',
@@ -545,22 +512,20 @@ class OrderController extends Controller
             'orderItems.combo',
             'orderItems.toppings'
         ])
-            ->where('batch_id', $batchId)
             ->where('driver_id', $driverId)
-            ->orderBy('batch_order')
-            ->get();
+            ->whereRaw("CONCAT('BATCH_', driver_id, '_', DATE_FORMAT(updated_at, '%Y%m%d%H')) = ?", [$batchGroupId])
+            ->firstOrFail();
             
-        if ($batchOrders->isEmpty()) {
-            abort(404, 'Không tìm thấy batch này.');
-        }
+        // Lấy tất cả đơn hàng trong batch
+        $batchOrders = $currentOrder->getBatchOrders();
 
-        return view('driver.orders.batch-navigate', compact('batchOrders', 'batchId'));
+        return view('driver.orders.batch-navigate', compact('batchOrders', 'batchGroupId', 'currentOrder'));
     }
 
     /**
      * Cập nhật trạng thái đơn hàng trong batch
      */
-    public function updateBatchOrderStatus(Request $request, $batchId, $orderId)
+    public function updateBatchOrderStatus(Request $request, $batchGroupId, $orderId)
     {
         $request->validate([
             'status' => 'required|string|in:driver_confirmed,waiting_driver_pick_up,driver_picked_up,in_transit,delivered,delivery_failed,item_received'
@@ -568,14 +533,16 @@ class OrderController extends Controller
 
         $driverId = Auth::guard('driver')->id();
         
+        $order = Order::where('id', $orderId)
+            ->where('driver_id', $driverId)
+            ->firstOrFail();
+        
         // Các trạng thái cần thay đổi đồng bộ cho tất cả đơn trong batch
         $syncStatuses = ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up', 'in_transit'];
         
         if (in_array($request->status, $syncStatuses)) {
             // Cập nhật tất cả đơn hàng trong batch cùng lúc
-            $batchOrders = Order::where('batch_id', $batchId)
-                ->where('driver_id', $driverId)
-                ->get();
+            $batchOrders = $order->getBatchOrders();
                 
             if ($batchOrders->isEmpty()) {
                 return response()->json([
@@ -603,11 +570,6 @@ class OrderController extends Controller
             
         } else {
             // Chỉ cập nhật đơn hàng cụ thể (cho delivered, delivery_failed, item_received)
-            $order = Order::where('id', $orderId)
-                ->where('batch_id', $batchId)
-                ->where('driver_id', $driverId)
-                ->firstOrFail();
-
             $oldStatus = $order->status;
             $order->status = $request->status;
             
@@ -628,13 +590,16 @@ class OrderController extends Controller
     /**
      * Hủy ghép đơn
      */
-    public function disbandBatch($batchId)
+    public function disbandBatch($batchGroupId)
     {
         $driverId = Auth::guard('driver')->id();
         
-        $batchOrders = Order::where('batch_id', $batchId)
-            ->where('driver_id', $driverId)
-            ->get();
+        // Tìm đơn hàng đầu tiên trong batch
+        $order = Order::where('driver_id', $driverId)
+            ->whereRaw("CONCAT('BATCH_', driver_id, '_', DATE_FORMAT(updated_at, '%Y%m%d%H')) = ?", [$batchGroupId])
+            ->firstOrFail();
+            
+        $batchOrders = $order->getBatchOrders();
             
         if ($batchOrders->isEmpty()) {
             return response()->json([
@@ -643,11 +608,10 @@ class OrderController extends Controller
             ], 404);
         }
 
-        // Xóa batch_id và batch_order
-        foreach ($batchOrders as $order) {
-            $order->batch_id = null;
-            $order->batch_order = null;
-            $order->save();
+        // Tách các đơn hàng bằng cách cập nhật updated_at khác nhau
+        foreach ($batchOrders as $index => $batchOrder) {
+            $batchOrder->updated_at = now()->subMinutes($index * 10); // Tách thời gian 10 phút
+            $batchOrder->save();
         }
 
         return response()->json([
@@ -664,59 +628,27 @@ class OrderController extends Controller
     {
         $driverId = $currentOrder->driver_id;
         
-        // Lấy tọa độ của đơn hàng hiện tại
-        $currentLat = $currentOrder->address->latitude ?? $currentOrder->guest_latitude ?? null;
-        $currentLng = $currentOrder->address->longitude ?? $currentOrder->guest_longitude ?? null;
-        
-        if (!$currentLat || !$currentLng) {
-            return; // Không thể tự động ghép nếu không có tọa độ
-        }
-        
-        // Tìm các đơn hàng khác của tài xế này có thể ghép
-        $potentialOrders = Order::where('driver_id', $driverId)
-            ->where('id', '!=', $currentOrder->id)
-            ->whereIn('status', ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
-            ->whereNull('batch_id') // Chưa được ghép
-            ->get();
-
-        // Lọc các đơn hàng trong bán kính 7km
-        $batchableOrders = collect();
-        
-        foreach ($potentialOrders as $order) {
-            $orderLat = $order->address->latitude ?? $order->guest_latitude ?? null;
-            $orderLng = $order->address->longitude ?? $order->guest_longitude ?? null;
-            
-            if ($orderLat && $orderLng) {
-                $distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
-                
-                // Chỉ thêm vào danh sách nếu khoảng cách <= 7km
-                if ($distance <= 7) {
-                    $batchableOrders->push($order);
-                }
-            }
-        }
+        // Sử dụng phương thức mới từ Model
+        $batchableOrders = $currentOrder->getBatchableOrders();
         
         // Giới hạn tối đa 4 đơn khác (tổng cộng 5 đơn)
         $batchableOrders = $batchableOrders->take(4);
 
         // Nếu có ít nhất 1 đơn hàng khác, tạo batch
         if ($batchableOrders->count() > 0) {
-            // Tạo batch ID mới
-            $batchId = 'BATCH_' . $driverId . '_' . time();
-            
-            // Thêm đơn hàng hiện tại vào batch
-            $currentOrder->batch_id = $batchId;
-            $currentOrder->batch_order = 1;
+            // Đánh dấu các đơn hàng đã được ghép bằng cách cập nhật updated_at cùng thời điểm
+            $batchTime = now();
+            $currentOrder->updated_at = $batchTime;
             $currentOrder->save();
             
-            // Thêm các đơn hàng khác vào batch
-            foreach ($batchableOrders as $index => $order) {
-                $order->batch_id = $batchId;
-                $order->batch_order = $index + 2; // Bắt đầu từ 2 vì đơn hiện tại là 1
+            // Cập nhật thời gian cho các đơn hàng khác
+            foreach ($batchableOrders as $order) {
+                $order->updated_at = $batchTime;
                 $order->save();
             }
             
-            Log::info("Auto-created batch {$batchId} with " . ($batchableOrders->count() + 1) . " orders for driver {$driverId} within 7km radius");
+            $batchGroupId = $currentOrder->getBatchGroupId();
+            Log::info("Auto-created batch {$batchGroupId} with " . ($batchableOrders->count() + 1) . " orders for driver {$driverId} within 7km radius");
         }
     }
 

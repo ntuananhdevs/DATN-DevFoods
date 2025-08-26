@@ -1065,7 +1065,7 @@
                 <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
             </button>
             <div>
-                <h1 class="header-title">Đơn hàng ghép #{{ $batchId }}</h1>
+                <h1 class="header-title">Đơn hàng ghép #{{ $batchGroupId }}</h1>
                 <p class="header-subtitle">{{ $batchOrders->count() }} khách hàng • Tuyến đường tối ưu • 
                 @php
                     $totalDistance = 0;
@@ -2617,7 +2617,7 @@
             const numericOrderId = orderId.toString().replace('ORD', '');
 
             // Send request to update status using batch route
-            const response = await fetch(`/driver/orders/batch/{{ $batchId }}/${numericOrderId}/update-status`, {
+            const response = await fetch(`/driver/orders/batch/{{ $batchGroupId }}/${numericOrderId}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2909,7 +2909,7 @@
             // Use the first order ID for the batch update
             const firstOrderId = customers[0].id.toString().replace('ORD', '');
             
-            const response = await fetch(`/driver/orders/batch/{{ $batchId }}/${firstOrderId}/update-status`, {
+            const response = await fetch(`/driver/orders/batch/{{ $batchGroupId }}/${firstOrderId}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
