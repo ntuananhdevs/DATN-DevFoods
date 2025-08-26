@@ -204,7 +204,15 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         try {
+            // Đăng xuất khỏi driver guard
+            Auth::guard('driver')->logout();
+            
+            // Xóa session
             session()->forget(['driver_id', 'driver_name', 'driver_phone', 'driver_logged_in', 'first_login']);
+            
+            // Invalidate session để bảo mật
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
             return redirect()->route('driver.login')->with('success', 'Đăng xuất thành công!');
         } catch (Exception $e) {
