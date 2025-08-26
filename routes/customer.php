@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Customer\AddressController as CustomerAddressController;
 use App\Http\Controllers\Customer\DriverRatingController;
 use App\Http\Controllers\Customer\ReviewReplyController;
+use App\Http\Controllers\Customer\WalletController;
 
 // API Controllers for Customer
 // use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -140,6 +141,22 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     // Address Controller routes (alternative endpoints)
     Route::post('/addresses', [CustomerAddressController::class, 'store'])->name('customer.addresses.store');
     Route::put('/addresses/{id}', [CustomerAddressController::class, 'update'])->name('customer.addresses.update');
+    
+    // Wallet routes
+    Route::prefix('wallet')->name('customer.wallet.')->group(function () {
+        Route::get('/', [WalletController::class, 'index'])->name('index');
+        Route::post('/deposit', [WalletController::class, 'deposit'])->name('deposit');
+        Route::post('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
+        Route::post('/retry-payment', [WalletController::class, 'retryPayment'])->name('retry-payment');
+        Route::post('/cancel-transaction', [WalletController::class, 'cancelTransaction'])->name('cancel-transaction');
+        Route::get('/pending-transactions', [WalletController::class, 'getPendingTransactions'])->name('pending-transactions');
+        Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
+        Route::post('/update-expired', [WalletController::class, 'updateExpiredTransactions'])->name('update-expired');
+        
+        // VNPay routes
+        Route::get('/vnpay/return', [WalletController::class, 'vnpayReturn'])->name('vnpay.return');
+        Route::post('/vnpay/ipn', [WalletController::class, 'vnpayIpn'])->name('vnpay.ipn');
+    });
 });
 
 // Phone Required routes (không cần phone.required middleware)

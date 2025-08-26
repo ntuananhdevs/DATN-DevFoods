@@ -222,4 +222,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(Branch::class, 'manager_user_id', 'id');
     }
+
+    /**
+     * Get the wallet transactions for the user
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
 }
