@@ -4,9 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.classList.add('user-authenticated');
     }
 
-    // AJAX Search and Filter functionality
-    initializeAjaxFilters();
-
     // Khai báo biến channel
     let productsChannel, favoritesChannel, cartChannel, branchStockChannel, discountsChannel;
     
@@ -342,6 +339,7 @@ function initializeLazyLoading() {
 
 window.addEventListener('DOMContentLoaded', function() {
     initializeLazyLoading();
+    initializeAjaxFilters();
 });
 
 // AJAX Filter Functions

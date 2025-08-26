@@ -404,6 +404,7 @@
                                                         <span>{{ $review->branch->name }}</span>
                                                     @endif
                                                 </div>
+                                                <span class="review-content block mt-1 text-base text-gray-800">{{ $review->review }}</span>
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-end gap-1">
@@ -421,8 +422,8 @@
                                             </div>
                                         </div>
                                     </div>
+
                                     <div class="mt-4 space-y-3">
-                                        <p class="text-gray-700 leading-relaxed">{{ $review->review }}</p>
                                         @if ($review->review_image)
                                             <div class="mt-3">
                                                 <img src="{{ $review->review_image }}" alt="Review image"
@@ -514,10 +515,12 @@
                         </div>
                         <!-- Form gửi đánh giá hoặc phản hồi -->
                         @php
+                            $currentBranchId = $currentBranch ? $currentBranch->id : null; // Sử dụng $currentBranch thay vì session
                             $hasPurchased = false;
-                            if (auth()->check()) {
+                            if ($currentBranchId && auth()->check()) {
                                 $hasPurchased = \App\Models\Order::where('customer_id', auth()->id())
-                                    ->where('status', 'delivered')
+                                    ->where('branch_id', $currentBranchId)
+                                    ->whereIn('status', ['delivered', 'item_received'])
                                     ->whereHas('orderItems', function($q) use ($combo) {
                                         $q->where('combo_id', $combo->id);
                                     })
@@ -533,7 +536,7 @@
                                         data-default-action="{{ route('products.review', $combo->id) }}">
                                         @csrf
                                         <input type="hidden" name="type" value="combo">
-                                        <input type="hidden" name="branch_id" value="{{ $currentBranch->id }}">
+                                        <input type="hidden" name="branch_id" value="{{ $currentBranchId }}">
                                         <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
                                         <div id="replying-to" class="mb-2 hidden">
                                             <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
@@ -585,7 +588,7 @@
                                 </div>
                             @else
                                 <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                                    <p class="text-gray-600 mb-4">Vui lòng mua hàng để gửi đánh giá cho combo này.</p>
+                                    <p class="text-gray-600 mb-4">Bạn chỉ có thể đánh giá sản phẩm đã mua tại chi nhánh này.</p>
                                 </div>
                             @endif
                         @else
