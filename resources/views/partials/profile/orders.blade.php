@@ -287,7 +287,22 @@
                                 </button>
                             </form>
                         @elseif ($order->status == 'item_received')
-                            <a href="#" {{-- Cân nhắc tạo một route thực tế cho việc đánh giá --}}
+                            @php
+                                // Lấy sản phẩm đầu tiên trong đơn hàng để chuyển đến trang đánh giá
+                                $firstItem = $order->orderItems->first();
+                                $reviewUrl = '#';
+                                
+                                if ($firstItem) {
+                                    if ($firstItem->productVariant && $firstItem->productVariant->product) {
+                                        // Nếu là sản phẩm thường
+                                        $reviewUrl = route('products.show', $firstItem->productVariant->product->slug) . '#review-reply-form-container';
+                                    } elseif ($firstItem->combo) {
+                                        // Nếu là combo
+                                        $reviewUrl = route('combos.show', $firstItem->combo->slug) . '#review-reply-form-container';
+                                    }
+                                }
+                            @endphp
+                            <a href="{{ $reviewUrl }}"
                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -391,19 +406,22 @@ class CustomerOrderRealtime {
     }
 
     handleOrderStatusUpdate(orderId, data) {
+        console.log('Handling order status update:', orderId, data);
+        
         // Find the order element
         const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
         if (!orderElement) {
+            console.log('Order element not found for ID:', orderId);
             return;
         }
 
         // Update status badge
         const statusBadge = orderElement.querySelector('.status-badge');
-        if (statusBadge && data.status_text) {
+        if (statusBadge) {
             // Handle special case for 'confirmed' status
             if (data.status === 'confirmed') {
                 statusBadge.textContent = 'Đang tìm tài xế';
-            } else {
+            } else if (data.status_text) {
                 statusBadge.textContent = data.status_text;
             }
             
@@ -415,11 +433,7 @@ class CustomerOrderRealtime {
                 statusBadge.style.color = data.status_text_color;
             }
             
-            // Add status icon if provided
-            if (data.status_icon) {
-                const iconHtml = `<i class="${data.status_icon} mr-1"></i>`;
-                statusBadge.innerHTML = iconHtml + statusBadge.textContent;
-            }
+            console.log('Updated status badge:', statusBadge.textContent);
         }
 
         // Update delivery time if provided
@@ -432,6 +446,8 @@ class CustomerOrderRealtime {
 
         // Update action buttons based on new status
         this.updateActionButtons(orderElement, data.status);
+        
+        console.log('Order status update completed for:', orderId);
     }
 
     updateDeliveryTime(orderElement, actualDeliveryTime) {
@@ -509,7 +525,99 @@ class CustomerOrderRealtime {
         form.appendChild(statusInput);
         form.appendChild(button);
         
+        // Add event listener for the dynamically created form
+        this.attachReceiveFormListener(form);
+        
         return form;
+    }
+    
+    attachReceiveFormListener(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const actionUrl = this.action;
+            
+            // Gửi yêu cầu xác nhận nhận hàng
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show toast message
+                    const toastMessage = document.getElementById('toast-message');
+                    if (toastMessage) {
+                        toastMessage.textContent = data.message || 'Đã xác nhận nhận hàng thành công';
+                        toastMessage.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+                        toastMessage.classList.add('bg-green-600');
+                        setTimeout(() => {
+                            toastMessage.classList.add('hidden');
+                        }, 3000);
+                    }
+                    
+                    // Cập nhật DOM trực tiếp
+                    const orderElement = this.closest('[data-order-id]');
+                    if (orderElement && data.order) {
+                        // Cập nhật status badge
+                        const statusBadge = orderElement.querySelector('.status-badge');
+                        if (statusBadge) {
+                            statusBadge.textContent = data.order.status_text || 'Đã nhận hàng';
+                            if (data.order.status_color) {
+                                statusBadge.style.backgroundColor = data.order.status_color;
+                            }
+                            if (data.order.status_text_color) {
+                                statusBadge.style.color = data.order.status_text_color;
+                            }
+                        }
+                        
+                        // Ẩn form và thêm nút đánh giá
+                        this.style.display = 'none';
+                        
+                        const actionContainer = orderElement.querySelector('.order-actions');
+                        if (actionContainer) {
+                            const reviewButton = document.createElement('a');
+                            reviewButton.href = '#';
+                            reviewButton.className = 'inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600';
+                            reviewButton.innerHTML = `
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                </svg> Đánh giá
+                            `;
+                            actionContainer.appendChild(reviewButton);
+                        }
+                    }
+                } else {
+                    // Show error toast
+                    const toastMessage = document.getElementById('toast-message');
+                    if (toastMessage) {
+                        toastMessage.textContent = data.message || 'Có lỗi xảy ra khi xác nhận nhận hàng';
+                        toastMessage.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+                        toastMessage.classList.add('bg-red-600');
+                        setTimeout(() => {
+                            toastMessage.classList.add('hidden');
+                        }, 3000);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error toast
+                const toastMessage = document.getElementById('toast-message');
+                if (toastMessage) {
+                    toastMessage.textContent = 'Có lỗi xảy ra khi xác nhận nhận hàng';
+                    toastMessage.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+                    toastMessage.classList.add('bg-red-600');
+                    setTimeout(() => {
+                        toastMessage.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+        });
     }
 
     createReviewButton() {
@@ -553,10 +661,11 @@ class CustomerOrderRealtime {
             clearInterval(this.pollingInterval);
         }
         
+        const REFRESH_INTERVAL = 100; // 0.1 seconds
         this.pollingInterval = setInterval(() => {
             // Simple polling implementation - could be enhanced with AJAX calls
             // to check for order updates from server
-        }, 30000);
+        }, REFRESH_INTERVAL);
     }
 
     destroy() {
@@ -615,8 +724,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const otherReasonText = document.getElementById('other-reason-text');
     const toastMessage = document.getElementById('toast-message');
     
-    // Lấy tất cả các nút hủy đơn
+    // Lấy tất cả các nút hủy đơn và form nhận hàng
     const cancelOrderBtns = document.querySelectorAll('.cancel-order-btn');
+    const receiveOrderForms = document.querySelectorAll('.receive-order-form');
     
     // Hàm hiển thị toast message
     function showToast(message, isSuccess = true) {
@@ -654,6 +764,70 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
             openActionModal(orderId);
+        });
+    });
+    
+    // Xử lý sự kiện submit cho form nhận hàng
+    receiveOrderForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const actionUrl = this.action;
+            
+            // Gửi yêu cầu xác nhận nhận hàng
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Đã xác nhận nhận hàng thành công');
+                    
+                    // Cập nhật DOM trực tiếp thay vì reload trang
+                    const orderElement = this.closest('[data-order-id]');
+                    if (orderElement && data.order) {
+                        // Cập nhật status badge với dữ liệu từ server
+                        const statusBadge = orderElement.querySelector('.status-badge');
+                        if (statusBadge) {
+                            statusBadge.textContent = data.order.status_text || 'Đã nhận hàng';
+                            if (data.order.status_color) {
+                                statusBadge.style.backgroundColor = data.order.status_color;
+                            }
+                            if (data.order.status_text_color) {
+                                statusBadge.style.color = data.order.status_text_color;
+                            }
+                        }
+                        
+                        // Ẩn form nhận hàng và thêm nút đánh giá
+                        this.style.display = 'none';
+                        
+                        // Thêm nút đánh giá
+                        const actionContainer = orderElement.querySelector('.order-actions');
+                        if (actionContainer) {
+                            const reviewButton = document.createElement('a');
+                            reviewButton.href = '#';
+                            reviewButton.className = 'inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600';
+                            reviewButton.innerHTML = `
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                </svg> Đánh giá
+                            `;
+                            actionContainer.appendChild(reviewButton);
+                        }
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra khi xác nhận nhận hàng', false);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Có lỗi xảy ra khi xác nhận nhận hàng', false);
+            });
         });
     });
     
@@ -725,10 +899,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 showToast(data.message || 'Đơn hàng đã được hủy thành công');
                 closeModal();
-                // Reload trang sau 1 giây để cập nhật trạng thái
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                
+                // Cập nhật DOM trực tiếp thay vì reload trang
+                const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+                if (orderElement && data.order) {
+                    // Cập nhật status badge với dữ liệu từ server
+                    const statusBadge = orderElement.querySelector('.status-badge');
+                    if (statusBadge) {
+                        statusBadge.textContent = data.order.status_text || 'Đã hủy';
+                        if (data.order.status_color) {
+                            statusBadge.style.backgroundColor = data.order.status_color;
+                        }
+                        if (data.order.status_text_color) {
+                            statusBadge.style.color = data.order.status_text_color;
+                        }
+                    }
+                    
+                    // Ẩn tất cả action buttons khi đơn đã hủy
+                    const actionContainer = orderElement.querySelector('.order-actions');
+                    if (actionContainer) {
+                        const actionButtons = actionContainer.querySelectorAll('form, button');
+                        actionButtons.forEach(btn => btn.style.display = 'none');
+                    }
+                }
             } else {
                 showToast(data.message || 'Có lỗi xảy ra khi hủy đơn hàng', false);
             }

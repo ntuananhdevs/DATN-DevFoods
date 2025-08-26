@@ -37,9 +37,9 @@
         <div class="container-ft mx-auto px-4 relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
-                    <a href="{{ route('customer.orders.index') }}" class="text-white hover:text-gray-200 mr-4">
+                    <button onclick="history.back()" class="text-white hover:text-gray-200 mr-4">
                         <i class="fas fa-arrow-left text-lg"></i>
-                    </a>
+                    </button>
                     <div>
                         <h1 class="text-2xl font-bold text-white">Chi tiết đơn hàng #{{ $order->order_code ?? $order->id }}
                         </h1>
@@ -527,6 +527,23 @@
                                                 (Đã bao gồm topping)
                                             </p>
                                         @endif
+                                        
+                                        {{-- Nút đánh giá cho từng sản phẩm --}}
+                                        @if ($order->status === 'item_received')
+                                            <div class="mt-2">
+                                                @if ($item->productVariant && $item->productVariant->product)
+                                                    <a href="{{ route('products.show', $item->productVariant->product->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @elseif ($item->combo)
+                                                    <a href="{{ route('combos.show', $item->combo->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -552,6 +569,8 @@
                                         </div>
                                     </div>
                                 @endif
+
+
                             </div>
                         @endforeach
                     </div>
@@ -674,11 +693,6 @@
                                     <i class="fas fa-check mr-2"></i>Xác nhận đã nhận hàng
                                 </button>
                             </form>
-                        @elseif($order->status == 'item_received')
-                            <a href="#"
-                                class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium inline-block">
-                                <i class="fas fa-star mr-2"></i>Đánh giá đơn hàng
-                            </a>
                         @endif
 
                         @if (in_array($order->status, ['item_received', 'cancelled']))
@@ -1217,6 +1231,60 @@
                     ratingText.textContent = 'Chọn số sao để đánh giá';
                     rateDriverSubmitBtn.disabled = true;
                 }
+            });
+        </script>
+        
+        <!-- Pusher Real-time Order Status Updates -->
+        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+        <script>
+            Pusher.logToConsole = true;
+            var pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                encrypted: true,
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                }
+            });
+            
+            // Add Pusher debugging
+            pusher.connection.bind('connected', function() {
+                console.log('✅ Pusher connected successfully');
+            });
+
+            pusher.connection.bind('error', function(err) {
+                console.error('❌ Pusher connection error:', err);
+            });
+
+            pusher.connection.bind('disconnected', function() {
+                console.log('⚠️ Pusher disconnected');
+            });
+            
+            // Subscribe to order-specific channel
+            var orderId = {{ $order->id }};
+            var channel = pusher.subscribe('private-order.' + orderId);
+            
+            channel.bind('pusher:subscription_succeeded', function() {
+                console.log('✅ Subscribed to order channel:', 'private-order.' + orderId);
+            });
+            
+            channel.bind('pusher:subscription_error', function(error) {
+                console.error('❌ Failed to subscribe to order channel:', 'private-order.' + orderId, error);
+            });
+            
+            channel.bind('order-status-updated', function(data) {
+                console.log('🔄 Pusher event order-status-updated received for order', orderId, data);
+                
+                // Show notification
+                if (typeof showToast === 'function') {
+                    showToast('🔄 Đơn hàng của bạn vừa được cập nhật trạng thái!', 'success');
+                }
+                
+                // Reload page immediately to show updated status
+                console.log('🔄 Reloading page to show updated order status...');
+                window.location.reload();
             });
         </script>
 @endpush

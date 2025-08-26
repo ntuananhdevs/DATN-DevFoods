@@ -556,15 +556,15 @@
                         <div class="flex items-center gap-1 mb-2">
                             {{-- Rating Stars --}}
                             @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                @if($i <= floor($product->average_rating ?? 0))
+                                    <i class="fas fa-star text-yellow-400 text-xs"></i>
+                                @elseif($i - 0.5 <= ($product->average_rating ?? 0))
+                                    <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
                                 @else
-                                    <i class="far fa-star text-yellow-400"></i> {{-- or text-gray-300 for empty --}}
+                                    <i class="far fa-star text-yellow-400 text-xs"></i>
                                 @endif
                             @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                            <span class="text-xs text-gray-500 ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
                         </div>
 
                         <a href="{{ route('products.show', $product->slug) }}">
