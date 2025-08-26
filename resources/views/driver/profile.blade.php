@@ -124,10 +124,13 @@
 
     <!-- Logout Button -->
     <div class="bg-white rounded-lg p-4 shadow-sm">
-        <button class="w-full text-red-600 font-medium py-2">
-            <i class="fas fa-sign-out-alt mr-2"></i>
-            Đăng xuất
-        </button>
+        <form action="{{ route('driver.logout') }}" method="POST" class="w-full">
+            @csrf
+            <button type="submit" class="w-full text-red-600 font-medium py-2 hover:bg-red-50 rounded transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i>
+                Đăng xuất
+            </button>
+        </form>
     </div>
 </div>
 @endsection

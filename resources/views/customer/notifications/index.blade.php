@@ -1,4 +1,4 @@
-@extends('layouts.customer.contentLayoutMaster')
+@extends('layouts.customer.fullLayoutMaster')
 
 @section('content')
     <div class="container mx-auto py-4">
