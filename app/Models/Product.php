@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'category_id',
@@ -168,5 +170,23 @@ class Product extends Model
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->whereIn('orders.status', ['delivered', 'item_received'])
             ->sum('order_items.quantity');
+    }
+
+    /**
+     * Kiểm tra xem sản phẩm có trong đơn hàng nào không
+     */
+    public function hasOrders()
+    {
+        return $this->variants()
+            ->join('order_items', 'product_variants.id', '=', 'order_items.product_variant_id')
+            ->exists();
+    }
+
+    /**
+     * Kiểm tra xem sản phẩm có thể xóa hoàn toàn không
+     */
+    public function canForceDelete()
+    {
+        return !$this->hasOrders();
     }
 }

@@ -259,8 +259,7 @@ function dtmodalConfirmDelete(options) {
         title: title,
         subtitle: subtitle,
         message: itemName ?
-            `Bạn đang xóa: <strong>"${itemName}"</strong><br>${message}` :
-            message,
+            `Bạn đang xóa: <strong>"${itemName}"</strong><br>${message}` : message,
         confirmText: "Xác nhận xóa",
         cancelText: "Hủy bỏ",
         onConfirm: onConfirm,
@@ -282,9 +281,54 @@ function dtmodalConfirmIndex(options) {
         title: title,
         subtitle: subtitle,
         message: itemName ?
-            `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}` :
-            message,
+            `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}` : message,
         confirmText: "Xác nhận thay đổi",
+        cancelText: "Hủy bỏ",
+        onConfirm: onConfirm,
+        onCancel: null,
+    });
+}
+
+// Xác nhận khôi phục
+function dtmodalConfirmRestore(options) {
+    const {
+        title = "Xác nhận khôi phục",
+            subtitle = "Bạn có chắc chắn muốn khôi phục?",
+            message = "Sản phẩm sẽ được hiển thị trở lại.",
+            itemName = "",
+            onConfirm = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "info",
+        title: title,
+        subtitle: subtitle,
+        message: itemName ?
+            `Bạn đang khôi phục: <strong>"${itemName}"</strong><br>${message}` : message,
+        confirmText: "Xác nhận khôi phục",
+        cancelText: "Hủy bỏ",
+        onConfirm: onConfirm,
+        onCancel: null,
+    });
+}
+
+// Xác nhận xóa vĩnh viễn
+function dtmodalConfirmForceDelete(options) {
+    const {
+        title = "Xác nhận xóa vĩnh viễn",
+            subtitle = "Bạn có chắc chắn muốn xóa vĩnh viễn?",
+            message = "Hành động này không thể hoàn tác và sẽ xóa hoàn toàn khỏi hệ thống.",
+            itemName = "",
+            onConfirm = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "error",
+        title: title,
+        subtitle: subtitle,
+        message: itemName ?
+            `Bạn đang xóa vĩnh viễn: <strong>"${itemName}"</strong><br>${message}` : message,
+        confirmText: "Xác nhận xóa vĩnh viễn",
         cancelText: "Hủy bỏ",
         onConfirm: onConfirm,
         onCancel: null,
@@ -395,12 +439,12 @@ function updateSelectedBannerStatus(status) {
 function dtmodalConfirmOrderStatus(options) {
     const {
         orderCode = "",
-        newStatusText = "Cập nhật trạng thái",
-        message = "Bạn có chắc chắn muốn thực hiện hành động này?",
-        confirmText = "Xác nhận",
-        cancelText = "Hủy bỏ",
-        onConfirm = null,
-        onCancel = null,
+            newStatusText = "Cập nhật trạng thái",
+            message = "Bạn có chắc chắn muốn thực hiện hành động này?",
+            confirmText = "Xác nhận",
+            cancelText = "Hủy bỏ",
+            onConfirm = null,
+            onCancel = null,
     } = options;
 
     return dtmodalCreateModal({
