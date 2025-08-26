@@ -207,7 +207,7 @@ class OrderController extends Controller
 
         $customerName = $order->customer->full_name ?? $order->guest_name;
         $customerPhone = $order->customer->phone ?? $order->guest_phone;
-        $deliveryAddress = $order->address->address_line ?? $order->guest_address;
+        $deliveryAddress = $order->delivery_address;
         $notes = $order->notes;
 
         $type = $request->query('type');

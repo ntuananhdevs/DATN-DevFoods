@@ -411,7 +411,7 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => $this->delivery_address_line_snapshot
-                ?? ($this->address ? $this->address->address_line : $this->guest_address)
+                ?? $this->delivery_address
                 ?? 'Không có địa chỉ'
         );
     }
@@ -541,8 +541,8 @@ class Order extends Model
             return collect();
         }
 
-        // Lấy các đơn hàng khác của cùng tài xế trong khoảng thời gian gần (30 phút)
-        $timeWindow = now()->subMinutes(30);
+        // Lấy các đơn hàng khác của cùng tài xế trong khoảng thời gian gần (5 phút)
+        $timeWindow = now()->subMinutes(5);
         
         $potentialOrders = static::where('driver_id', $this->driver_id)
             ->where('id', '!=', $this->id)
@@ -566,11 +566,18 @@ class Order extends Model
     }
 
     /**
-     * Kiểm tra xem đơn hàng này có thể ghép với đơn hàng khác không
+     * Kiểm tra xem đơn hàng này có đang trong một batch hay không
      */
     public function isPartOfBatch(): bool
     {
-        return $this->getBatchableOrders()->count() > 0;
+        // Nếu đơn hàng đã giao hoặc bị hủy thì không còn trong batch
+        if (in_array($this->status, ['delivered', 'cancelled'])) {
+            return false;
+        }
+        
+        // Kiểm tra xem có ít nhất 2 đơn hàng cùng batch group ID hay không
+        $batchOrders = $this->getBatchOrders();
+        return $batchOrders->count() > 1;
     }
 
     /**
@@ -609,7 +616,11 @@ class Order extends Model
         }
 
         $batchableOrders = $this->getBatchableOrders();
-        $batchableOrders->prepend($this);
+        
+        // Chỉ thêm đơn hàng hiện tại nếu nó chưa được giao
+        if (in_array($this->status, ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
+            $batchableOrders->prepend($this);
+        }
         
         return $batchableOrders->sortBy('updated_at');
     }
