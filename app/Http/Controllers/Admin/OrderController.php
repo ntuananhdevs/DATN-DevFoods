@@ -278,6 +278,14 @@ class OrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy'
+        ])->select([
+            'orders.*',
+            'delivery_address_line_snapshot',
+            'delivery_ward_snapshot',
+            'delivery_district_snapshot',
+            'delivery_province_snapshot',
+            'delivery_phone_snapshot',
+            'delivery_recipient_name_snapshot'
         ])->findOrFail($id);
 
         return view('admin.order.show', compact('order'));

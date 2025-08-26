@@ -170,7 +170,17 @@ class OrderController extends Controller
     public function show($orderId)
     {
         $driverId = Auth::guard('driver')->id();
-        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage', 'address'])->findOrFail($orderId);
+        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage', 'address'])
+            ->select([
+                'orders.*',
+                'delivery_address_line_snapshot',
+                'delivery_ward_snapshot', 
+                'delivery_district_snapshot',
+                'delivery_province_snapshot',
+                'delivery_phone_snapshot',
+                'delivery_recipient_name_snapshot'
+            ])
+            ->findOrFail($orderId);
 
         // Logic mới:
         // 1. Nếu đơn hàng chưa có tài xế và đang chờ -> Cho phép xem để nhận đơn.
@@ -407,27 +417,31 @@ class OrderController extends Controller
             abort(403, 'Bạn không có quyền thực hiện hành động này.');
         }
 
-        // Sử dụng phương thức mới từ Model
+        // Sử dụng phương thức mới từ Model để lấy các đơn có thể ghép
         $batchableOrders = $currentOrder->getBatchableOrders();
         
-        // Thêm thông tin khoảng cách cho mỗi đơn hàng
-        $currentLat = $currentOrder->address->latitude ?? $currentOrder->guest_latitude ?? null;
-        $currentLng = $currentOrder->address->longitude ?? $currentOrder->guest_longitude ?? null;
-        
-        if ($currentLat && $currentLng) {
-            $batchableOrders = $batchableOrders->map(function ($order) use ($currentLat, $currentLng) {
-                $orderLat = $order->address->latitude ?? $order->guest_latitude ?? null;
-                $orderLng = $order->address->longitude ?? $order->guest_longitude ?? null;
-                
-                if ($orderLat && $orderLng) {
-                    $order->distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
-                }
-                
-                return $order;
-            });
+        // Nếu có đơn có thể ghép, tự động tạo batch và chuyển đến trang batch-navigate
+        if ($batchableOrders->isNotEmpty()) {
+            // Tạo batch group ID
+            $batchGroupId = $currentOrder->getBatchGroupId();
+            
+            // Tự động ghép tất cả đơn có thể ghép
+            $batchTime = now();
+            $currentOrder->updated_at = $batchTime;
+            $currentOrder->save();
+            
+            foreach ($batchableOrders as $order) {
+                $order->updated_at = $batchTime;
+                $order->save();
+            }
+            
+            // Chuyển hướng đến trang batch-navigate
+            return redirect()->route('driver.orders.batch.navigate', ['batchGroupId' => $batchGroupId]);
         }
-
-        return view('driver.orders.batchable', compact('currentOrder', 'batchableOrders'));
+        
+        // Nếu không có đơn nào có thể ghép, chuyển về trang chi tiết đơn hàng
+        return redirect()->route('driver.orders.show', $currentOrder->id)
+            ->with('info', 'Hiện tại không có đơn hàng nào có thể ghép với đơn này.');
     }
 
     /**

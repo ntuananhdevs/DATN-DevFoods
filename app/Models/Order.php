@@ -526,7 +526,7 @@ class Order extends Model
 
     /**
      * Lấy các đơn hàng có thể ghép với đơn hàng này
-     * Dựa trên khoảng cách địa lý (trong bán kính 7km) và cùng tài xế
+     * Chỉ cần cùng tài xế và có ít nhất 2 đơn
      */
     public function getBatchableOrders()
     {
@@ -534,35 +534,12 @@ class Order extends Model
             return collect();
         }
 
-        $currentLat = $this->address->latitude ?? $this->guest_latitude ?? null;
-        $currentLng = $this->address->longitude ?? $this->guest_longitude ?? null;
-        
-        if (!$currentLat || !$currentLng) {
-            return collect();
-        }
-
-        // Lấy các đơn hàng khác của cùng tài xế trong khoảng thời gian gần (5 phút)
-        $timeWindow = now()->subMinutes(5);
-        
-        $potentialOrders = static::where('driver_id', $this->driver_id)
+        // Lấy tất cả đơn hàng khác của cùng tài xế
+        return static::where('driver_id', $this->driver_id)
             ->where('id', '!=', $this->id)
-            ->whereIn('status', ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
-            ->where('updated_at', '>=', $timeWindow)
+            ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
             ->with(['address'])
             ->get();
-
-        // Lọc theo khoảng cách
-        return $potentialOrders->filter(function ($order) use ($currentLat, $currentLng) {
-            $orderLat = $order->address->latitude ?? $order->guest_latitude ?? null;
-            $orderLng = $order->address->longitude ?? $order->guest_longitude ?? null;
-            
-            if (!$orderLat || !$orderLng) {
-                return false;
-            }
-            
-            $distance = $this->calculateDistance($currentLat, $currentLng, $orderLat, $orderLng);
-            return $distance <= 7; // 7km
-        });
     }
 
     /**
@@ -575,28 +552,12 @@ class Order extends Model
             return false;
         }
         
-        // Kiểm tra xem có ít nhất 2 đơn hàng cùng batch group ID hay không
+        // Kiểm tra xem có ít nhất 2 đơn hàng của cùng tài xế hay không
         $batchOrders = $this->getBatchOrders();
         return $batchOrders->count() > 1;
     }
 
-    /**
-     * Tính khoảng cách giữa hai điểm địa lý (km)
-     */
-    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
-    {
-        $earthRadius = 6371; // Bán kính Trái Đất tính bằng km
-        
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        
-        $a = sin($dLat/2) * sin($dLat/2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLng/2) * sin($dLng/2);
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-        
-        return $earthRadius * $c;
-    }
+
 
     /**
      * Lấy ID nhóm đơn ghép dựa trên tài xế và thời gian
@@ -618,10 +579,10 @@ class Order extends Model
         $batchableOrders = $this->getBatchableOrders();
         
         // Chỉ thêm đơn hàng hiện tại nếu nó chưa được giao
-        if (in_array($this->status, ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
+        if (in_array($this->status, ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
             $batchableOrders->prepend($this);
         }
         
-        return $batchableOrders->sortBy('updated_at');
+        return $batchableOrders->sortBy('id');
     }
 }
