@@ -8,6 +8,8 @@ class ToppingModal {
         this.allToppings = [];
         this.filteredToppings = [];
         this.isLoaded = false; // Prevent multiple loads
+        this.isLoading = false; // Prevent multiple loading calls
+        this.eventsInitialized = false; // Prevent duplicate event bindings
         this.init();
     }
 
@@ -16,68 +18,111 @@ class ToppingModal {
     }
 
     bindEvents() {
+        // Prevent duplicate event bindings
+        if (this.eventsInitialized) {
+            return;
+        }
+
         // Open modal button
-        document.getElementById('open-toppings-modal')?.addEventListener('click', () => {
-            this.openModal();
-        });
+        const openModalBtn = document.getElementById('open-toppings-modal');
+        if (openModalBtn) {
+            openModalBtn.addEventListener('click', () => {
+                this.openModal();
+            });
+        }
 
         // Close modal buttons
-        document.getElementById('close-modal')?.addEventListener('click', () => {
-            this.closeModal();
-        });
+        const closeModalBtn = document.getElementById('close-modal');
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => {
+                this.closeModal();
+            });
+        }
 
-        document.getElementById('cancel-modal')?.addEventListener('click', () => {
-            this.closeModal();
-        });
+        const cancelModalBtn = document.getElementById('cancel-modal');
+        if (cancelModalBtn) {
+            cancelModalBtn.addEventListener('click', () => {
+                this.closeModal();
+            });
+        }
 
         // Confirm button
-        document.getElementById('confirm-toppings')?.addEventListener('click', () => {
-            this.confirmSelection();
-        });
+        const confirmBtn = document.getElementById('confirm-toppings');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                this.confirmSelection();
+            });
+        }
 
         // Search functionality - debounced
         const searchInput = document.getElementById('topping-search');
         let searchTimeout;
-        searchInput?.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filterToppings(e.target.value);
-            }, 300); // Debounce 300ms
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.filterToppings(e.target.value);
+                }, 300); // Debounce 300ms
+            });
+        }
 
         // Select/Clear all buttons
-        document.getElementById('modal-select-all')?.addEventListener('click', () => {
-            this.selectAllToppings();
-        });
+        const selectAllBtn = document.getElementById('modal-select-all');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                this.selectAllToppings();
+            });
+        }
 
-        document.getElementById('modal-clear-all')?.addEventListener('click', () => {
-            this.clearAllToppings();
-        });
+        const clearAllBtn = document.getElementById('modal-clear-all');
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', () => {
+                this.clearAllToppings();
+            });
+        }
 
         // Close modal when clicking outside
-        document.getElementById('toppings-modal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'toppings-modal') {
-                this.closeModal();
-            }
-        });
+        const modal = document.getElementById('toppings-modal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'toppings-modal') {
+                    this.closeModal();
+                }
+            });
+        }
+
+        this.eventsInitialized = true;
     }
 
     async loadToppings() {
-        // Only load once
+        // Prevent multiple loading calls
+        if (this.isLoading) {
+            return;
+        }
+
+        this.isLoading = true;
+        this.showLoading();
+
+        // If already loaded, show loading briefly then render
         if (this.isLoaded) {
-            this.renderToppings();
+            setTimeout(() => {
+                // Reset filtered toppings to show all
+                this.filteredToppings = [...this.allToppings];
+                this.renderToppings();
+                this.isLoading = false;
+            }, 300); // Show loading for 300ms
             return;
         }
 
         try {
             const response = await fetch('/admin/products/get-toppings');
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             if (result.success && result.data) {
                 this.allToppings = result.data;
                 this.filteredToppings = [...this.allToppings];
@@ -89,6 +134,8 @@ class ToppingModal {
         } catch (error) {
             console.error('Error loading toppings:', error);
             this.displayError('Không thể tải danh sách toppings. Vui lòng thử lại.');
+        } finally {
+            this.isLoading = false;
         }
     }
 
@@ -105,7 +152,7 @@ class ToppingModal {
             return;
         }
 
-        container.innerHTML = this.filteredToppings.map(topping => 
+        container.innerHTML = this.filteredToppings.map(topping =>
             this.createToppingItem(topping)
         ).join('');
 
@@ -121,7 +168,7 @@ class ToppingModal {
     createToppingItem(topping) {
         const formattedPrice = topping.formatted_price || `${parseInt(topping.price).toLocaleString()}đ`;
         const isSelected = this.selectedToppings.has(topping.id);
-        
+
         return `
             <div class="topping-item ${isSelected ? 'selected' : ''}" data-topping-id="${topping.id}">
                 <div class="aspect-square mb-2 overflow-hidden rounded-lg border border-gray-200">
@@ -145,8 +192,8 @@ class ToppingModal {
             </div>
         `;
     }
- 
-     toggleTopping(toppingId) {
+
+    toggleTopping(toppingId) {
         const topping = this.allToppings.find(t => t.id === toppingId);
         if (!topping) return;
 
@@ -184,7 +231,7 @@ class ToppingModal {
 
     filterToppings(searchTerm) {
         const term = searchTerm.toLowerCase().trim();
-        
+
         if (term === '') {
             this.filteredToppings = [...this.allToppings];
         } else {
@@ -192,7 +239,7 @@ class ToppingModal {
                 return topping.name.toLowerCase().includes(term);
             });
         }
-        
+
         this.renderToppings();
     }
 
@@ -201,16 +248,15 @@ class ToppingModal {
         if (modal) {
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
-            
-            // Load toppings only when modal opens
-            this.loadToppings();
-            
-            // Reset search
+
+            // Reset search input
             const searchInput = document.getElementById('topping-search');
             if (searchInput) {
                 searchInput.value = '';
-                this.filterToppings('');
             }
+
+            // Load toppings only when modal opens
+            this.loadToppings();
         }
     }
 
@@ -231,7 +277,7 @@ class ToppingModal {
     updateSelectedToppingsDisplay() {
         const container = document.getElementById('selected-toppings-tags');
         const noToppingsMessage = document.getElementById('no-toppings-message');
-        
+
         if (!container) return;
 
         if (this.selectedToppings.size === 0) {
@@ -244,7 +290,7 @@ class ToppingModal {
             noToppingsMessage.style.display = 'none';
         }
 
-        const tags = Array.from(this.selectedToppings.values()).map(topping => 
+        const tags = Array.from(this.selectedToppings.values()).map(topping =>
             this.createToppingTag(topping)
         ).join('');
 
@@ -261,9 +307,9 @@ class ToppingModal {
     }
 
     createToppingTag(topping) {
-         const formattedPrice = topping.formatted_price || `${parseInt(topping.price).toLocaleString()}đ`;
-         
-         return `
+        const formattedPrice = topping.formatted_price || `${parseInt(topping.price).toLocaleString()}đ`;
+
+        return `
              <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-800 text-sm px-4 py-2 rounded-lg border border-blue-200">
                 <span>${topping.name}</span>
                 <span class="text-blue-600 font-medium">${formattedPrice}</span>
@@ -288,11 +334,25 @@ class ToppingModal {
         }
     }
 
+    showLoading() {
+        const container = document.getElementById('modal-toppings-list');
+        if (container) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <div class="inline-flex items-center gap-2">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span>Đang tải toppings...</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     displayError(message) {
         const container = document.getElementById('modal-toppings-list');
         if (container) {
             container.innerHTML = `
-                <div class="text-center py-8 text-red-500">
+                <div class="col-span-full text-center py-8 text-red-500">
                     <p>${message}</p>
                     <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
                         Thử lại
@@ -318,7 +378,9 @@ class ToppingModal {
     }
 }
 
-// Initialize when DOM is loaded
+// Initialize when DOM is loaded - prevent duplicate initialization
 document.addEventListener('DOMContentLoaded', function() {
-    window.toppingModal = new ToppingModal();
+    if (!window.toppingModal) {
+        window.toppingModal = new ToppingModal();
+    }
 });

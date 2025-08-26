@@ -33,11 +33,11 @@
                     <!-- Bộ lọc trạng thái đơn hàng -->
                     <div class="flex flex-wrap gap-2 mt-4 overflow-x-auto pb-2" id="status-filter">
                         @foreach($statuses as $statusKey => $statusLabel)
-                            <button type="button" data-status="{{ $statusKey }}" 
+                            <a href="{{ route('customer.orders.index', $statusKey != 'all' ? ['status' => $statusKey] : []) }}" 
                                class="status-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors 
                                     {{ request('status', 'all') == $statusKey ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                                 {{ $statusLabel }} {{ request('status', 'all') == $statusKey ? '(' . $orders->total() . ')' : '' }}
-                            </button>
+                            </a>
                         @endforeach
                     </div>
                 </div>
@@ -165,181 +165,29 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý lọc đơn hàng theo trạng thái bằng AJAX
+            // Xử lý các nút hành động
             const statusFilterButtons = document.querySelectorAll('.status-filter-btn');
             const orderListContainer = document.getElementById('order-list-container');
             const paginationContainer = document.querySelector('.pagination-container');
             
-            // Hàm hiển thị loading
-            function showLoading() {
-                orderListContainer.innerHTML = '<div class="flex justify-center items-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div></div>';
-            }
-            
-            // Hàm cập nhật URL mà không reload trang
-            function updateUrlParam(key, value) {
-                const url = new URL(window.location.href);
-                if (value === 'all') {
-                    url.searchParams.delete(key);
-                } else {
-                    url.searchParams.set(key, value);
-                }
-                window.history.pushState({}, '', url);
-                return url;
-            }
-            
-            // Hàm cập nhật trạng thái active của các nút lọc
-            function updateFilterButtonsState(activeStatus) {
-                statusFilterButtons.forEach(button => {
-                    const status = button.dataset.status;
-                    if (status === activeStatus) {
-                        button.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-                        button.classList.add('bg-orange-500', 'text-white');
-                    } else {
-                        button.classList.remove('bg-orange-500', 'text-white');
-                        button.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-                    }
-                });
-            }
-            
-            // Hàm để gắn lại các event listener cho các nút hành động
-            function reattachActionButtonListeners() {
-                document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
-                    button.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        const form = this.closest('form');
-                        openActionModal(form, 'cancel');
-                    });
-                });
-                
-                document.querySelectorAll('.receive-order-form button[type="submit"]').forEach(button => {
-                    button.addEventListener('click', function(event) {
-                        event.preventDefault();
-                        const form = this.closest('form');
-                        openActionModal(form, 'receive');
-                    });
-                });
-            }
-            
-            // Hàm tải danh sách đơn hàng theo trạng thái
-            function loadOrdersByStatus(status) {
-                showLoading();
-                const url = updateUrlParam('status', status);
-                
-                // Sử dụng URL tuyệt đối thay vì route helper để đảm bảo đúng đường dẫn
-                const listPartialUrl = "{{ url('/customer/orders/list') }}";
-                const indexUrl = "{{ url('/customer/orders') }}";
-                
-                fetch(`${listPartialUrl}?${url.searchParams.toString()}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        orderListContainer.innerHTML = html;
-                        
-                        // Cập nhật lại các event listener cho các nút trong danh sách đơn hàng
-                        reattachActionButtonListeners();
-                        
-                        // Cập nhật lại danh sách orderIds cho Pusher
-                        orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
-                            .map(el => parseInt(el.dataset.orderId))
-                            .filter(id => !isNaN(id));
-                            
-                        // Cập nhật phân trang
-                        return fetch(`${indexUrl}?${url.searchParams.toString()}`);
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const newPagination = doc.querySelector('.pagination-container');
-                        
-                        if (newPagination && paginationContainer) {
-                            paginationContainer.innerHTML = newPagination.innerHTML;
-                            
-                            // Cập nhật event listener cho các nút phân trang
-                            document.querySelectorAll('.pagination-item').forEach(item => {
-                                if (!item.classList.contains('disabled') && !item.classList.contains('active')) {
-                                    item.addEventListener('click', function(e) {
-                                        e.preventDefault();
-                                        const pageUrl = new URL(this.href);
-                                        const pageParams = pageUrl.searchParams.toString();
-                                        
-                                        loadOrdersByPage(pageParams);
-                                    });
-                                }
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading orders:', error);
-                        orderListContainer.innerHTML = '<div class="text-center text-red-500 py-12">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</div>';
-                    });
-            }
-            
-            // Hàm tải danh sách đơn hàng theo trang
-            function loadOrdersByPage(pageParams) {
-                showLoading();
-                
-                // Sử dụng URL tuyệt đối thay vì route helper để đảm bảo đúng đường dẫn
-                const listPartialUrl = "{{ url('/customer/orders/list') }}";
-                const indexUrl = "{{ url('/customer/orders') }}";
-                
-                fetch(`${listPartialUrl}?${pageParams}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        orderListContainer.innerHTML = html;
-                        
-                        // Cập nhật URL
-                        window.history.pushState({}, '', `${indexUrl}?${pageParams}`);
-                        
-                        // Cập nhật lại các event listener
-                        reattachActionButtonListeners();
-                        
-                        // Cập nhật lại danh sách orderIds cho Pusher
-                        orderIds = Array.from(document.querySelectorAll('[data-order-id]'))
-                            .map(el => parseInt(el.dataset.orderId))
-                            .filter(id => !isNaN(id));
-                    })
-                    .catch(error => {
-                        console.error('Error loading orders by page:', error);
-                        orderListContainer.innerHTML = '<div class="text-center text-red-500 py-12">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</div>';
-                    });
-            }
-            
-            // Thêm event listener cho các nút lọc trạng thái
-            statusFilterButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const status = this.dataset.status;
-                    loadOrdersByStatus(status);
-                    updateFilterButtonsState(status);
+            // Xử lý các nút hành động cho hủy đơn và xác nhận nhận hàng
+            document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const form = this.closest('form');
+                    openActionModal(form, 'cancel');
                 });
             });
             
-            // Thêm event listener cho các nút phân trang
-            document.querySelectorAll('.pagination-item').forEach(item => {
-                if (!item.classList.contains('disabled') && !item.classList.contains('active')) {
-                    item.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const pageUrl = new URL(this.href);
-                        const pageParams = pageUrl.searchParams.toString();
-                        
-                        loadOrdersByPage(pageParams);
-                    });
-                }
+            document.querySelectorAll('.receive-order-form button[type="submit"]').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const form = this.closest('form');
+                    openActionModal(form, 'receive');
+                });
             });
+            
+            // Không cần JavaScript cho các nút lọc trạng thái vì đã chuyển thành liên kết thông thường
             
             // Toast thông báo thành công hoặc lỗi
             function showToast(message, color = "bg-green-600") {
@@ -552,18 +400,10 @@
                     console.log('Pusher event OrderStatusUpdated received for order', orderId, data);
                     showToast('🔄 Đơn hàng #' + orderId + ' vừa được cập nhật trạng thái!');
                     
-                    // Lấy trạng thái hiện tại từ URL
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const currentStatus = urlParams.get('status') || 'all';
-                    
-                    // Cập nhật danh sách đơn hàng với trạng thái hiện tại
-                    fetch("{{ route('customer.orders.listPartial') }}?status=" + currentStatus)
-                        .then(response => response.text())
-                        .then(html => {
-                            document.getElementById('order-list-container').innerHTML = html;
-                            // Gắn lại các event listener sau khi cập nhật nội dung
-                            reattachActionButtonListeners();
-                        });
+                    // Tải lại trang để cập nhật trạng thái đơn hàng
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
                 });
             });
         }

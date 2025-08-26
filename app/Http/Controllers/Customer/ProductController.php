@@ -39,12 +39,62 @@ class ProductController extends Controller
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+        
+        // Override branch_id if provided in request (for AJAX)
+        if ($request->has('branch_id') && $request->branch_id) {
+            $selectedBranchId = $request->branch_id;
+        }
+        
+        // Get filter parameters
+        $searchTerm = $request->get('search', '');
+        $sortBy = $request->get('sort', 'popular');
+        $categoryFilter = $request->get('category', '');
 
         // Lấy tất cả categories để hiển thị filter và lazy load
-        $categories = Category::where('status', true)
-            ->with(['products' => function($query) use ($selectedBranchId) {
-                $query->where('status', 'selling')
-                    ->with([
+        $categoriesQuery = Category::where('status', true);
+        
+        // Filter by category if specified
+        if ($categoryFilter) {
+            $categoriesQuery->where('id', $categoryFilter);
+        }
+        
+        $categories = $categoriesQuery
+            ->with(['products' => function($query) use ($selectedBranchId, $searchTerm, $sortBy) {
+                $query->where('status', 'selling');
+                
+                // Apply search filter
+                if ($searchTerm) {
+                    $query->where(function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%')
+                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+                
+                // Apply sorting
+                switch ($sortBy) {
+                    case 'name-asc':
+                        $query->orderBy('name', 'asc');
+                        break;
+                    case 'name-desc':
+                        $query->orderBy('name', 'desc');
+                        break;
+                    case 'price-asc':
+                        $query->orderBy('base_price', 'asc');
+                        break;
+                    case 'price-desc':
+                        $query->orderBy('base_price', 'desc');
+                        break;
+                    case 'newest':
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                    case 'popular':
+                    default:
+                        $query->orderBy('favorite_count', 'desc')
+                              ->orderBy('created_at', 'desc');
+                        break;
+                }
+                
+                $query->with([
                         'category',
                         'combos', // Thêm dòng này để eager load combos
                         'images' => function($q) { $q->orderBy('is_primary', 'desc'); },
@@ -63,10 +113,42 @@ class ProductController extends Controller
                     });
                 }
                 // Không phân trang
-            }, 'combos' => function($query) use ($selectedBranchId) {
+            }, 'combos' => function($query) use ($selectedBranchId, $searchTerm, $sortBy) {
                 $query->where('status', 'selling')
-                    ->where('active', true)
-                    ->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
+                    ->where('active', true);
+                
+                // Apply search filter for combos
+                if ($searchTerm) {
+                    $query->where(function($q) use ($searchTerm) {
+                        $q->where('name', 'like', '%' . $searchTerm . '%')
+                          ->orWhere('description', 'like', '%' . $searchTerm . '%');
+                    });
+                }
+                
+                // Apply sorting for combos
+                switch ($sortBy) {
+                    case 'name-asc':
+                        $query->orderBy('name', 'asc');
+                        break;
+                    case 'name-desc':
+                        $query->orderBy('name', 'desc');
+                        break;
+                    case 'price-asc':
+                        $query->orderBy('price', 'asc');
+                        break;
+                    case 'price-desc':
+                        $query->orderBy('price', 'desc');
+                        break;
+                    case 'newest':
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                    case 'popular':
+                    default:
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                }
+                
+                $query->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
                         if ($selectedBranchId) {
                             $q->where('branch_id', $selectedBranchId);
                         }
@@ -223,6 +305,16 @@ class ProductController extends Controller
                     }
                 }
             }
+        }
+
+        // Xử lý AJAX request
+        if ($request->ajax() || $request->has('ajax')) {
+            // Render partial view cho AJAX
+            $html = view('customer.shop._ajax_products', compact('categories', 'selectedBranchId'))->render();
+            return response()->json([
+                'success' => true,
+                'html' => $html
+            ]);
         }
 
         return view("customer.shop.index", compact('categories', 'selectedBranchId'));
@@ -507,9 +599,10 @@ class ProductController extends Controller
 
         // Kiểm tra user đã mua sản phẩm này chưa (để hiển thị form review)
         $hasPurchased = false;
-        if (Auth::check()) {
+        if (Auth::check() && $selectedBranchId) {
             $hasPurchased = \App\Models\Order::where('customer_id', Auth::id())
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
+                ->where('branch_id', $selectedBranchId)
                 ->whereHas('orderItems.productVariant', function($q) use ($product) {
                     $q->where('product_id', $product->id);
                 })
@@ -649,7 +742,7 @@ class ProductController extends Controller
     $canReview = false;
     if ($user) {
         $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'item_received'])
             ->whereHas('orderItems', function($q) use ($combo) {
                 $q->where('combo_id', $combo->id);
             })
@@ -909,6 +1002,7 @@ class ProductController extends Controller
 
         $user = $request->user();
         $type = $request->input('type');
+        $branchId = $request->input('branch_id');
         $item = null;
         $order = null;
         $itemType = '';
@@ -917,9 +1011,10 @@ class ProductController extends Controller
             $item = Product::findOrFail($id);
             $itemType = 'sản phẩm';
             
-            // Kiểm tra user đã mua sản phẩm này chưa
+            // Kiểm tra user đã mua sản phẩm này ở chi nhánh này chưa
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
+                ->where('branch_id', $branchId) // Thêm điều kiện chi nhánh
                 ->whereHas('orderItems.productVariant', function($q) use ($id) {
                     $q->where('product_id', $id);
                 })
@@ -929,9 +1024,10 @@ class ProductController extends Controller
             $item = \App\Models\Combo::findOrFail($id);
             $itemType = 'combo';
             
-            // Kiểm tra user đã mua combo này chưa
+            // Kiểm tra user đã mua combo này ở chi nhánh này chưa
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
+                ->where('branch_id', $branchId) // Thêm điều kiện chi nhánh
                 ->whereHas('orderItems', function($q) use ($id) {
                     $q->where('combo_id', $id);
                 })
@@ -941,14 +1037,15 @@ class ProductController extends Controller
 
         if (!$order) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua!"], 403);
+                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua tại chi nhánh này!"], 403);
             }
-            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua!");
+            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua tại chi nhánh này!");
         }
 
-        // Kiểm tra xem user đã review item này chưa
+        // Kiểm tra xem user đã review item này ở chi nhánh này chưa
         $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
-            ->where('order_id', $order->id);
+            ->where('order_id', $order->id)
+            ->where('branch_id', $branchId); // Thêm điều kiện chi nhánh
         
         if ($type === 'product') {
             $existingReview->where('product_id', $item->id);
@@ -960,9 +1057,9 @@ class ProductController extends Controller
         
         if ($existingReview) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này rồi!"], 409);
+                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này tại chi nhánh này rồi!"], 409);
             }
-            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này rồi!");
+            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này tại chi nhánh này rồi!");
         }
 
         $review = new \App\Models\ProductReview();
@@ -1107,14 +1204,14 @@ class ProductController extends Controller
         $hasPurchased = false;
         if ($review->product_id) {
             $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
                 ->whereHas('orderItems.productVariant', function($q) use ($review) {
                     $q->where('product_id', $review->product_id);
                 })
                 ->exists();
         } elseif ($review->combo_id) {
             $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received'])
                 ->whereHas('orderItems', function($q) use ($review) {
                     $q->where('combo_id', $review->combo_id);
                 })

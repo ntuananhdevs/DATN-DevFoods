@@ -25,6 +25,15 @@ class Kernel extends ConsoleKernel
         
         // Dọn dẹp file avatar tạm thời mỗi giờ
         $schedule->command('avatar:cleanup-temp --force')->hourly();
+        
+        // Rà soát đơn hàng bị treo mỗi 5 phút
+        $schedule->command('orders:review-stuck')->everyFiveMinutes()->withoutOverlapping();
+        
+        // Rà soát đơn hàng bị treo bao gồm đơn cũ mỗi 30 phút
+        $schedule->command('orders:review-stuck --include-old')->everyThirtyMinutes()->withoutOverlapping();
+        
+        // Dọn dẹp cache đơn hàng mỗi giờ
+        $schedule->command('orders:review-stuck --cleanup-only')->hourly()->withoutOverlapping();
     }
 
     /**
