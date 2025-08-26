@@ -93,8 +93,7 @@
             </div>
             <div class="space-y-3">
                 @forelse($processingOrders as $order)
-                    <a href="{{ route('driver.orders.show', $order->id) }}"
-                        class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
                         <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
                             style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
@@ -103,14 +102,31 @@
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
-                            <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ $order->displayFullDeliveryAddress }}</div>
+                            {{-- Hiển thị thông tin ghép đơn nếu có --}}
+                            @if(isset($batchableOrdersInfo[$order->id]))
+                                <div class="text-xs text-orange-600 mt-1">
+                                    <i class="fas fa-layer-group"></i> Có {{ $batchableOrdersInfo[$order->id]['batchable_count'] }} đơn có thể ghép
+                                </div>
+                            @endif
                         </div>
-                        {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
-                        <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
-                            style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
-                            {{ $order->status_text }}
+                        <div class="flex flex-col space-y-2">
+                            {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
+                            <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
+                                style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                                {{ $order->status_text }}
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{{ route('driver.orders.show', $order->id) }}"
+                                    class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700 flex-shrink-0">Xem đơn</a>
+                                {{-- Hiển thị nút "Xem đơn ghép" nếu có đơn có thể ghép --}}
+                                @if(isset($batchableOrdersInfo[$order->id]))
+                                    <a href="{{ route('driver.orders.batchable', ['current_order_id' => $order->id]) }}"
+                                        class="bg-orange-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-orange-700 flex-shrink-0">Xem đơn ghép</a>
+                                @endif
+                            </div>
                         </div>
-                    </a>
+                    </div>
                 @empty
                     <p class="text-center text-sm text-gray-500 py-3">Không có đơn hàng nào đang xử lý.</p>
                 @endforelse
@@ -134,7 +150,7 @@
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
-                            <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ $order->displayFullDeliveryAddress }}</div>
                         </div>
                         <a href="{{ route('driver.orders.show', $order->id) }}"
                             class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem
