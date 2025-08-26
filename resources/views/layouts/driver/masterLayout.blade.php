@@ -20,6 +20,8 @@
     <script src="{{ mix('js/app.js') }}" defer></script>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    @stack('styles')
 </head>
 
 <body class="bg-gray-50">

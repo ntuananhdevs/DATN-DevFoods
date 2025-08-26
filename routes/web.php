@@ -39,6 +39,11 @@ Route::get('/refresh-csrf', function () {
 
 Route::get('/customer/profile/branches-map', [ProfileController::class, 'getBranchesForMap']);
 
+// Navigation routes
+Route::get('/navigation/turn-by-turn', function () {
+    return view('navigation.turn-by-turn');
+})->name('navigation.turn-by-turn');
+
 Route::get('/test-notification-debug', function () {
     return view('test-notification-debug');
 })->middleware('auth');

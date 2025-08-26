@@ -495,7 +495,7 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
                         <div class="skeleton-card"></div>
                     @endfor
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 product-cards-container">
                     @foreach($comboCategory->combos as $combo)
                         @include('customer.shop._combo_card', ['combo' => $combo])
                     @endforeach
@@ -514,7 +514,7 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
                         <div class="skeleton-card"></div>
                     @endfor
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 product-cards-container">
                     @foreach($category->products as $product)
                         @include('customer.shop._product_card', ['product' => $product])
                     @endforeach

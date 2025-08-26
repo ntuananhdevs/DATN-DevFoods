@@ -149,12 +149,22 @@
             {{-- XÓA NÚT MUA HÀNG/HẾT HÀNG --}}
             <div class="flex justify-between items-center">
                 <div class="flex items-center">
-                    <i class="fas fa-star text-yellow-400 text-xs"></i>
-                    <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
+                    @for($i = 1; $i <= 5; $i++)
+                        @if($i <= floor($product->average_rating ?? 0))
+                            <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        @elseif($i - 0.5 <= ($product->average_rating ?? 0))
+                            <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
+                        @else
+                            <i class="far fa-star text-yellow-400 text-xs"></i>
+                        @endif
+                    @endfor
+                    <span class="commons rating-count ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
                 </div>
+                @if(isset($product->sold_count))
                 <div class="flex items-center">
-                    <span class="commons">Đã bán 46k</span>
+                    <span class="commons">Đã bán {{ $product->sold_count > 1000 ? number_format($product->sold_count/1000, 1) . 'k' : $product->sold_count }}</span>
                 </div>
+                @endif
             </div>
         </div>
     </div>

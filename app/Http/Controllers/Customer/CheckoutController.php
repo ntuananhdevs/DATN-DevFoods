@@ -42,13 +42,61 @@ class CheckoutController extends Controller
             session()->forget('buy_now_checkout');
         }
         $buyNow = session('buy_now_checkout');
+        
+        // Lấy danh sách mã giảm giá có thể áp dụng
+        $now = \Carbon\Carbon::now();
+        $currentTime = $now->format('H:i:s');
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $branchId = $currentBranch ? $currentBranch->id : null;
+        
+        // Query mã giảm giá đang hoạt động
+        $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereDoesntHave('branches')
+                          ->orWhereHas('branches', function($q) use ($branchId) {
+                              $q->where('branches.id', $branchId);
+                          });
+                }
+            });
+
+        // Lọc theo loại mã giảm giá (công khai hoặc cá nhân)
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                       ->whereHas('users', function($uq){
+                           $uq->where('user_id', \Illuminate\Support\Facades\Auth::id());
+                       });
+                });
+            }
+        });
+
+        // Lấy danh sách mã giảm giá và lọc theo thời gian hợp lệ
+        $availableDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($q){
+            $q->with(['product', 'category']);
+        }])->get()->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to   = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                } else {
+                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                }
+            }
+            return true;
+        });
         if ($buyNow) {
             $cartItems = collect();
             if ($buyNow['type'] === 'product') {
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
                     $variant = \App\Models\ProductVariant::with([
-                        'product',
+                        'product.images',
                         'variantValues.attribute'
                     ])->find($buyNow['variant_id']);
                 }
@@ -75,6 +123,14 @@ class CheckoutController extends Controller
                         $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
                     }
                     $item->combo = null;
+                    
+                    // Set primary image for buy now product
+                    if ($item->variant && $item->variant->product) {
+                        $item->variant->product->primary_image = $item->variant->product->images
+                            ->where('is_primary', true)
+                            ->first() ?? $item->variant->product->images->first();
+                    }
+                    
                     $cartItems->push($item);
                 }
             } elseif ($buyNow['type'] === 'combo') {
@@ -113,7 +169,7 @@ class CheckoutController extends Controller
                 'bufferTime' => GeneralSetting::getBufferTimeMinutes()
             ];
             
-            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig', 'availableDiscountCodes'));
         }
 
         $cartItems = [];
@@ -168,6 +224,11 @@ class CheckoutController extends Controller
                     $item->variant->product->primary_image = $item->variant->product->images
                         ->where('is_primary', true)
                         ->first() ?? $item->variant->product->images->first();
+                    
+                    // Thêm S3 URL cho primary image
+                    if ($item->variant->product->primary_image && $item->variant->product->primary_image->img) {
+                        $item->variant->product->primary_image->s3_url = \Storage::disk('s3')->url($item->variant->product->primary_image->img);
+                    }
                 }
                 // Xử lý cho combo (nếu cần)
                 elseif ($item->combo) {
@@ -201,7 +262,7 @@ class CheckoutController extends Controller
             'bufferTime' => GeneralSetting::getBufferTimeMinutes()
         ];
 
-        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig'));
+        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig', 'availableDiscountCodes'));
     }
     
     /**
@@ -514,6 +575,15 @@ class CheckoutController extends Controller
                 $order->guest_district = $request->district;
                 $order->guest_ward = $request->ward;
                 $order->guest_city = $request->city;
+                $order->guest_latitude = $request->latitude;
+                $order->guest_longitude = $request->longitude;
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Setting guest coordinates for order', [
+                    'order_code' => $order->order_code,
+                    'guest_latitude' => $request->latitude,
+                    'guest_longitude' => $request->longitude
+                ]);
             }
             
             $order->branch_id = $branchId;
@@ -526,6 +596,16 @@ class CheckoutController extends Controller
             $order->estimated_delivery_time = $estimatedDeliveryTime;
             $order->delivery_fee = $shipping;
             $order->discount_amount = $discount;
+            
+            // Lưu mã giảm giá vào đơn hàng nếu có
+            if (session()->has('coupon_code')) {
+                $couponCode = session('coupon_code');
+                $discountCode = \App\Models\DiscountCode::where('code', $couponCode)->first();
+                if ($discountCode) {
+                    $order->discount_code_id = $discountCode->id;
+                }
+            }
+            
             $order->subtotal = $subtotal;
             $order->total_amount = $total;
             $order->notes = $request->notes;
@@ -617,6 +697,33 @@ class CheckoutController extends Controller
                 }
             }
             
+            // Cập nhật lịch sử sử dụng mã giảm giá nếu có
+            if ($order->discount_code_id) {
+                $discountCode = \App\Models\DiscountCode::find($order->discount_code_id);
+                if ($discountCode) {
+                    // Tăng số lượng sử dụng của mã giảm giá
+                    $discountCode->current_usage_count = $discountCode->current_usage_count + 1;
+                    $discountCode->save();
+                    
+                    // Lưu lịch sử sử dụng
+                    $usageHistory = new \App\Models\DiscountUsageHistory();
+                    $usageHistory->discount_code_id = $discountCode->id;
+                    $usageHistory->order_id = $order->id;
+                    $usageHistory->branch_id = $order->branch_id;
+                    $usageHistory->original_amount = $order->subtotal;
+                    $usageHistory->discount_amount = $order->discount_amount;
+                    $usageHistory->used_at = now();
+                    
+                    if (auth()->check()) {
+                        $usageHistory->user_id = auth()->id();
+                    } else {
+                        $usageHistory->guest_phone = $order->phone;
+                    }
+                    
+                    $usageHistory->save();
+                }
+            }
+            
             // Đảm bảo đơn hàng đã được lưu trước khi snapshot
             if (!$order->exists) {
                 $order->save();
@@ -677,6 +784,12 @@ class CheckoutController extends Controller
             if ($buyNow) {
                 // Clear buy now session
                 session()->forget('buy_now_checkout');
+            }
+            
+            // Xóa mã giảm giá khỏi session sau khi đã sử dụng
+            if (session()->has('coupon_code')) {
+                session()->forget(['coupon_code', 'coupon_discount_amount']);
+            }
             } else {
                 // Chỉ xóa cart items khi đơn hàng đã được xác nhận (không phải pending_payment)
                 if ($order->status === 'awaiting_confirmation' && $cart && isset($selectedIds) && is_array($selectedIds)) {

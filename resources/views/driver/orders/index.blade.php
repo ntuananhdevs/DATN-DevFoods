@@ -31,7 +31,13 @@
         <div class="space-y-3">
             @forelse ($orders as $order)
                 {{-- Sử dụng các accessor từ Order model --}}
-                <a href="{{ route('driver.orders.show', $order->id) }}"
+                @php
+                    // Kiểm tra nếu đơn hàng là đơn ghép thì chuyển đến trang batch-navigate
+                    $href = $order->isPartOfBatch() 
+                        ? route('driver.orders.batch.navigate', $order->batch_id)
+                        : route('driver.orders.show', $order->id);
+                @endphp
+                <a href="{{ $href }}"
                     class="block bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
 
                     <div class="p-4 border-b border-gray-100">

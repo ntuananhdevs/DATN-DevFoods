@@ -46,8 +46,19 @@ class CouponController extends Controller
         }
 
         // --- 2. Validate Usage Count ---
-        if ($coupon->uses_count >= $coupon->max_uses) {
+        if ($coupon->current_usage_count >= $coupon->max_total_usage) {
              return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết lượt sử dụng.'], 422);
+        }
+        
+        // --- 2.1 Validate User Usage Count ---
+        if ($user) {
+            $userUsageCount = \App\Models\DiscountUsageHistory::where('discount_code_id', $coupon->id)
+                ->where('user_id', $user->id)
+                ->count();
+                
+            if ($userUsageCount >= $coupon->max_usage_per_user) {
+                return response()->json(['success' => false, 'message' => 'Bạn đã sử dụng hết lượt dùng mã giảm giá này.'], 422);
+            }
         }
 
         // --- 3. Validate Branch ---
@@ -61,30 +72,93 @@ class CouponController extends Controller
         }
         
         // --- 5. Validate Cart Content & Requirements ---
-        $cart = Cart::with('items.variant.product', 'items.toppings')->where('user_id', $user->id)->where('status', 'active')->first();
-        if (!$cart || $cart->items->isEmpty()) {
-            return response()->json(['success' => false, 'message' => 'Giỏ hàng của bạn đang trống.'], 400);
+        $buyNow = session('buy_now_checkout');
+        
+        // Kiểm tra nếu đang trong quá trình mua ngay (buy now)
+        if ($buyNow) {
+            // Tính toán subtotal cho mua ngay
+            $subtotal = 0;
+            if ($buyNow['type'] === 'product' && !empty($buyNow['variant_id'])) {
+                $variant = \App\Models\ProductVariant::find($buyNow['variant_id']);
+                if ($variant) {
+                    $subtotal = $variant->price * $buyNow['quantity'];
+                    // Thêm giá topping nếu có
+                    if (!empty($buyNow['toppings'])) {
+                        $toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
+                        $subtotal += $toppings->sum('price') * $buyNow['quantity'];
+                    }
+                }
+            } elseif ($buyNow['type'] === 'combo' && !empty($buyNow['combo_id'])) {
+                $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                if ($combo) {
+                    $subtotal = $combo->price * $buyNow['quantity'];
+                }
+            }
+            
+            if ($subtotal <= 0) {
+                return response()->json(['success' => false, 'message' => 'Không tìm thấy thông tin sản phẩm.'], 400);
+            }
+        } else {
+            // Kiểm tra giỏ hàng thông thường
+            $cart = Cart::with('items.variant.product', 'items.toppings')
+                ->where(function($query) use ($user) {
+                    if ($user) {
+                        $query->where('user_id', $user->id);
+                    } else {
+                        $query->where('session_id', session()->getId());
+                    }
+                })
+                ->where('status', 'active')
+                ->first();
+                
+            if (!$cart || $cart->items->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Giỏ hàng của bạn đang trống.'], 400);
+            }
+            
+            $subtotal = $cart->items->sum(function ($item) {
+                return $item->variant->price * $item->quantity + $item->toppings->sum('price');
+            });
         }
 
-        $subtotal = $cart->items->sum(function ($item) {
-            return $item->variant->price * $item->quantity + $item->toppings->sum('price');
-        });
-
+        // Kiểm tra điều kiện tối thiểu của mã giảm giá
         if ($coupon->min_requirement_type === 'order_total' && $subtotal < $coupon->min_requirement_value) {
             return response()->json(['success' => false, 'message' => 'Đơn hàng chưa đạt giá trị tối thiểu ' . number_format($coupon->min_requirement_value) . 'đ.'], 422);
         }
         
         // --- 6. Calculate the actual discount amount ---
         $discountableAmount = $subtotal; // Default: apply to whole order
+        
         if ($coupon->applicable_scope === 'specific_items' && $coupon->products->isNotEmpty()) {
             $applicableItemIds = $coupon->products->pluck('product_id')->filter();
             $applicableCategoryIds = $coupon->products->pluck('category_id')->filter();
-
-            $discountableAmount = $cart->items->where(function ($item) use ($applicableItemIds, $applicableCategoryIds) {
-                return $applicableItemIds->contains($item->variant->product_id) || $applicableCategoryIds->contains($item->variant->product->category_id);
-            })->sum(function ($item) {
-                 return $item->variant->price * $item->quantity; // Note: toppings might not be discountable
-            });
+            
+            if ($buyNow) {
+                // Xử lý cho trường hợp mua ngay
+                $discountableAmount = 0;
+                
+                if ($buyNow['type'] === 'product' && !empty($buyNow['variant_id'])) {
+                    $variant = \App\Models\ProductVariant::with('product')->find($buyNow['variant_id']);
+                    
+                    if ($variant && ($applicableItemIds->contains($variant->product_id) || 
+                        ($variant->product && $applicableCategoryIds->contains($variant->product->category_id)))) {
+                        $discountableAmount = $variant->price * $buyNow['quantity'];
+                    }
+                } elseif ($buyNow['type'] === 'combo' && !empty($buyNow['combo_id'])) {
+                    $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                    
+                    if ($combo && $applicableItemIds->contains($combo->id)) {
+                        $discountableAmount = $combo->price * $buyNow['quantity'];
+                    }
+                }
+            } else {
+                // Xử lý cho giỏ hàng thông thường
+                $discountableAmount = $cart->items->where(function ($item) use ($applicableItemIds, $applicableCategoryIds) {
+                    return $applicableItemIds->contains($item->variant->product_id) || 
+                           ($item->variant->product && $applicableCategoryIds->contains($item->variant->product->category_id));
+                })->sum(function ($item) {
+                    return $item->variant->price * $item->quantity; // Note: toppings might not be discountable
+                });
+            }
 
             if ($discountableAmount <= 0) {
                  return response()->json(['success' => false, 'message' => 'Mã không áp dụng cho sản phẩm trong giỏ hàng.'], 422);
@@ -132,4 +206,4 @@ class CouponController extends Controller
             'message' => 'Đã gỡ mã giảm giá.'
         ]);
     }
-} 
+}

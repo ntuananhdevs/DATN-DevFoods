@@ -12,6 +12,95 @@ use Illuminate\Support\Facades\Hash;
 class DriverSeeder extends Seeder
 {
     /**
+     * Tạo tọa độ ngẫu nhiên trong phạm vi Hà Nội
+     */
+    private function generateHanoiCoordinates()
+    {
+        // Các khu vực khác nhau của Hà Nội với tọa độ trung tâm
+        $hanoiAreas = [
+            // Quận Hoàn Kiếm
+            ['lat' => 21.0285, 'lng' => 105.8542, 'radius' => 0.01],
+            // Quận Ba Đình
+            ['lat' => 21.0367, 'lng' => 105.8345, 'radius' => 0.015],
+            // Quận Đống Đa
+            ['lat' => 21.0278, 'lng' => 105.8342, 'radius' => 0.02],
+            // Quận Hai Bà Trưng
+            ['lat' => 21.0058, 'lng' => 105.8469, 'radius' => 0.018],
+            // Quận Hoàng Mai
+            ['lat' => 20.9815, 'lng' => 105.8516, 'radius' => 0.025],
+            // Quận Long Biên
+            ['lat' => 21.0367, 'lng' => 105.8906, 'radius' => 0.03],
+            // Quận Tây Hồ
+            ['lat' => 21.0583, 'lng' => 105.8194, 'radius' => 0.025],
+            // Quận Thanh Xuân
+            ['lat' => 20.9881, 'lng' => 105.8019, 'radius' => 0.02],
+            // Quận Cầu Giấy
+            ['lat' => 21.0333, 'lng' => 105.7947, 'radius' => 0.018],
+            // Quận Nam Từ Liêm
+            ['lat' => 21.0378, 'lng' => 105.7644, 'radius' => 0.03],
+            // Quận Bắc Từ Liêm
+            ['lat' => 21.0608, 'lng' => 105.7756, 'radius' => 0.025],
+            // Quận Hà Đông
+            ['lat' => 20.9719, 'lng' => 105.7694, 'radius' => 0.025],
+        ];
+        
+        // Chọn ngẫu nhiên một khu vực
+        $area = $hanoiAreas[array_rand($hanoiAreas)];
+        
+        // Tạo tọa độ ngẫu nhiên trong bán kính của khu vực đó
+        $angle = mt_rand(0, 360) * (M_PI / 180); // Góc ngẫu nhiên
+        $distance = mt_rand(0, 100) / 100 * $area['radius']; // Khoảng cách ngẫu nhiên
+        
+        $lat = $area['lat'] + ($distance * cos($angle));
+        $lng = $area['lng'] + ($distance * sin($angle));
+        
+        return [
+            'latitude' => round($lat, 6),
+            'longitude' => round($lng, 6)
+        ];
+    }
+
+    /**
+     * Tính khoảng cách giữa hai điểm (Haversine formula)
+     */
+    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371; // km
+        
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+        
+        $a = sin($dLat/2) * sin($dLat/2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLng/2) * sin($dLng/2);
+        
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Tạo tọa độ gần chi nhánh nhất
+     */
+    private function generateCoordinatesNearBranch($branchLat, $branchLng, $maxDistance = 2)
+    {
+        // Tạo tọa độ trong bán kính $maxDistance km từ chi nhánh
+        $angle = mt_rand(0, 360) * (M_PI / 180);
+        $distance = mt_rand(50, $maxDistance * 1000) / 1000; // 0.05km đến $maxDistance km
+        
+        // Chuyển đổi khoảng cách từ km sang độ (xấp xỉ)
+        $distanceInDegrees = $distance / 111; // 1 độ ≈ 111km
+        
+        $lat = $branchLat + ($distanceInDegrees * cos($angle));
+        $lng = $branchLng + ($distanceInDegrees * sin($angle));
+        
+        return [
+            'latitude' => round($lat, 6),
+            'longitude' => round($lng, 6)
+        ];
+    }
+
+    /**
      * Run the database seeds.
      */
     public function run(): void
@@ -26,8 +115,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST001',
-                'latitude' => 21.033,
-                'longitude' => 105.849,
             ],
             [
                 'full_name' => 'Nguyễn Văn B',
@@ -38,8 +125,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST002',
-                'latitude' => 21.034,
-                'longitude' => 105.850,
             ],
             [
                 'full_name' => 'Nguyễn Văn C',
@@ -50,8 +135,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST003',
-                'latitude' => 21.035,
-                'longitude' => 105.851,
             ],
             // Thêm 20 tài xế mới
             [
@@ -63,8 +146,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST004',
-                'latitude' => 21.036,
-                'longitude' => 105.852,
             ],
             [
                 'full_name' => 'Lê Thị E',
@@ -75,8 +156,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST005',
-                'latitude' => 21.037,
-                'longitude' => 105.853,
             ],
             [
                 'full_name' => 'Phạm Văn F',
@@ -87,8 +166,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST006',
-                'latitude' => 21.038,
-                'longitude' => 105.854,
             ],
             [
                 'full_name' => 'Hoàng Thị G',
@@ -99,8 +176,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST007',
-                'latitude' => 21.039,
-                'longitude' => 105.855,
             ],
             [
                 'full_name' => 'Vũ Văn H',
@@ -111,8 +186,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST008',
-                'latitude' => 21.040,
-                'longitude' => 105.856,
             ],
             [
                 'full_name' => 'Đặng Thị I',
@@ -123,8 +196,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST009',
-                'latitude' => 21.041,
-                'longitude' => 105.857,
             ],
             [
                 'full_name' => 'Bùi Văn K',
@@ -135,8 +206,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST010',
-                'latitude' => 21.042,
-                'longitude' => 105.858,
             ],
             [
                 'full_name' => 'Đinh Thị L',
@@ -147,8 +216,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST011',
-                'latitude' => 21.043,
-                'longitude' => 105.859,
             ],
             [
                 'full_name' => 'Dương Văn M',
@@ -159,8 +226,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST012',
-                'latitude' => 21.044,
-                'longitude' => 105.860,
             ],
             [
                 'full_name' => 'Cao Thị N',
@@ -171,8 +236,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST013',
-                'latitude' => 21.045,
-                'longitude' => 105.861,
             ],
             [
                 'full_name' => 'Lý Văn O',
@@ -183,8 +246,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST014',
-                'latitude' => 21.046,
-                'longitude' => 105.862,
             ],
             [
                 'full_name' => 'Mạc Thị P',
@@ -195,8 +256,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST015',
-                'latitude' => 21.047,
-                'longitude' => 105.863,
             ],
             [
                 'full_name' => 'Tô Văn Q',
@@ -207,8 +266,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST016',
-                'latitude' => 21.048,
-                'longitude' => 105.864,
             ],
             [
                 'full_name' => 'Hồ Thị R',
@@ -219,8 +276,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST017',
-                'latitude' => 21.049,
-                'longitude' => 105.865,
             ],
             [
                 'full_name' => 'Võ Văn S',
@@ -231,8 +286,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST018',
-                'latitude' => 21.050,
-                'longitude' => 105.866,
             ],
             [
                 'full_name' => 'Đỗ Thị T',
@@ -243,8 +296,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST019',
-                'latitude' => 21.051,
-                'longitude' => 105.867,
             ],
             [
                 'full_name' => 'Nông Văn U',
@@ -255,8 +306,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST020',
-                'latitude' => 21.052,
-                'longitude' => 105.868,
             ],
             [
                 'full_name' => 'Kiều Thị V',
@@ -267,8 +316,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST021',
-                'latitude' => 21.053,
-                'longitude' => 105.869,
             ],
             [
                 'full_name' => 'Ông Văn W',
@@ -279,8 +326,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST022',
-                'latitude' => 21.054,
-                'longitude' => 105.870,
             ],
             [
                 'full_name' => 'Ứng Thị X',
@@ -291,8 +336,6 @@ class DriverSeeder extends Seeder
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'TEST023',
-                'latitude' => 21.055,
-                'longitude' => 105.871,
             ],
         ];
 
@@ -340,12 +383,22 @@ class DriverSeeder extends Seeder
                 ]
             );
 
-            // Tạo driver location (chỉ dùng driver_id, latitude, longitude)
+            // Tạo tọa độ cho tài xế - Nguyễn Văn A sẽ ở gần chi nhánh Đống Đa
+            if ($driverData['full_name'] === 'Nguyễn Văn A') {
+                // Tọa độ chi nhánh Đống Đa
+                $dongDaLat = 21.0278;
+                $dongDaLng = 105.8342;
+                $coordinates = $this->generateCoordinatesNearBranch($dongDaLat, $dongDaLng, 1); // Trong bán kính 1km
+            } else {
+                $coordinates = $this->generateHanoiCoordinates();
+            }
+            
+            // Tạo driver location
             DriverLocation::updateOrCreate(
                 ['driver_id' => $driver->id],
                 [
-                    'latitude' => $driverData['latitude'],
-                    'longitude' => $driverData['longitude'],
+                    'latitude' => $coordinates['latitude'],
+                    'longitude' => $coordinates['longitude'],
                 ]
             );
 
