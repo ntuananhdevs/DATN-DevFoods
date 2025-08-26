@@ -80,7 +80,7 @@
             </div>
         </div>
 
-        <form id="variant-stock-form" action="{{ route('admin.products.update-branch-stocks', $product->id) }}" method="POST">
+        <form id="variant-stock-form" action="{{ route('admin.products.update-stocks', $product->id) }}" method="POST">
             @csrf
             @method('POST')
             <input type="hidden" name="product_id" value="{{ $product->id }}">

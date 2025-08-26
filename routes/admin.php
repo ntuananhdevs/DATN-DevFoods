@@ -152,6 +152,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
         // Topping management for products
         Route::get('get-toppings', [ToppingController::class, 'getToppings'])->name('get-toppings');
+        
+        // Attribute/Value deletion check routes
+        Route::post('check-attribute-deletable', [ProductController::class, 'checkAttributeDeletable'])->name('check-attribute-deletable');
+        Route::post('check-value-deletable', [ProductController::class, 'checkValueDeletable'])->name('check-value-deletable');
     });
 
     // Toppings Management

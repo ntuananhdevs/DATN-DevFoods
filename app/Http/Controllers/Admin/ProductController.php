@@ -29,7 +29,7 @@ class ProductController extends Controller
      */
     public function index(Request $request) {
         try {
-            $query = Product::with(['category', 'variants.branchStocks', 'images']);
+            $query = Product::withTrashed()->with(['category', 'variants.branchStocks', 'images']);
 
             // Tìm kiếm theo tên hoặc mã sản phẩm (ưu tiên cao nhất)
             $hasSearch = $request->has('search') && $request->search;
@@ -96,6 +96,16 @@ class ProductController extends Controller
                 $query->whereDate('created_at', $request->date_added);
             }
 
+            // Lọc theo trạng thái xóa
+            if ($request->has('deleted_status') && $request->deleted_status !== '') {
+                if ($request->deleted_status === 'deleted') {
+                    $query->onlyTrashed();
+                } elseif ($request->deleted_status === 'active') {
+                    $query->withoutTrashed();
+                }
+                // Nếu là 'all' thì giữ nguyên withTrashed()
+            }
+
             $products = $query->latest()->paginate(10);
             $categories = Category::all();
             $branches = Branch::where('active', true)->get();
@@ -136,7 +146,7 @@ class ProductController extends Controller
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
 
-            return redirect()->back();
+            return redirect()->route('admin.products.index');
         }
     }
 
@@ -359,14 +369,67 @@ class ProductController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Soft delete the specified resource from storage.
      */
     public function destroy($id)
     {
         try {
             $product = Product::findOrFail($id);
             
+            // Kiểm tra xem sản phẩm có trong đơn hàng không
+            if ($product->hasOrders()) {
+                session()->flash('toast', [
+                    'type' => 'error',
+                    'title' => 'Không thể ẩn sản phẩm!',
+                    'message' => 'Sản phẩm "' . $product->name . '" đang có trong đơn hàng nên không thể ẩn.'
+                ]);
+                
+                return redirect()->back();
+            }
+            
+            // Thực hiện soft delete
+            $product->delete();
+            
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Sản phẩm "' . $product->name . '" đã được ẩn thành công. Sản phẩm vẫn có thể được khôi phục.'
+            ]);
+            
+            return redirect()->back();
+        } catch (\Exception $e) {
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
+        }
+    }
+
+    /**
+     * Force delete the specified resource from storage.
+     */
+    public function forceDelete($id)
+    {
+        try {
+            $product = Product::withTrashed()->findOrFail($id);
+            
+            // Kiểm tra xem sản phẩm có thể xóa hoàn toàn không
+            if (!$product->canForceDelete()) {
+                session()->flash('toast', [
+                    'type' => 'error',
+                    'title' => 'Không thể xóa!',
+                    'message' => 'Không thể xóa sản phẩm "' . $product->name . '" vì đã có đơn hàng sử dụng sản phẩm.'
+                ]);
+                
+                return redirect()->back();
+            }
+            
             DB::beginTransaction();
+            
+            $productName = $product->name;
             
             // Delete images from storage
             foreach ($product->images as $image) {
@@ -375,21 +438,66 @@ class ProductController extends Controller
                 }
             }
             
-            $product->delete();
+            // Force delete the product
+            $product->forceDelete();
             
             DB::commit();
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Sản phẩm đã được xóa thành công'
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Sản phẩm "' . $productName . '" đã được xóa hoàn toàn khỏi hệ thống.'
             ]);
+            
+            return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
             
-            return response()->json([
-                'success' => false,
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ], 500);
+            ]);
+            
+            return redirect()->back();
+        }
+    }
+
+    /**
+     * Restore the specified soft deleted resource.
+     */
+    public function restore($id)
+    {
+        try {
+            $product = Product::withTrashed()->findOrFail($id);
+            
+            if (!$product->trashed()) {
+                session()->flash('toast', [
+                    'type' => 'warning',
+                    'title' => 'Thông báo!',
+                    'message' => 'Sản phẩm này chưa bị ẩn.'
+                ]);
+                
+                return redirect()->back();
+            }
+            
+            $product->restore();
+            
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Sản phẩm "' . $product->name . '" đã được khôi phục thành công.'
+            ]);
+            
+            return redirect()->back();
+        } catch (\Exception $e) {
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
         }
     }
 
@@ -424,7 +532,7 @@ class ProductController extends Controller
                     'title' => 'Cảnh báo!',
                     'message' => 'Không có dữ liệu kho hàng nào được cập nhật'
                 ]);
-                return redirect()->back();
+                return redirect()->route('admin.products.index');
             }
 
             DB::beginTransaction();
@@ -449,7 +557,7 @@ class ProductController extends Controller
                 'message' => 'Cập nhật tồn kho thành công'
             ]);
 
-            return redirect()->back();
+            return redirect()->route('admin.products.index');
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -459,7 +567,7 @@ class ProductController extends Controller
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
 
-            return redirect()->back();
+            return redirect()->route('admin.products.index');
         }
     }
 
@@ -1170,6 +1278,60 @@ class ProductController extends Controller
         file_put_contents($file, $json);
 
         return Response::download($file, $filename);
+    }
+
+    /**
+     * Kiểm tra xem attribute có thể xóa được không
+     */
+    public function checkAttributeDeletable(Request $request)
+    {
+        $attributeId = $request->input('attribute_id');
+        $productId = $request->input('product_id');
+        
+        // Kiểm tra xem attribute có đang được sử dụng trong các variant của sản phẩm này không
+        $isUsed = \App\Models\ProductVariant::where('product_id', $productId)
+            ->whereHas('variantValues.attribute', function($query) use ($attributeId) {
+                $query->where('id', $attributeId);
+            })
+            ->where(function($query) {
+                // Kiểm tra trong OrderItem
+                $query->whereHas('orderItems')
+                    // Hoặc trong CartItem
+                    ->orWhereHas('cartItems');
+            })
+            ->exists();
+            
+        return response()->json([
+            'can_delete' => !$isUsed,
+            'message' => $isUsed ? 'Không thể xóa thuộc tính này vì đã có trong đơn hàng hoặc giỏ hàng.' : 'Có thể xóa thuộc tính này.'
+        ]);
+    }
+    
+    /**
+     * Kiểm tra xem value có thể xóa được không
+     */
+    public function checkValueDeletable(Request $request)
+    {
+        $valueId = $request->input('value_id');
+        $productId = $request->input('product_id');
+        
+        // Kiểm tra xem value có đang được sử dụng trong các variant của sản phẩm này không
+        $isUsed = \App\Models\ProductVariant::where('product_id', $productId)
+            ->whereHas('variantValues', function($query) use ($valueId) {
+                $query->where('variant_value_id', $valueId);
+            })
+            ->where(function($query) {
+                // Kiểm tra trong OrderItem
+                $query->whereHas('orderItems')
+                    // Hoặc trong CartItem
+                    ->orWhereHas('cartItems');
+            })
+            ->exists();
+            
+        return response()->json([
+            'can_delete' => !$isUsed,
+            'message' => $isUsed ? 'Không thể xóa giá trị này vì đã có trong đơn hàng hoặc giỏ hàng.' : 'Có thể xóa giá trị này.'
+        ]);
     }
 
 }

@@ -321,45 +321,7 @@
                 <input type="text" placeholder="Tìm kiếm theo tên, mã sản phẩm..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput">
             </div>
             <div class="flex items-center gap-2">
-                <button class="btn btn-outline flex items-center" id="selectAllButton">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
-                        <path d="m9 12 2 2 4-4"></path>
-                    </svg>
-                    <span>Chọn tất cả</span>
-                </button>
-                <div class="dropdown relative">
-                    <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                            <circle cx="12" cy="12" r="2"></circle>
-                            <circle cx="12" cy="5" r="2"></circle>
-                            <circle cx="12" cy="19" r="2"></circle>
-                        </svg>
-                        Thao tác
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </button>
-                    <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
-                        <div class="p-2">
-                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(1)">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <path d="m9 11 3 3L22 4"></path>
-                                </svg>
-                                Kích hoạt đã chọn
-                            </a>
-                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(0)">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <path d="m15 9-6 6"></path>
-                                    <path d="m9 9 6 6"></path>
-                                </svg>
-                                Vô hiệu hóa đã chọn
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
                 <button class="btn btn-outline flex items-center" onclick="toggleModal('filterModal')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -374,14 +336,12 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b bg-muted/50">
-                        <th class="py-3 px-4 text-left font-medium">
-                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300">
-                        </th>
+
                         <th class="py-3 px-4 text-left font-medium">Mã sản phẩm</th>
                         <th class="py-3 px-4 text-left font-medium">Hình ảnh</th>
                         <th class="py-3 px-4 text-left font-medium">Tên sản phẩm</th>
                         <th class="py-3 px-4 text-left font-medium">Danh mục</th>
-                        <th class="py-3 px-4 text-right font-medium">Giá</th>
+                        <th class="py-3 px-4 text-center font-medium">Giá</th>
                         <th class="py-3 px-4 text-center font-medium">Tồn kho</th>
                         <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
                         <th class="py-3 px-4 text-center font-medium">Thao tác</th>
@@ -390,9 +350,7 @@
                 <tbody id="productTableBody">
                     @forelse($products as $product)
                     <tr class="border-b">
-                        <td class="py-3 px-4">
-                            <input type="checkbox" name="selected_products[]" value="{{ $product->id }}" class="product-checkbox rounded border-gray-300">
-                        </td>
+
                         <td class="py-3 px-4 font-medium">{{ $product->sku }}</td>
                         <td class="py-3 px-4">
                             <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden" style="width:100px; height:60px; border-radius:4px; background:#f3f4f6;">
@@ -435,56 +393,109 @@
                             </span>
                         </td>
                         <td class="py-3 px-4">
-                            @php
-                                switch ($product->status) {
-                                    case 'selling':
-                                        $statusText = 'Đang bán';
-                                        $statusClass = 'selling';
-                                        break;
-                                    case 'coming_soon':
-                                        $statusText = 'Sắp ra mắt';
-                                        $statusClass = 'coming-soon';
-                                        break;
-                                    case 'discontinued':
-                                    default:
-                                        $statusText = 'Ngừng bán';
-                                        $statusClass = 'discontinued';
-                                        break;
-                                }
-                            @endphp
-                            <span class="product-status {{ $statusClass }}">
-                                {{ $statusText }}
-                            </span>
+                            @if($product->trashed())
+                                <span class="product-status deleted">
+                                    Đã xóa
+                                </span>
+                            @else
+                                @php
+                                    switch ($product->status) {
+                                        case 'selling':
+                                            $statusText = 'Đang bán';
+                                            $statusClass = 'selling';
+                                            break;
+                                        case 'coming_soon':
+                                            $statusText = 'Sắp ra mắt';
+                                            $statusClass = 'coming-soon';
+                                            break;
+                                        case 'discontinued':
+                                        default:
+                                            $statusText = 'Ngừng bán';
+                                            $statusClass = 'discontinued';
+                                            break;
+                                    }
+                                @endphp
+                                <span class="product-status {{ $statusClass }}">
+                                    {{ $statusText }}
+                                </span>
+                            @endif
                         </td>
                         <td class="py-3 px-4">
                             <div class="flex justify-center space-x-1">
-                                <a href="{{ route('admin.products.edit', $product->id) }}"
-                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
-                                    title="Chỉnh sửa">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </a>
-                                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
-                                        onclick="dtmodalConfirmDelete({
-                                                title: 'Xác nhận xóa sản phẩm',
-                                                subtitle: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
-                                                message: 'Hành động này không thể hoàn tác.',
-                                                itemName: '{{ $product->name }}',
-                                                onConfirm: () => this.closest('form').submit()
-                                            })"
-                                        title="Xóa">
+                                @if($product->trashed())
+                                    <!-- Nút khôi phục -->
+                                    <form action="{{ route('admin.products.restore', $product->id) }}" method="POST" class="restore-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent text-green-600"
+                                            onclick="dtmodalConfirmRestore({
+                                                    title: 'Xác nhận khôi phục sản phẩm',
+                                                    subtitle: 'Bạn có chắc chắn muốn khôi phục sản phẩm này?',
+                                                    itemName: '{{ $product->name }}',
+                                                    onConfirm: () => this.closest('form').submit()
+                                                })"
+                                            title="Khôi phục">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                                <path d="M21 3v5h-5"></path>
+                                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                                <path d="M8 16l-5 5v-5h5"></path>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                    <!-- Nút xóa hoàn toàn -->
+                                    <form action="{{ route('admin.products.forceDelete', $product->id) }}" method="POST" class="force-delete-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent text-red-600"
+                                            onclick="dtmodalConfirmForceDelete({
+                                                    title: 'Xác nhận xóa hoàn toàn',
+                                                    subtitle: 'Bạn có chắc chắn muốn xóa hoàn toàn sản phẩm này?',
+                                                    message: 'Hành động này không thể hoàn tác và sẽ xóa vĩnh viễn sản phẩm khỏi hệ thống.',
+                                                    itemName: '{{ $product->name }}',
+                                                    onConfirm: () => this.closest('form').submit()
+                                                })"
+                                            title="Xóa hoàn toàn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M3 6h18"></path>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @else
+                                    <!-- Nút chỉnh sửa -->
+                                    <a href="{{ route('admin.products.edit', $product->id) }}"
+                                        class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                        title="Chỉnh sửa">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
-                                    </button>
-                                </form>
+                                    </a>
+                                    <!-- Nút xóa mềm -->
+                                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
+                                            onclick="dtmodalConfirmDelete({
+                                                    title: 'Xác nhận ẩn sản phẩm',
+                                                    subtitle: 'Bạn có chắc chắn muốn ẩn sản phẩm này?',
+                                                    message: 'Sản phẩm sẽ được ẩn khỏi danh sách nhưng vẫn có thể khôi phục.',
+                                                    itemName: '{{ $product->name }}',
+                                                    onConfirm: () => this.closest('form').submit()
+                                                })"
+                                            title="Ẩn sản phẩm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M3 6h18"></path>
+                                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -598,7 +609,7 @@
                 </div>
 
                 <!-- Row 3: Status Filters -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="text-sm font-medium block mb-2">Tình trạng kho</label>
                         <div class="space-y-1">
@@ -628,6 +639,14 @@
                                 Không bán
                             </label>
                         </div>
+                    </div>
+                    <div>
+                        <label for="filter_deleted_status" class="text-sm font-medium block mb-2">Trạng thái hiển thị</label>
+                        <select id="filter_deleted_status" name="deleted_status" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
+                            <option value="" {{ request('deleted_status') === '' ? 'selected' : '' }}>Tất cả sản phẩm</option>
+                            <option value="active" {{ request('deleted_status') === 'active' ? 'selected' : '' }}>Sản phẩm đang hoạt động</option>
+                            <option value="deleted" {{ request('deleted_status') === 'deleted' ? 'selected' : '' }}>Sản phẩm đã ẩn</option>
+                        </select>
                     </div>
                 </div>
             </div>
