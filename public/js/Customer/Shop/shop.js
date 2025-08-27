@@ -2010,9 +2010,7 @@ const discountsChannel = discountsPusher.subscribe("discounts");
 discountsChannel.bind("discount-updated", function (data) {
     console.log('--- Pusher event "discount-updated" received ---');
     console.log("Data received:", data);
-    setTimeout(() => {
-        window.location.reload();
-    }, 1000);
+    window.location.reload();
 });
 
 // Thêm CSS hiệu ứng nửa sao vào cuối file (nếu chưa có)
