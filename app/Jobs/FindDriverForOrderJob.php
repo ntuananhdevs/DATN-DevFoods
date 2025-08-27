@@ -743,10 +743,6 @@ class FindDriverForOrderJob implements ShouldQueue
     {
         // Lấy tọa độ của các đơn hàng hiện tại của tài xế (loại trừ đơn đang giao)
         $currentOrders = DB::select("
-<<<<<<< HEAD
-            SELECT o.id, o.pickup_latitude, o.pickup_longitude, o.delivery_latitude, o.delivery_longitude
-            FROM orders o
-=======
             SELECT o.id, 
                    b.latitude as pickup_latitude, 
                    b.longitude as pickup_longitude,
@@ -755,7 +751,6 @@ class FindDriverForOrderJob implements ShouldQueue
             FROM orders o
             LEFT JOIN branches b ON o.branch_id = b.id
             LEFT JOIN addresses a ON o.address_id = a.id
->>>>>>> b173e204c7fa4078aa71fb6607038c9b9c5473a5
             WHERE o.driver_id = ?
                 AND o.status IN ('awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up')
         ", [$driverId]);
