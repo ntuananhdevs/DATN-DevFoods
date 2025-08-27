@@ -435,46 +435,45 @@
                                     </div>
                                 @else
                                     <!-- Manual coupon code input -->
-                                    <div class="mb-4">
-                                        <div class="flex">
-                                            <input type="text" id="coupon-code-input" class="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Nhập mã giảm giá">
-                                            <button type="button" id="apply-coupon-btn" class="bg-orange-500 text-white px-4 py-2 rounded-r-lg hover:bg-orange-600 font-medium transition-colors">
-                                                Áp dụng
-                                            </button>
-                                        </div>
-                                    </div>
                                     
-                                    <!-- Available discount codes -->
+                                    <!-- Available discount codes as dropdown -->
                                     @if(isset($availableDiscountCodes) && count($availableDiscountCodes) > 0)
                                         <div class="mt-4">
-                                            <h3 class="text-sm font-medium text-gray-700 mb-2">Mã giảm giá khả dụng:</h3>
-                                            <div class="grid grid-cols-1 gap-3">
-                                                @foreach($availableDiscountCodes as $code)
-                                                    <div class="coupon-item border border-gray-200 rounded-lg p-3 hover:border-orange-300 cursor-pointer transition-all">
-                                                        <div class="flex justify-between items-center">
-                                                            <div>
-                                                                <div class="font-medium text-gray-800">{{ $code->name }}</div>
-                                                                <div class="text-sm text-gray-600">Mã: <span class="font-medium text-orange-600">{{ $code->code }}</span></div>
-                                                                <div class="text-sm text-gray-600">
-                                                                    @if($code->discount_type == 'percentage')
-                                                                        Giảm {{ $code->discount_value }}%
-                                                                        @if($code->max_discount_amount)
-                                                                            (tối đa {{ number_format($code->max_discount_amount) }}đ)
+                                            <div class="relative">
+                                                <button type="button" id="discount-dropdown-btn" class="w-full flex justify-between items-center bg-white border border-gray-300 rounded-lg px-4 py-2 text-left focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                                    <span class="text-sm font-medium text-gray-700">Chọn mã giảm giá ({{ count($availableDiscountCodes) }})</span>
+                                                    <i class="fas fa-chevron-down text-gray-500"></i>
+                                                </button>
+                                                <div id="discount-dropdown-menu" class="hidden absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                    @foreach($availableDiscountCodes as $code)
+                                                        <div class="coupon-item p-3 hover:bg-orange-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                                                            <div class="flex justify-between items-center">
+                                                                <div>
+                                                                    <div class="font-medium text-gray-800">{{ $code->name }}</div>
+                                                                    <div class="text-sm text-gray-600">Mã: <span class="font-medium text-orange-600">{{ $code->code }}</span></div>
+                                                                    <div class="text-sm text-gray-600">
+                                                                        @if($code->discount_type == 'percentage')
+                                                                            Giảm {{ $code->discount_value }}%
+                                                                            @if($code->max_discount_amount)
+                                                                                (tối đa {{ number_format($code->max_discount_amount) }}đ)
+                                                                            @endif
+                                                                        @elseif($code->discount_type == 'free_shipping')
+                                                                            Miễn phí vận chuyển
+                                                                        @else
+                                                                            Giảm {{ number_format($code->discount_value) }}đ
                                                                         @endif
-                                                                    @else
-                                                                        Giảm {{ number_format($code->discount_value) }}đ
+                                                                    </div>
+                                                                    @if($code->min_requirement_value)
+                                                                        <div class="text-xs text-gray-500">Đơn tối thiểu: {{ number_format($code->min_requirement_value) }}đ</div>
                                                                     @endif
                                                                 </div>
-                                                                @if($code->min_requirement_value)
-                                                                    <div class="text-xs text-gray-500">Đơn tối thiểu: {{ number_format($code->min_requirement_value) }}đ</div>
-                                                                @endif
+                                                                <button type="button" class="apply-coupon-btn bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 font-medium text-sm transition-colors" data-code="{{ $code->code }}">
+                                                                    Áp dụng
+                                                                </button>
                                                             </div>
-                                                            <button type="button" class="apply-coupon-btn bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 font-medium text-sm transition-colors" data-code="{{ $code->code }}">
-                                                                Áp dụng
-                                                            </button>
                                                         </div>
-                                                    </div>
-                                                @endforeach
+                                                    @endforeach
+                                                </div>
                                             </div>
                                         </div>
                                     @else
@@ -3691,6 +3690,38 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Coupon code application
         document.addEventListener('DOMContentLoaded', function() {
+            // Discount dropdown functionality
+            const discountDropdownBtn = document.getElementById('discount-dropdown-btn');
+            const discountDropdownMenu = document.getElementById('discount-dropdown-menu');
+            
+            if (discountDropdownBtn && discountDropdownMenu) {
+                // Toggle dropdown when button is clicked
+                discountDropdownBtn.addEventListener('click', function() {
+                    discountDropdownMenu.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!discountDropdownBtn.contains(event.target) && !discountDropdownMenu.contains(event.target)) {
+                        discountDropdownMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Handle coupon item clicks
+                const couponItems = discountDropdownMenu.querySelectorAll('.coupon-item');
+                couponItems.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        // Don't trigger if the apply button was clicked (it has its own handler)
+                        if (!e.target.closest('.apply-coupon-btn')) {
+                            const applyBtn = this.querySelector('.apply-coupon-btn');
+                            if (applyBtn) {
+                                applyBtn.click();
+                            }
+                        }
+                    });
+                });
+            }
+            
             const applyCouponBtn = document.getElementById('apply-coupon-btn');
             const couponCodeInput = document.getElementById('coupon-code-input');
             const couponFeedback = document.getElementById('coupon-feedback');
@@ -3815,9 +3846,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     const shipping = parseInt(shippingElement.getAttribute('data-value') || 0);
                     const discount = discountElement ? parseInt(discountElement.getAttribute('data-value') || 0) : 0;
                     
-                    const total = subtotal + shipping - discount;
+                    // Check if we have a free shipping coupon applied
+                    const isFreeShipping = document.querySelector('#coupon-area .bg-green-50 .bg-green-100')?.textContent?.includes('free_shipping');
+                    
+                    // If free shipping is applied, don't charge for shipping
+                    const effectiveShipping = isFreeShipping ? 0 : shipping;
+                    
+                    const total = subtotal + effectiveShipping - discount;
                     totalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
                     totalElement.setAttribute('data-value', total);
+                    
+                    // Update shipping display if free shipping is applied
+                    if (isFreeShipping && shipping > 0) {
+                        shippingElement.innerHTML = '<span class="line-through text-gray-400">' + 
+                            new Intl.NumberFormat('vi-VN').format(shipping) + 'đ</span> ' +
+                            '<span class="text-green-600 font-medium">Miễn phí</span>';
+                    }
                 }
             }
         });

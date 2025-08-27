@@ -651,6 +651,18 @@ class CheckoutController extends Controller
             // Apply discount if available
             $discount = session('coupon_discount_amount', 0);
             
+            // Kiểm tra nếu có mã giảm giá free_shipping
+            $isFreeShipping = false;
+            if (session()->has('coupon_code')) {
+                $couponCode = session('coupon_code');
+                $discountCode = \App\Models\DiscountCode::where('code', $couponCode)->first();
+                if ($discountCode && $discountCode->discount_type === 'free_shipping') {
+                    $isFreeShipping = true;
+                    $discount = $shipping; // Đặt giá trị giảm giá bằng phí vận chuyển
+                    $shipping = 0; // Đặt phí vận chuyển bằng 0
+                }
+            }
+            
             // Calculate total
             $total = $subtotal + $shipping - $discount;
             
