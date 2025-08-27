@@ -34,7 +34,7 @@
                 @php
                     // Kiểm tra nếu đơn hàng là đơn ghép thì chuyển đến trang batch-navigate
                     $href = $order->isPartOfBatch() 
-                        ? route('driver.orders.batch.navigate', $order->batch_id)
+                        ? route('driver.orders.batch.navigate', $order->getBatchGroupId())
                         : route('driver.orders.show', $order->id);
                 @endphp
                 <a href="{{ $href }}"

@@ -67,7 +67,7 @@
                 <div class="space-y-3">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-user text-gray-400"></i>
-                        <span>{{ $order->customer->full_name ?? $order->guest_name }}</span>
+                        <span>{{ $order->displayRecipientName }}</span>
                         {{-- Add data-action attribute to identify the action --}}
                         <button data-action="call-customer"
                             class="ml-auto text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
@@ -78,7 +78,7 @@
                         <i class="fas fa-map-marker-alt text-gray-400 mt-1"></i>
                         <div>
                             <p class="font-medium">Địa chỉ giao hàng</p>
-                            <p class="text-sm text-gray-600">{{ $order->delivery_address }}</p>
+                            <p class="text-sm text-gray-600">{{ $order->displayFullDeliveryAddress }}</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -106,7 +106,7 @@
                     @foreach ($order->orderItems as $item)
                         <div class="flex justify-between">
                             <span>{{ $item->quantity }}x
-                                {{ $item->productVariant->product->name ?? 'Sản phẩm' }}</span>
+                                {{ $item->product_name_snapshot ?? $item->productVariant->product->name ?? 'Sản phẩm' }}</span>
                             <span>{{ number_format($item->total_price, 0, ',', '.') }} đ</span>
                         </div>
                     @endforeach
@@ -192,9 +192,9 @@
                         {{-- Các trạng thái delivered/item_received/... không hiển thị nút --}}
                 @endSwitch
 
-                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn --}}
-                @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
-                    @if(is_null($order->batch_id))
+                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn - chỉ hiển thị khi đã bắt đầu di chuyển --}}
+                @if (in_array($order->status, ['waiting_driver_pick_up', 'in_transit']))
+                    @if(!$order->isPartOfBatch())
                         {{-- Đơn lẻ: hiển thị nút xem bản đồ lớn --}}
                         <button data-action="view-large-map"
                             class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
@@ -203,7 +203,7 @@
                         </button>
                     @else
                         {{-- Đơn ghép: hiển thị nút xem ghép đơn --}}
-                        <a href="{{ route('driver.orders.batch.navigate', $order->batch_id) }}"
+                        <a href="{{ route('driver.orders.batch.navigate', $order->getBatchGroupId()) }}"
                             class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
                             <i class="fas fa-route w-4 h-4 mr-2"></i>
                             Xem ghép đơn

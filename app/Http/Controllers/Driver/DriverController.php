@@ -34,6 +34,15 @@ class DriverController extends Controller
         // Lấy các đơn hàng tài xế đang xử lý
         $processingOrders = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
+            ->select([
+                'orders.*',
+                'delivery_address_line_snapshot',
+                'delivery_ward_snapshot', 
+                'delivery_district_snapshot',
+                'delivery_province_snapshot',
+                'delivery_phone_snapshot',
+                'delivery_recipient_name_snapshot'
+            ])
             ->latest()->get();
 
         // Lấy các đơn hàng mới đang chờ tài xế
@@ -45,7 +54,31 @@ class DriverController extends Controller
                 });
         })
             ->where('status', 'awaiting_driver')
+            ->select([
+                'orders.*',
+                'delivery_address_line_snapshot',
+                'delivery_ward_snapshot', 
+                'delivery_district_snapshot',
+                'delivery_province_snapshot',
+                'delivery_phone_snapshot',
+                'delivery_recipient_name_snapshot'
+            ])
             ->get();
+
+        // Kiểm tra điều kiện ghép đơn
+        $batchableOrdersInfo = [];
+        foreach ($processingOrders as $order) {
+            if (in_array($order->status, ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
+                $batchableOrders = $order->getBatchableOrders();
+                if ($batchableOrders->count() > 0) {
+                    $batchableOrdersInfo[$order->id] = [
+                        'order' => $order,
+                        'batchable_count' => $batchableOrders->count(),
+                        'batchable_orders' => $batchableOrders
+                    ];
+                }
+            }
+        }
 
         return view('driver.dashboard', compact(
             'driver',
@@ -53,7 +86,8 @@ class DriverController extends Controller
             'deliveredOrdersCountToday',
             'averageEarningPerOrder',
             'processingOrders',
-            'availableOrders'
+            'availableOrders',
+            'batchableOrdersInfo'
         ));
     }
 

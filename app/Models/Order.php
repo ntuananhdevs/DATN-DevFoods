@@ -411,7 +411,7 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => $this->delivery_address_line_snapshot
-                ?? ($this->address ? $this->address->address_line : $this->guest_address)
+                ?? $this->delivery_address
                 ?? 'Không có địa chỉ'
         );
     }
@@ -525,70 +525,64 @@ class Order extends Model
     }
 
     /**
-     * Get all orders in the same batch
+     * Lấy các đơn hàng có thể ghép với đơn hàng này
+     * Chỉ cần cùng tài xế và có ít nhất 2 đơn
      */
-    public function batchOrders()
+    public function getBatchableOrders()
     {
-        return $this->where('batch_id', $this->batch_id)
-                   ->where('batch_id', '!=', null)
-                   ->orderBy('batch_order');
+        if (!$this->driver_id) {
+            return collect();
+        }
+
+        // Lấy tất cả đơn hàng khác của cùng tài xế
+        return static::where('driver_id', $this->driver_id)
+            ->where('id', '!=', $this->id)
+            ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
+            ->with(['address'])
+            ->get();
     }
 
     /**
-     * Check if this order is part of a batch
+     * Kiểm tra xem đơn hàng này có đang trong một batch hay không
      */
     public function isPartOfBatch(): bool
     {
-        return !empty($this->batch_id);
+        // Nếu đơn hàng đã giao hoặc bị hủy thì không còn trong batch
+        if (in_array($this->status, ['delivered', 'cancelled'])) {
+            return false;
+        }
+        
+        // Kiểm tra xem có ít nhất 2 đơn hàng của cùng tài xế hay không
+        $batchOrders = $this->getBatchOrders();
+        return $batchOrders->count() > 1;
+    }
+
+
+
+    /**
+     * Lấy ID nhóm đơn ghép dựa trên tài xế và thời gian
+     */
+    public function getBatchGroupId(): string
+    {
+        return 'BATCH_' . $this->driver_id . '_' . $this->updated_at->format('YmdH');
     }
 
     /**
-     * Get the next order in the batch
+     * Lấy tất cả đơn hàng trong cùng nhóm ghép
      */
-    public function nextBatchOrder()
+    public function getBatchOrders()
     {
-        return $this->where('batch_id', $this->batch_id)
-                   ->where('batch_order', '>', $this->batch_order)
-                   ->orderBy('batch_order')
-                   ->first();
-    }
+        if (!$this->driver_id) {
+            return collect([$this]);
+        }
 
-    /**
-     * Get the previous order in the batch
-     */
-    public function previousBatchOrder()
-    {
-        return $this->where('batch_id', $this->batch_id)
-                   ->where('batch_order', '<', $this->batch_order)
-                   ->orderBy('batch_order', 'desc')
-                   ->first();
-    }
-
-    /**
-     * Check if this is the first order in the batch
-     */
-    public function isFirstInBatch(): bool
-    {
-        if (!$this->isPartOfBatch()) return false;
+        $batchableOrders = $this->getBatchableOrders();
         
-        $firstOrder = $this->where('batch_id', $this->batch_id)
-                          ->orderBy('batch_order')
-                          ->first();
+        // Chỉ thêm đơn hàng hiện tại nếu nó chưa được giao
+        if (in_array($this->status, ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
+            $batchableOrders->prepend($this);
+        }
         
-        return $firstOrder && $firstOrder->id === $this->id;
-    }
-
-    /**
-     * Check if this is the last order in the batch
-     */
-    public function isLastInBatch(): bool
-    {
-        if (!$this->isPartOfBatch()) return false;
-        
-        $lastOrder = $this->where('batch_id', $this->batch_id)
-                         ->orderBy('batch_order', 'desc')
-                         ->first();
-        
-        return $lastOrder && $lastOrder->id === $this->id;
+        return $batchableOrders->sortBy('id');
     }
 }
