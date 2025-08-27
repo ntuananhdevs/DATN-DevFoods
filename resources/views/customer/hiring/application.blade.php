@@ -791,7 +791,6 @@ function loadDistricts(provinceCode) {
             console.error('Error loading districts:', error);
             districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
         });}
-}
 
 // Modal functions
 function showTermsModal() {
