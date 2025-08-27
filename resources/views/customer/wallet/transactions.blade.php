@@ -16,16 +16,22 @@
         border-left-color: #f97316;
     }
     
-    .filter-tab {
-        transition: all 0.3s eazse;
+    .filter-tab, .status-tab {
+        transition: all 0.3s ease;
         cursor: pointer;
     }
     
-    .filter-tab.active {
+    .filter-tab.active, .status-tab.active {
         background-color: #f97316;
         color: white;
+        border-color: #f97316;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    
+    .quick-date:hover {
+        background-color: #fff7ed;
+        border-color: #f97316;
     }
 </style>
 
@@ -80,22 +86,115 @@
         </div>
     </div>
 
-    <!-- Filters -->
+    <!-- Advanced Filters -->
     <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <div class="flex flex-wrap gap-4 items-center">
-            <div class="flex space-x-2">
-                <button class="filter-tab px-4 py-2 rounded-lg border active" data-type="">Tất Cả</button>
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-type="deposit">Nạp Tiền</button>
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-type="withdraw">Rút Tiền</button>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-filter mr-2 text-orange-500"></i>
+                Bộ Lọc Giao Dịch
+            </h3>
+            <button id="reset-filters" class="text-sm text-gray-500 hover:text-orange-500 transition duration-300">
+                <i class="fas fa-undo mr-1"></i>
+                Đặt Lại
+            </button>
+        </div>
+        
+        <form id="filter-form" class="space-y-4">
+            <!-- Type Filters -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Loại Giao Dịch</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="filter-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-orange-300 transition duration-300 active" data-type="">
+                        <i class="fas fa-list mr-2"></i>Tất Cả
+                    </button>
+                    <button type="button" class="filter-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-green-300 transition duration-300" data-type="deposit">
+                        <i class="fas fa-plus-circle mr-2 text-green-500"></i>Nạp Tiền
+                    </button>
+                    <button type="button" class="filter-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-red-300 transition duration-300" data-type="withdraw">
+                        <i class="fas fa-minus-circle mr-2 text-red-500"></i>Rút Tiền
+                    </button>
+                    <button type="button" class="filter-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-blue-300 transition duration-300" data-type="payment">
+                        <i class="fas fa-shopping-cart mr-2 text-blue-500"></i>Thanh Toán
+                    </button>
+                    <button type="button" class="filter-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-purple-300 transition duration-300" data-type="refund">
+                        <i class="fas fa-undo mr-2 text-purple-500"></i>Hoàn Tiền
+                    </button>
+                </div>
             </div>
             
-            <div class="flex space-x-2">
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-status="">Tất Cả Trạng Thái</button>
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-status="completed">Hoàn Thành</button>
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-status="pending">Đang Xử Lý</button>
-                <button class="filter-tab px-4 py-2 rounded-lg border" data-status="failed">Thất Bại</button>
+            <!-- Status Filters -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Trạng Thái</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-orange-300 transition duration-300 active" data-status="">
+                        <i class="fas fa-list mr-2"></i>Tất Cả
+                        @if(isset($stats['total_transactions']))
+                            <span class="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{{ $stats['total_transactions'] }}</span>
+                        @endif
+                    </button>
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-green-300 transition duration-300" data-status="completed">
+                        <i class="fas fa-check-circle mr-2 text-green-500"></i>Hoàn Thành
+                        <span class="ml-1 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">{{ ($stats['total_deposits'] ?? 0) + ($stats['total_withdrawals'] ?? 0) }}</span>
+                    </button>
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-yellow-300 transition duration-300" data-status="pending">
+                        <i class="fas fa-clock mr-2 text-yellow-500"></i>Đang Xử Lý
+                        @if(isset($stats['pending_count']) && $stats['pending_count'] > 0)
+                            <span class="ml-1 text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">{{ $stats['pending_count'] }}</span>
+                        @endif
+                    </button>
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-red-300 transition duration-300" data-status="failed">
+                        <i class="fas fa-times-circle mr-2 text-red-500"></i>Thất Bại
+                        @if(isset($stats['failed_count']) && $stats['failed_count'] > 0)
+                            <span class="ml-1 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">{{ $stats['failed_count'] }}</span>
+                        @endif
+                    </button>
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-gray-400 transition duration-300" data-status="cancelled">
+                        <i class="fas fa-ban mr-2 text-gray-500"></i>Đã Hủy
+                    </button>
+                    <button type="button" class="status-tab px-4 py-2 rounded-lg border-2 border-gray-200 bg-white hover:border-gray-600 transition duration-300" data-status="expired">
+                        <i class="fas fa-hourglass-end mr-2 text-gray-600"></i>Hết Hạn
+                    </button>
+                </div>
             </div>
-        </div>
+            
+            <!-- Date and Amount Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Khoảng Thời Gian</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="date_from" name="date_from" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Từ ngày">
+                        <input type="date" id="date_to" name="date_to" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Đến ngày">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Khoảng Số Tiền (VND)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="amount_from" name="amount_from" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Từ">
+                        <input type="number" id="amount_to" name="amount_to" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Đến">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Date Filters -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Lọc Nhanh</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" class="quick-date px-3 py-1 text-sm rounded-lg border border-gray-300 hover:border-orange-300 hover:bg-orange-50 transition duration-300" data-days="1">Hôm Nay</button>
+                    <button type="button" class="quick-date px-3 py-1 text-sm rounded-lg border border-gray-300 hover:border-orange-300 hover:bg-orange-50 transition duration-300" data-days="7">7 Ngày</button>
+                    <button type="button" class="quick-date px-3 py-1 text-sm rounded-lg border border-gray-300 hover:border-orange-300 hover:bg-orange-50 transition duration-300" data-days="30">30 Ngày</button>
+                    <button type="button" class="quick-date px-3 py-1 text-sm rounded-lg border border-gray-300 hover:border-orange-300 hover:bg-orange-50 transition duration-300" data-days="90">3 Tháng</button>
+                </div>
+            </div>
+            
+            <!-- Apply Filters Button -->
+            <div class="flex justify-end">
+                <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition duration-300">
+                    <i class="fas fa-search mr-2"></i>
+                    Áp Dụng Bộ Lọc
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Transactions List -->
@@ -148,17 +247,50 @@
                         
                         <!-- Amount and Status -->
                         <div class="text-right">
-                            <p class="text-lg font-bold {{ $transaction->type == 'deposit' ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $transaction->type == 'deposit' ? '+' : '-' }}{{ $transaction->formatted_amount }}
-                            </p>
-                            <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full 
-                                {{ $transaction->status == 'completed' ? 'bg-green-100 text-green-800' : 
-                                   ($transaction->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                   ($transaction->status == 'failed' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')) }}">
-                                <i class="fas {{ $transaction->status == 'completed' ? 'fa-check' : 
-                                               ($transaction->status == 'pending' ? 'fa-clock' : 'fa-times') }} mr-1"></i>
-                                {{ $transaction->status_text }}
-                            </span>
+                            <div class="mb-2">
+                                <p class="text-lg font-bold {{ $transaction->type == 'deposit' ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $transaction->type == 'deposit' ? '+' : '-' }}{{ $transaction->formatted_amount }}
+                                </p>
+                                
+                                @if($transaction->type == 'withdraw' && isset($transaction->metadata['processing_fee']))
+                                    <p class="text-xs text-gray-500">
+                                        Phí xử lý: {{ number_format($transaction->metadata['processing_fee']) }} VND
+                                    </p>
+                                    <p class="text-xs text-gray-600 font-medium">
+                                        Thực nhận: {{ number_format($transaction->metadata['net_amount'] ?? $transaction->amount) }} VND
+                                    </p>
+                                @endif
+                            </div>
+                            
+                            <div class="space-y-1">
+                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full 
+                                    {{ $transaction->status == 'completed' ? 'bg-green-100 text-green-800' : 
+                                       ($transaction->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                                       ($transaction->status == 'failed' ? 'bg-red-100 text-red-800' : 
+                                       ($transaction->status == 'cancelled' ? 'bg-gray-100 text-gray-800' :
+                                       ($transaction->status == 'expired' ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-800')))) }}">
+                                    <i class="fas {{ $transaction->status == 'completed' ? 'fa-check' : 
+                                                   ($transaction->status == 'pending' ? 'fa-clock' : 
+                                                   ($transaction->status == 'failed' ? 'fa-times' : 
+                                                   ($transaction->status == 'cancelled' ? 'fa-ban' : 
+                                                   ($transaction->status == 'expired' ? 'fa-hourglass-end' : 'fa-info')))) }} mr-1"></i>
+                                    {{ $transaction->status_text }}
+                                </span>
+                                
+                                @if($transaction->type == 'withdraw' && $transaction->status == 'pending')
+                                    <div class="text-xs text-yellow-600 mt-1">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Đang chờ admin xử lý
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->status == 'expired' && $transaction->type == 'deposit')
+                                    <div class="text-xs text-gray-600 mt-1">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Đã hết hạn thanh toán
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                     
@@ -199,47 +331,173 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Filter functionality
+    const filterForm = document.getElementById('filter-form');
+    const resetFiltersBtn = document.getElementById('reset-filters');
     const filterTabs = document.querySelectorAll('.filter-tab');
-    const transactionCards = document.querySelectorAll('.transaction-card');
+    const statusTabs = document.querySelectorAll('.status-tab');
+    const quickDateBtns = document.querySelectorAll('.quick-date');
     
-    let currentTypeFilter = '';
-    let currentStatusFilter = '';
+    let currentFilters = {
+        type: '',
+        status: '',
+        date_from: '',
+        date_to: '',
+        amount_from: '',
+        amount_to: ''
+    };
     
+    // Type filter tabs
     filterTabs.forEach(tab => {
         tab.addEventListener('click', function() {
-            // Remove active class from siblings
-            if (this.dataset.type !== undefined) {
-                // Type filter
-                document.querySelectorAll('[data-type]').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                currentTypeFilter = this.dataset.type;
-            } else if (this.dataset.status !== undefined) {
-                // Status filter
-                document.querySelectorAll('[data-status]').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                currentStatusFilter = this.dataset.status;
-            }
-            
-            // Apply filters
-            filterTransactions();
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            this.classList.add('border-orange-500', 'bg-orange-50', 'text-orange-600');
+            currentFilters.type = this.dataset.type;
+            applyFilters();
         });
     });
     
-    function filterTransactions() {
-        transactionCards.forEach(card => {
-            const cardType = card.dataset.type;
-            const cardStatus = card.dataset.status;
+    // Status filter tabs
+    statusTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            statusTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            this.classList.add('border-orange-500', 'bg-orange-50', 'text-orange-600');
+            currentFilters.status = this.dataset.status;
+            applyFilters();
+        });
+    });
+    
+    // Quick date filters
+    quickDateBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const days = parseInt(this.dataset.days);
+            const today = new Date();
+            const fromDate = new Date(today);
             
-            const typeMatch = !currentTypeFilter || cardType === currentTypeFilter;
-            const statusMatch = !currentStatusFilter || cardStatus === currentStatusFilter;
-            
-            if (typeMatch && statusMatch) {
-                card.style.display = 'block';
+            if (days === 1) {
+                fromDate.setDate(today.getDate());
             } else {
-                card.style.display = 'none';
+                fromDate.setDate(today.getDate() - days + 1);
+            }
+            
+            document.getElementById('date_from').value = fromDate.toISOString().split('T')[0];
+            document.getElementById('date_to').value = today.toISOString().split('T')[0];
+            
+            // Highlight selected button
+            quickDateBtns.forEach(b => {
+                b.classList.remove('border-orange-300', 'bg-orange-50');
+                b.classList.add('border-gray-300');
+            });
+            this.classList.remove('border-gray-300');
+            this.classList.add('border-orange-300', 'bg-orange-50');
+        });
+    });
+    
+    // Form submission
+    filterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form data
+        const formData = new FormData(this);
+        const params = new URLSearchParams();
+        
+        // Add current filters
+        if (currentFilters.type) params.append('type', currentFilters.type);
+        if (currentFilters.status) params.append('status', currentFilters.status);
+        
+        // Add form fields
+        for (let [key, value] of formData.entries()) {
+            if (value) {
+                params.append(key, value);
+            }
+        }
+        
+        // Redirect with filters
+        window.location.href = '{{ route("customer.wallet.transactions") }}?' + params.toString();
+    });
+    
+    // Reset filters
+    resetFiltersBtn.addEventListener('click', function() {
+        // Reset form
+        filterForm.reset();
+        
+        // Reset tabs
+        filterTabs.forEach(tab => {
+            tab.classList.remove('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+        });
+        statusTabs.forEach(tab => {
+            tab.classList.remove('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+        });
+        
+        // Reset first tabs as active
+        if (filterTabs.length > 0) {
+            filterTabs[0].classList.add('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+        }
+        if (statusTabs.length > 0) {
+            statusTabs[0].classList.add('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+        }
+        
+        // Reset quick date buttons
+        quickDateBtns.forEach(b => {
+            b.classList.remove('border-orange-300', 'bg-orange-50');
+            b.classList.add('border-gray-300');
+        });
+        
+        // Reset filters
+        currentFilters = {
+            type: '',
+            status: '',
+            date_from: '',
+            date_to: '',
+            amount_from: '',
+            amount_to: ''
+        };
+        
+        // Redirect to clean page
+        window.location.href = '{{ route("customer.wallet.transactions") }}';
+    });
+    
+    function applyFilters() {
+        // This function can be used for real-time filtering if needed
+        // For now, we'll use form submission for server-side filtering
+    }
+    
+    // Initialize filters from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Set active states based on URL parameters
+    const typeParam = urlParams.get('type');
+    const statusParam = urlParams.get('status');
+    
+    if (typeParam) {
+        filterTabs.forEach(tab => {
+            if (tab.dataset.type === typeParam) {
+                tab.classList.add('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+                currentFilters.type = typeParam;
             }
         });
     }
+    
+    if (statusParam) {
+        statusTabs.forEach(tab => {
+            if (tab.dataset.status === statusParam) {
+                tab.classList.add('active', 'border-orange-500', 'bg-orange-50', 'text-orange-600');
+                currentFilters.status = statusParam;
+            }
+        });
+    }
+    
+    // Set form values from URL parameters
+    ['date_from', 'date_to', 'amount_from', 'amount_to'].forEach(field => {
+        const value = urlParams.get(field);
+        if (value) {
+            const input = document.getElementById(field);
+            if (input) {
+                input.value = value;
+            }
+        }
+    });
 });
 </script>
 </x-customer-container>

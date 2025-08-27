@@ -9,10 +9,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Notifications\WithdrawalRequestNotification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Exception;
 
 class WalletController extends Controller
 {
+
     /**
      * Hiển thị trang nạp tiền
      */
@@ -144,7 +148,7 @@ class WalletController extends Controller
                 $user->decrement('balance', $amount);
 
                 // Tạo giao dịch rút tiền
-                WalletTransaction::create([
+                $transaction = WalletTransaction::create([
                     'user_id' => $user->id,
                     'type' => 'withdraw',
                     'amount' => $amount,
@@ -157,6 +161,11 @@ class WalletController extends Controller
                         'account_holder' => $request->account_holder
                     ])
                 ]);
+
+                // Gửi notification cho admin nếu amount lớn
+                if ($amount >= 1000000) { // 1M VND
+                    $this->notifyAdminWithdrawal($transaction);
+                }
 
                 DB::commit();
 
@@ -190,27 +199,60 @@ class WalletController extends Controller
         // Tự động cập nhật expired transactions trước khi hiển thị
         $this->autoExpireTransactions();
         
-        $transactions = WalletTransaction::where('user_id', $user->id)
-            ->when($request->type, function($query) use ($request) {
-                return $query->where('type', $request->type);
-            })
-            ->when($request->status, function($query) use ($request) {
-                return $query->where('status', $request->status);
-            })
-            ->latest()
-            ->paginate($perPage);
+        $query = WalletTransaction::where('user_id', $user->id);
+        
+        // Filter by type
+        if ($request->type && in_array($request->type, ['deposit', 'withdraw', 'payment', 'refund'])) {
+            $query->where('type', $request->type);
+        }
+        
+        // Filter by status
+        if ($request->status && in_array($request->status, ['pending', 'completed', 'failed', 'cancelled', 'expired'])) {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter by date range
+        if ($request->date_from) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->date_to) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        // Filter by amount range
+        if ($request->amount_from) {
+            $query->where('amount', '>=', $request->amount_from);
+        }
+        
+        if ($request->amount_to) {
+            $query->where('amount', '<=', $request->amount_to);
+        }
+        
+        $transactions = $query->latest()->paginate($perPage);
 
         // Model accessors sẽ tự động tính toán các thuộc tính cần thiết
-        // Chỉ cần auto-expire transactions nếu cần
         $transactions->getCollection()->each(function ($transaction) {
             $transaction->autoExpireIfNeeded();
         });
 
+        // Get statistics for the current user
+        $stats = [
+            'total_transactions' => WalletTransaction::where('user_id', $user->id)->count(),
+            'total_deposits' => WalletTransaction::where('user_id', $user->id)->deposits()->where('status', 'completed')->count(),
+            'total_withdrawals' => WalletTransaction::where('user_id', $user->id)->withdrawals()->where('status', 'completed')->count(),
+            'pending_count' => WalletTransaction::where('user_id', $user->id)->where('status', 'pending')->count(),
+            'failed_count' => WalletTransaction::where('user_id', $user->id)->where('status', 'failed')->count(),
+        ];
+
         if ($request->ajax()) {
-            return response()->json($transactions);
+            return response()->json([
+                'transactions' => $transactions,
+                'stats' => $stats
+            ]);
         }
 
-        return view('customer.wallet.transactions', compact('transactions'));
+        return view('customer.wallet.transactions', compact('transactions', 'stats'));
     }
 
     /**
@@ -869,6 +911,38 @@ class WalletController extends Controller
 
         return $statusTexts[$status] ?? 'Không Xác Định';
     }
+
+
+
+    /**
+     * Notify admin about withdrawal request
+     */
+    private function notifyAdminWithdrawal($transaction)
+    {
+        try {
+            // Log the withdrawal request
+            \Log::info('Admin notification: Large withdrawal request', [
+                'transaction_id' => $transaction->id,
+                'user_id' => $transaction->user_id,
+                'amount' => $transaction->amount,
+            ]);
+            
+            // Send email notification to admin (simplified)
+            $adminEmail = env('ADMIN_EMAIL', 'admin@example.com');
+            if ($adminEmail) {
+                Notification::route('mail', $adminEmail)
+                    ->notify(new WithdrawalRequestNotification($transaction));
+            }
+            
+        } catch (Exception $e) {
+            \Log::error('Failed to notify admin about withdrawal', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
     /**
      * Lấy IP client

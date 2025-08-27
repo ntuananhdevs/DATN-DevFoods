@@ -166,4 +166,123 @@ class WalletTransaction extends Model
         }
         return false;
     }
+
+    /**
+     * Scope for withdrawal transactions
+     */
+    public function scopeWithdrawals($query)
+    {
+        return $query->where('type', 'withdraw');
+    }
+
+    /**
+     * Scope for deposit transactions
+     */
+    public function scopeDeposits($query)
+    {
+        return $query->where('type', 'deposit');
+    }
+
+    /**
+     * Scope for pending withdrawals
+     */
+    public function scopePendingWithdrawals($query)
+    {
+        return $query->where('type', 'withdraw')->where('status', 'pending');
+    }
+
+    /**
+     * Scope for completed withdrawals
+     */
+    public function scopeCompletedWithdrawals($query)
+    {
+        return $query->where('type', 'withdraw')->where('status', 'completed');
+    }
+
+    /**
+     * Get bank information from metadata
+     */
+    public function getBankInfoAttribute()
+    {
+        if ($this->type !== 'withdraw' || !$this->metadata) {
+            return null;
+        }
+
+        return [
+            'bank_name' => $this->metadata['bank_name'] ?? null,
+            'bank_account' => $this->metadata['bank_account'] ?? null,
+            'account_holder' => $this->metadata['account_holder'] ?? null,
+        ];
+    }
+
+    /**
+     * Check if withdrawal can be processed automatically
+     */
+    public function canAutoProcess()
+    {
+        return $this->type === 'withdraw' 
+            && $this->status === 'pending'
+            && $this->amount <= config('wallet.auto_process_limit', 1000000); // 1M VND
+    }
+
+    /**
+     * Check if withdrawal requires admin approval
+     */
+    public function requiresAdminApproval()
+    {
+        return $this->type === 'withdraw' 
+            && $this->status === 'pending'
+            && $this->amount > config('wallet.auto_process_limit', 1000000);
+    }
+
+    /**
+     * Validate bank account information
+     */
+    public function validateBankInfo()
+    {
+        if ($this->type !== 'withdraw') {
+            return true;
+        }
+
+        $bankInfo = $this->bank_info;
+        
+        if (!$bankInfo || !$bankInfo['bank_name'] || !$bankInfo['bank_account'] || !$bankInfo['account_holder']) {
+            return false;
+        }
+
+        // Validate bank account number format
+        $bankAccount = preg_replace('/\D/', '', $bankInfo['bank_account']);
+        if (strlen($bankAccount) < 8 || strlen($bankAccount) > 20) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get withdrawal processing fee
+     */
+    public function getProcessingFeeAttribute()
+    {
+        if ($this->type !== 'withdraw') {
+            return 0;
+        }
+
+        // Fee structure based on amount
+        if ($this->amount <= 500000) {
+            return 5000; // 5K VND for amounts <= 500K
+        } elseif ($this->amount <= 2000000) {
+            return 10000; // 10K VND for amounts <= 2M
+        } else {
+            return 15000; // 15K VND for amounts > 2M
+        }
+    }
+
+    /**
+     * Get net amount after processing fee
+     */
+    public function getNetAmountAttribute()
+    {
+        return $this->amount - $this->processing_fee;
+    }
 }
