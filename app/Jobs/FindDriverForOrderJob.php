@@ -26,12 +26,12 @@ class FindDriverForOrderJob implements ShouldQueue
     public $timeout = 120; // Timeout cho mỗi job
     public $tries = 3; // Số lần thử lại nếu job fail
     public $backoff = [10, 30, 60]; // Delay giữa các lần retry
-    private $maxAttempts = 60; // Tăng số lần thử để tìm tài xế nhanh hơn
-    private $delaySeconds = 3; // Giảm delay để tìm nhanh hơn
+    private $maxAttempts = 60; // Giảm số lần thử để tăng tốc độ
+    private $delaySeconds = 1; // Giảm delay để tìm nhanh hơn
     // Tìm tài xế trong bán kính, tăng dần theo số lần thử
-    private $searchRadiusStart = 2; // km - bắt đầu với bán kính nhỏ hơn
-    private $searchRadiusStep = 1; // km - tăng từ từ
-    private $searchRadiusMax = 20; // km - mở rộng phạm vi tìm kiếm
+    private $searchRadiusStart = 5; // km - bắt đầu với bán kính lớn hơn để tìm nhanh
+    private $searchRadiusStep = 2; // km - tăng nhanh hơn
+    private $searchRadiusMax = 30; // km - mở rộng phạm vi tìm kiếm
 
     /**
      * Create a new job instance.
@@ -140,24 +140,25 @@ class FindDriverForOrderJob implements ShouldQueue
             $excludeDriversStr = !empty($excludeDriverIds) ? implode(',', $excludeDriverIds) : '0';
         
             $drivers = DB::select("
-                SELECT d.*, dl.latitude, dl.longitude,
+                SELECT /*+ USE_INDEX(d, idx_drivers_status_available) USE_INDEX(dl, idx_driver_locations_driver_id) */ 
+                       d.*, dl.latitude, dl.longitude,
                        (6371 * acos(cos(radians(?)) * cos(radians(dl.latitude)) * 
                        cos(radians(dl.longitude) - radians(?)) + 
                        sin(radians(?)) * sin(radians(dl.latitude)))) AS distance,
                        COALESCE(order_counts.current_orders, 0) as current_orders,
                        COALESCE(delivering_orders.delivering_count, 0) as delivering_orders
-                FROM drivers d
-                INNER JOIN driver_locations dl ON d.id = dl.driver_id
+                FROM drivers d FORCE INDEX (PRIMARY)
+                INNER JOIN driver_locations dl FORCE INDEX (PRIMARY) ON d.id = dl.driver_id
                 LEFT JOIN (
                     SELECT driver_id, COUNT(*) as current_orders
-                    FROM orders 
+                    FROM orders USE INDEX (idx_orders_driver_status)
                     WHERE status IN ('awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up')
                     GROUP BY driver_id
                 ) order_counts ON d.id = order_counts.driver_id
                 LEFT JOIN (
                     SELECT driver_id, COUNT(*) as delivering_count
-                    FROM orders 
-                    WHERE status IN ('in_transit')
+                    FROM orders USE INDEX (idx_orders_driver_status)
+                    WHERE status = 'in_transit'
                     GROUP BY driver_id
                 ) delivering_orders ON d.id = delivering_orders.driver_id
                 WHERE d.status = 'active' 
@@ -166,59 +167,115 @@ class FindDriverForOrderJob implements ShouldQueue
                     AND COALESCE(delivering_orders.delivering_count, 0) = 0
                     AND d.id NOT IN ({$excludeDriversStr})
                 HAVING distance <= ?
-                ORDER BY distance ASC, RAND()
-                LIMIT 15
+                ORDER BY distance ASC, current_orders ASC
+                LIMIT 25
             ", [$lat, $lng, $lat, $maxOrders, $searchRadius]);
             
-            // Lọc tài xế phù hợp dựa trên khu vực đơn hàng hiện tại
+            // Lọc và tính điểm ưu tiên cho tài xế
             $suitableDrivers = [];
             $maxDistanceBetweenOrders = 5; // km - khoảng cách tối đa giữa các đơn hàng của cùng tài xế
             
-            Log::info('Bắt đầu lọc tài xế theo khu vực:', [
-                'total_drivers_found' => count($drivers),
-                'max_distance_between_orders' => $maxDistanceBetweenOrders
-            ]);
-            
             foreach ($drivers as $driver) {
+                $isAreaSuitable = false;
+                
                 if ($driver->current_orders == 0) {
                     // Tài xế chưa có đơn nào, có thể gán
-                    $suitableDrivers[] = $driver;
-                    Log::info('Tài xế không có đơn hiện tại:', ['driver_id' => $driver->id]);
+                    $isAreaSuitable = true;
                 } else {
                     // Kiểm tra khoảng cách với các đơn hàng hiện tại của tài xế
-                    $isInSameArea = $this->checkDriverOrdersInSameArea($driver->id, $lat, $lng, $maxDistanceBetweenOrders);
-                    if ($isInSameArea) {
-                        $suitableDrivers[] = $driver;
-                        Log::info('Tài xế phù hợp với khu vực:', [
-                            'driver_id' => $driver->id,
-                            'current_orders' => $driver->current_orders
-                        ]);
-                    } else {
-                        Log::info('Tài xế không phù hợp với khu vực:', [
-                            'driver_id' => $driver->id,
-                            'current_orders' => $driver->current_orders
-                        ]);
-                    }
+                    $isAreaSuitable = $this->checkDriverOrdersInSameArea($driver->id, $lat, $lng, $maxDistanceBetweenOrders);
+                }
+                
+                if ($isAreaSuitable) {
+                    // Tính điểm ưu tiên: khoảng cách gần hơn và ít đơn hơn = điểm cao hơn
+                    $distanceScore = max(0, 20 - $driver->distance); // Điểm khoảng cách (0-20)
+                    $orderScore = max(0, 10 - $driver->current_orders); // Điểm số đơn (0-10)
+                    $driver->priority_score = $distanceScore + $orderScore;
+                    
+                    $suitableDrivers[] = $driver;
                 }
             }
             
-            Log::info('Kết quả lọc tài xế:', [
-                'suitable_drivers_count' => count($suitableDrivers),
-                'original_drivers_count' => count($drivers)
-            ]);
+            // Sắp xếp theo điểm ưu tiên (cao nhất trước)
+            usort($suitableDrivers, function($a, $b) {
+                if ($a->priority_score == $b->priority_score) {
+                    return $a->distance <=> $b->distance; // Nếu điểm bằng nhau, ưu tiên gần hơn
+                }
+                return $b->priority_score <=> $a->priority_score; // Điểm cao hơn trước
+            });
+            
+            // Log chỉ khi có vấn đề hoặc thành công
+            if (empty($suitableDrivers)) {
+                Log::info('Không tìm được tài xế phù hợp', [
+                    'order_id' => $this->order->id,
+                    'original_drivers_count' => count($drivers)
+                ]);
+            }
             
             $drivers = $suitableDrivers;
             
             // Nếu không tìm được tài xế phù hợp sau khi lọc theo khu vực
             if (empty($drivers)) {
-                Log::warning('Không tìm được tài xế phù hợp trong khu vực lân cận', [
+                Log::warning('Không tìm được tài xế phù hợp trong khu vực lân cận, áp dụng fallback', [
                     'order_id' => $this->order->id,
                     'pickup_coordinates' => [$lat, $lng],
-                    'max_distance_between_orders' => $maxDistanceBetweenOrders
+                    'max_distance_between_orders' => $maxDistanceBetweenOrders,
+                    'attempt' => $attempt
                 ]);
                 
-                // Có thể thử lại với bán kính tìm kiếm lớn hơn hoặc bỏ qua ràng buộc khu vực
-                // Ở đây ta sẽ tiếp tục với danh sách rỗng để job thất bại và retry
+                // Fallback: Nới rộng điều kiện tìm kiếm
+                if ($attempt >= 5) {
+                    // Sau 5 lần thử, bỏ qua ràng buộc khu vực và tăng số đơn tối đa
+                    $fallbackMaxOrders = min($maxOrders + 5, 25); // Tăng tối đa 5 đơn
+                    $fallbackRadius = min($searchRadius + 5, 30); // Tăng bán kính thêm 5km
+                    
+                    Log::info('Áp dụng fallback: nới rộng điều kiện', [
+                        'fallback_max_orders' => $fallbackMaxOrders,
+                        'fallback_radius' => $fallbackRadius,
+                        'original_max_orders' => $maxOrders,
+                        'original_radius' => $searchRadius
+                    ]);
+                    
+                    // Tìm lại driver với điều kiện nới rộng
+                    $fallbackDrivers = DB::select("
+                        SELECT /*+ USE_INDEX(d, idx_drivers_status_available) USE_INDEX(dl, idx_driver_locations_driver_id) */ 
+                               d.*, dl.latitude, dl.longitude,
+                               (6371 * acos(cos(radians(?)) * cos(radians(dl.latitude)) * 
+                               cos(radians(dl.longitude) - radians(?)) + 
+                               sin(radians(?)) * sin(radians(dl.latitude)))) AS distance,
+                               COALESCE(order_counts.current_orders, 0) as current_orders,
+                               COALESCE(delivering_orders.delivering_count, 0) as delivering_orders
+                        FROM drivers d FORCE INDEX (PRIMARY)
+                        INNER JOIN driver_locations dl FORCE INDEX (PRIMARY) ON d.id = dl.driver_id
+                        LEFT JOIN (
+                            SELECT driver_id, COUNT(*) as current_orders
+                            FROM orders USE INDEX (idx_orders_driver_status)
+                            WHERE status IN ('awaiting_confirmation', 'confirmed', 'awaiting_driver', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up')
+                            GROUP BY driver_id
+                        ) order_counts ON d.id = order_counts.driver_id
+                        LEFT JOIN (
+                            SELECT driver_id, COUNT(*) as delivering_count
+                            FROM orders USE INDEX (idx_orders_driver_status)
+                            WHERE status = 'in_transit'
+                            GROUP BY driver_id
+                        ) delivering_orders ON d.id = delivering_orders.driver_id
+                        WHERE d.status = 'active' 
+                            AND d.is_available = 1
+                            AND COALESCE(order_counts.current_orders, 0) < ?
+                            AND COALESCE(delivering_orders.delivering_count, 0) = 0
+                            AND d.id NOT IN ({$excludeDriversStr})
+                        HAVING distance <= ?
+                        ORDER BY distance ASC, current_orders ASC
+                        LIMIT 30
+                    ", [$lat, $lng, $lat, $fallbackMaxOrders, $fallbackRadius]);
+                    
+                    // Sử dụng tất cả driver tìm được (bỏ qua ràng buộc khu vực)
+                    $drivers = $fallbackDrivers;
+                    
+                    Log::info('Kết quả fallback tìm kiếm:', [
+                        'fallback_drivers_found' => count($drivers)
+                    ]);
+                }
             }
         
             Log::info('Tìm được tài xế phù hợp (không đang giao hàng):', [
