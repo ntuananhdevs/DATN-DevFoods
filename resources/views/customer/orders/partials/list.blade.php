@@ -232,14 +232,35 @@
                 </div>
 
                 {{-- Tổng tiền + hành động --}}
-                <div class="flex justify-between items-center border-t pt-3 border-gray-300">
-                    <div class="text-md font-medium">
-                        <span class="text-gray-700">Tổng đơn hàng (x{{ $order->orderItems->sum('quantity') }} sản
-                            phẩm) :</span>
-                        <span class="text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }} đ</span>
+                <div class="border-t pt-3 border-gray-300">
+                    {{-- Chi tiết tổng tiền --}}
+                    <div class="space-y-2 mb-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Tạm tính (x{{ $order->orderItems->sum('quantity') }} sản phẩm)</span>
+                            <span class="font-medium text-gray-900">{{ number_format($order->subtotal, 0, ',', '.') }}đ</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-600">Phí giao hàng</span>
+                            <span class="font-medium text-gray-900">{{ number_format($order->delivery_fee, 0, ',', '.') }}đ</span>
+                        </div>
+                        @if ($order->discount_amount > 0 && $order->discountCode)
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-600 flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                    Giảm giá ({{ $order->discountCode->code }})
+                                </span>
+                                <span class="font-medium text-green-600">-{{ number_format($order->discount_amount, 0, ',', '.') }}đ</span>
+                            </div>
+                        @endif
+                        <div class="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <span class="text-md font-bold text-gray-700">Tổng đơn hàng:</span>
+                            <span class="text-lg font-bold text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex justify-end gap-2">
                         <a href="{{ route('customer.orders.show', $order) }}"
                             class="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300">
                             Chi tiết
