@@ -20,11 +20,20 @@ class WalletController extends Controller
     {
         $user = Auth::user();
         
+        // Tự động cập nhật expired transactions
+        $this->autoExpireTransactions();
+        
         // Lấy lịch sử giao dịch gần nhất (10 giao dịch)
         $transactions = WalletTransaction::where('user_id', $user->id)
             ->latest()
             ->take(10)
             ->get();
+
+        // Model accessors sẽ tự động tính toán các thuộc tính cần thiết
+        // Chỉ cần auto-expire transactions nếu cần
+        $transactions->each(function ($transaction) {
+            $transaction->autoExpireIfNeeded();
+        });
 
         return view('customer.wallet.index', compact('user', 'transactions'));
     }
@@ -60,7 +69,7 @@ class WalletController extends Controller
             $user = Auth::user();
             $amount = $request->amount;
 
-            // Tạo giao dịch pending
+            // Tạo giao dịch pending với timeout 15 phút
             $transaction = WalletTransaction::create([
                 'user_id' => $user->id,
                 'type' => 'deposit',
@@ -68,7 +77,8 @@ class WalletController extends Controller
                 'payment_method' => 'vnpay',
                 'status' => 'pending',
                 'description' => "Nạp tiền vào ví qua VNPay",
-                'transaction_code' => 'WALLET_' . time() . '_' . $user->id
+                'transaction_code' => 'WALLET_' . time() . '_' . $user->id,
+                'expires_at' => now()->addMinutes(15) // Hết hạn sau 15 phút
             ]);
 
             // Tích hợp VNPay
@@ -177,6 +187,9 @@ class WalletController extends Controller
         $user = Auth::user();
         $perPage = $request->get('per_page', 15);
         
+        // Tự động cập nhật expired transactions trước khi hiển thị
+        $this->autoExpireTransactions();
+        
         $transactions = WalletTransaction::where('user_id', $user->id)
             ->when($request->type, function($query) use ($request) {
                 return $query->where('type', $request->type);
@@ -186,6 +199,12 @@ class WalletController extends Controller
             })
             ->latest()
             ->paginate($perPage);
+
+        // Model accessors sẽ tự động tính toán các thuộc tính cần thiết
+        // Chỉ cần auto-expire transactions nếu cần
+        $transactions->getCollection()->each(function ($transaction) {
+            $transaction->autoExpireIfNeeded();
+        });
 
         if ($request->ajax()) {
             return response()->json($transactions);
@@ -413,6 +432,442 @@ class WalletController extends Controller
         }
 
         return response()->json($returnData);
+    }
+
+    /**
+     * Thanh toán lại giao dịch pending chưa hết hạn
+     */
+    public function retryPayment(Request $request, $transactionId)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = WalletTransaction::where('id', $transactionId)
+                ->where('user_id', $user->id)
+                ->where('type', 'deposit')
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giao dịch hoặc giao dịch đã được xử lý'
+                ], 404);
+            }
+
+            // Kiểm tra xem giao dịch có hết hạn chưa
+            if ($transaction->expires_at && $transaction->expires_at < now()) {
+                $transaction->update(['status' => 'expired']);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Giao dịch đã hết hạn. Vui lòng tạo giao dịch mới.'
+                ], 422);
+            }
+
+            // Tạo lại VNPay payment với transaction hiện tại
+            return $this->createVnpayPayment($transaction);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Tự động đánh dấu expired cho các giao dịch hết hạn
+     */
+    public function expireTransactions()
+    {
+        try {
+            $expiredCount = WalletTransaction::where('status', 'pending')
+                ->where('expires_at', '<', now())
+                ->whereNotNull('expires_at')
+                ->update(['status' => 'expired']);
+
+            $message = $expiredCount > 0 
+                ? "Đã cập nhật {$expiredCount} giao dịch hết hạn" 
+                : "Không có giao dịch hết hạn";
+                
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'expired_count' => $expiredCount
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lấy thông tin giao dịch với thời gian còn lại
+     */
+    public function getTransactionWithCountdown($transactionId)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = WalletTransaction::where('id', $transactionId)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giao dịch'
+                ], 404);
+            }
+
+            // Tính thời gian còn lại
+            $timeRemaining = null;
+            $canRetry = false;
+
+            if ($transaction->status === 'pending' && $transaction->expires_at) {
+                $now = now();
+                if ($transaction->expires_at > $now) {
+                    $timeRemaining = $transaction->expires_at->diffInSeconds($now);
+                    $canRetry = true;
+                } else {
+                    // Tự động cập nhật expired nếu chưa được cập nhật
+                    $transaction->update(['status' => 'expired']);
+                    $transaction->refresh();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'amount' => $transaction->amount,
+                    'formatted_amount' => number_format($transaction->amount, 0, ',', '.') . ' VND',
+                    'status' => $transaction->status,
+                    'status_text' => $this->getStatusText($transaction->status),
+                    'description' => $transaction->description,
+                    'transaction_code' => $transaction->transaction_code,
+                    'created_at' => $transaction->created_at->format('d/m/Y H:i'),
+                    'expires_at' => $transaction->expires_at ? $transaction->expires_at->format('d/m/Y H:i') : null,
+                    'time_remaining_seconds' => $timeRemaining,
+                    'can_retry' => $canRetry
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Tiếp tục thanh toán - Tạo VNPay link mới với cùng transaction
+     */
+    public function continuePayment(Request $request, $transactionId)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = WalletTransaction::where('id', $transactionId)
+                ->where('user_id', $user->id)
+                ->where('type', 'deposit')
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giao dịch hoặc giao dịch đã được xử lý'
+                ], 404);
+            }
+
+            // Kiểm tra xem giao dịch có hết hạn chưa
+            if ($transaction->expires_at && $transaction->expires_at < now()) {
+                $transaction->update(['status' => 'expired']);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Giao dịch đã hết hạn. Vui lòng tạo giao dịch mới.'
+                ], 422);
+            }
+
+            // Gia hạn thêm 15 phút
+            $transaction->update(['expires_at' => now()->addMinutes(15)]);
+
+            // Tạo lại VNPay payment với transaction hiện tại
+            return $this->createVnpayPayment($transaction);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Hủy giao dịch - Chuyển trạng thái thành CANCELLED
+     */
+    public function cancelTransaction(Request $request, $transactionId)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = WalletTransaction::where('id', $transactionId)
+                ->where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giao dịch hoặc giao dịch đã được xử lý'
+                ], 404);
+            }
+
+            // Cập nhật trạng thái thành cancelled
+            $transaction->update([
+                'status' => 'cancelled',
+                'processed_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã hủy giao dịch thành công',
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'status' => 'cancelled',
+                    'status_text' => 'Đã Hủy'
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Kiểm tra trạng thái giao dịch từ VNPay
+     */
+    public function checkTransactionStatus(Request $request, $transactionId)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = WalletTransaction::where('id', $transactionId)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy giao dịch'
+                ], 404);
+            }
+
+            // Nếu giao dịch không phải VNPay hoặc đã hoàn thành/thất bại thì không cần check
+            if ($transaction->payment_method !== 'vnpay' || 
+                in_array($transaction->status, ['completed', 'failed', 'cancelled', 'expired'])) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Trạng thái hiện tại của giao dịch',
+                    'transaction' => [
+                        'id' => $transaction->id,
+                        'status' => $transaction->status,
+                        'status_text' => $this->getStatusText($transaction->status),
+                        'needs_refresh' => false
+                    ]
+                ]);
+            }
+
+            // Gọi API VNPay để kiểm tra trạng thái
+            $vnpayStatus = $this->queryVNPayTransaction($transaction);
+
+            if ($vnpayStatus['success']) {
+                // Cập nhật trạng thái nếu có thay đổi từ VNPay
+                if ($vnpayStatus['transaction_status'] === '00') {
+                    // Giao dịch thành công
+                    DB::beginTransaction();
+                    try {
+                        $transaction->update([
+                            'status' => 'completed',
+                            'processed_at' => now(),
+                            'metadata' => json_encode(array_merge(
+                                json_decode($transaction->metadata ?? '{}', true),
+                                $vnpayStatus['metadata'] ?? []
+                            ))
+                        ]);
+                        
+                        // Cộng tiền vào tài khoản
+                        $transaction->user->increment('balance', $transaction->amount);
+                        
+                        DB::commit();
+                        
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Giao dịch đã được hoàn thành!',
+                            'transaction' => [
+                                'id' => $transaction->id,
+                                'status' => 'completed',
+                                'status_text' => 'Hoàn Thành',
+                                'needs_refresh' => true
+                            ]
+                        ]);
+                    } catch (Exception $e) {
+                        DB::rollBack();
+                        throw $e;
+                    }
+                } elseif (in_array($vnpayStatus['transaction_status'], ['01', '02', '03'])) {
+                    // Giao dịch thất bại
+                    $transaction->update(['status' => 'failed']);
+                    
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Giao dịch đã thất bại',
+                        'transaction' => [
+                            'id' => $transaction->id,
+                            'status' => 'failed',
+                            'status_text' => 'Thất Bại',
+                            'needs_refresh' => true
+                        ]
+                    ]);
+                }
+            }
+
+            // Trạng thái không thay đổi
+            return response()->json([
+                'success' => true,
+                'message' => 'Giao dịch vẫn đang chờ xử lý',
+                'transaction' => [
+                    'id' => $transaction->id,
+                    'status' => $transaction->status,
+                    'status_text' => $this->getStatusText($transaction->status),
+                    'needs_refresh' => false
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi kiểm tra trạng thái: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Query transaction status từ VNPay
+     */
+    private function queryVNPayTransaction($transaction)
+    {
+        try {
+            $vnp_TmnCode = env('VNPAY_TMN_CODE', '');
+            $vnp_HashSecret = env('VNPAY_HASH_SECRET', '');
+            $vnp_Url = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+            
+            $vnp_RequestId = time() . rand(100, 999);
+            $vnp_Version = "2.1.0";
+            $vnp_Command = "querydr";
+            $vnp_TxnRef = $transaction->transaction_code;
+            $vnp_OrderInfo = "Query transaction: " . $vnp_TxnRef;
+            $vnp_TransactionNo = "";
+            $vnp_TransDate = $transaction->created_at->format('YmdHis');
+            $vnp_CreateDate = date('YmdHis');
+            $vnp_IpAddr = $this->getClientIp();
+
+            $data = array(
+                "vnp_RequestId" => $vnp_RequestId,
+                "vnp_Version" => $vnp_Version,
+                "vnp_Command" => $vnp_Command,
+                "vnp_TmnCode" => $vnp_TmnCode,
+                "vnp_TxnRef" => $vnp_TxnRef,
+                "vnp_OrderInfo" => $vnp_OrderInfo,
+                "vnp_TransactionNo" => $vnp_TransactionNo,
+                "vnp_TransDate" => $vnp_TransDate,
+                "vnp_CreateDate" => $vnp_CreateDate,
+                "vnp_IpAddr" => $vnp_IpAddr
+            );
+
+            ksort($data);
+            $hashData = "";
+            $i = 0;
+            foreach ($data as $key => $value) {
+                if ($i == 1) {
+                    $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
+                } else {
+                    $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
+                    $i = 1;
+                }
+            }
+
+            $vnpSecureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+            $data['vnp_SecureHash'] = $vnpSecureHash;
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $vnp_Url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json'
+            ));
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $response) {
+                $result = json_decode($response, true);
+                
+                return [
+                    'success' => true,
+                    'transaction_status' => $result['vnp_TransactionStatus'] ?? null,
+                    'response_code' => $result['vnp_ResponseCode'] ?? null,
+                    'metadata' => [
+                        'vnp_TransactionNo' => $result['vnp_TransactionNo'] ?? null,
+                        'vnp_BankCode' => $result['vnp_BankCode'] ?? null,
+                        'vnp_PayDate' => $result['vnp_PayDate'] ?? null
+                    ]
+                ];
+            }
+
+            return ['success' => false, 'message' => 'Không thể kết nối tới VNPay'];
+
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Tự động đánh dấu expired cho các giao dịch hết hạn (helper method)
+     */
+    private function autoExpireTransactions()
+    {
+        $expiredCount = WalletTransaction::shouldBeExpired()->update(['status' => 'expired']);
+        
+        if ($expiredCount > 0) {
+            \Log::info("Auto-expired {$expiredCount} wallet transactions");
+        }
+        
+        return $expiredCount;
+    }
+    
+
+
+    /**
+     * Lấy text hiển thị cho status
+     */
+    private function getStatusText($status)
+    {
+        $statusTexts = [
+            'pending' => 'Đang Xử Lý',
+            'completed' => 'Hoàn Thành',
+            'failed' => 'Thất Bại',
+            'cancelled' => 'Đã Hủy',
+            'expired' => 'Hết Hạn'
+        ];
+
+        return $statusTexts[$status] ?? 'Không Xác Định';
     }
 
     /**
