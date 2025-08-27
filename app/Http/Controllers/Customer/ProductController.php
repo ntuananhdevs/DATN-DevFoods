@@ -258,6 +258,7 @@ class ProductController extends Controller
                 }
                 // Discount codes
                 $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+                    // Trường hợp áp dụng cho tất cả các mặt hàng
                     if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
                         if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
                             if ($discountCode->min_requirement_type === 'order_amount') {
@@ -268,11 +269,46 @@ class ProductController extends Controller
                         }
                         return true;
                     }
-                    $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
-                        if ($discountProduct->product_id === $product->id) return true;
-                        if ($discountProduct->category_id === $product->category_id) return true;
-                        return false;
-                    });
+                    
+                    $applies = false;
+                    
+                    // Trường hợp áp dụng cho tất cả sản phẩm
+                    if ($discountCode->applicable_items === 'all_products') {
+                        $applies = true;
+                    }
+                    // Trường hợp áp dụng cho tất cả danh mục
+                    elseif ($discountCode->applicable_items === 'all_categories') {
+                        $applies = true;
+                    }
+                    // Trường hợp áp dụng cho tất cả combo - không áp dụng cho sản phẩm thông thường
+                    elseif ($discountCode->applicable_items === 'all_combos') {
+                        $applies = false; // Đây là sản phẩm thông thường, không phải combo
+                    }
+                    // Trường hợp áp dụng cho sản phẩm cụ thể
+                    elseif ($discountCode->applicable_items === 'specific_products') {
+                        $specificProductIds = $discountCode->specificProducts()->pluck('product_id')->filter()->toArray();
+                        if (in_array($product->id, $specificProductIds)) {
+                            $applies = true;
+                        }
+                    }
+                    // Trường hợp áp dụng cho danh mục cụ thể
+                    elseif ($discountCode->applicable_items === 'specific_categories') {
+                        $specificCategoryIds = $discountCode->specificCategories()->pluck('category_id')->filter()->toArray();
+                        if (in_array($product->category_id, $specificCategoryIds)) {
+                            $applies = true;
+                        }
+                    }
+                    // Trường hợp áp dụng cho biến thể cụ thể
+                    elseif ($discountCode->applicable_items === 'specific_variants') {
+                        $specificVariantIds = $discountCode->specificVariants()->pluck('product_variant_id')->filter()->toArray();
+                        if ($product->variants->whereIn('id', $specificVariantIds)->count() > 0) {
+                            $applies = true;
+                        }
+                    }
+                    // Trường hợp áp dụng cho combo cụ thể - không áp dụng cho sản phẩm thông thường
+                    elseif ($discountCode->applicable_items === 'specific_combos') {
+                        $applies = false; // Đây là sản phẩm thông thường, không phải combo
+                    }
                     if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
                         if ($product->min_price < $discountCode->min_requirement_value) return false;
                     }
@@ -303,13 +339,76 @@ class ProductController extends Controller
                     } else {
                         $combo->discount_percent = 0;
                     }
+                    
+                    // Áp dụng mã giảm giá cho combo
+                    $combo->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($combo) {
+                        // Trường hợp áp dụng cho tất cả các mặt hàng
+                        if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                            if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                                if ($discountCode->min_requirement_type === 'order_amount') {
+                                    return true;
+                                } elseif ($discountCode->min_requirement_type === 'product_price') {
+                                    if ($combo->price < $discountCode->min_requirement_value) return false;
+                                }
+                            }
+                            return true;
+                        }
+                        
+                        $applies = false;
+                        
+                        // Trường hợp áp dụng cho tất cả combo
+                        if ($discountCode->applicable_items === 'all_combos') {
+                            $applies = true;
+                        }
+                        // Trường hợp áp dụng cho combo cụ thể
+                        elseif ($discountCode->applicable_items === 'specific_combos') {
+                            $specificComboIds = $discountCode->specificCombos()->pluck('combo_id')->filter()->toArray();
+                            if (in_array($combo->id, $specificComboIds)) {
+                                $applies = true;
+                            }
+                        }
+                        
+                        if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                            if ($combo->price < $discountCode->min_requirement_value) return false;
+                        }
+                        return $applies;
+                    });
                 }
             }
         }
 
         // Xử lý AJAX request
         if ($request->ajax() || $request->has('ajax')) {
-            // Render partial view cho AJAX
+            // Xử lý request cho single product card
+            if ($request->has('ajax_single_product') && $request->has('product_id')) {
+                $productId = $request->get('product_id');
+                
+                // Tìm product trong categories đã load
+                $product = null;
+                foreach ($categories as $category) {
+                    $foundProduct = $category->products->where('id', $productId)->first();
+                    if ($foundProduct) {
+                        $product = $foundProduct;
+                        break;
+                    }
+                }
+                
+                if ($product) {
+                    // Render single product card
+                    $html = view('customer.shop._product_card', compact('product'))->render();
+                    return response()->json([
+                        'success' => true,
+                        'html' => $html
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Product not found'
+                    ], 404);
+                }
+            }
+            
+            // Render partial view cho AJAX (toàn bộ products)
             $html = view('customer.shop._ajax_products', compact('categories', 'selectedBranchId'))->render();
             return response()->json([
                 'success' => true,

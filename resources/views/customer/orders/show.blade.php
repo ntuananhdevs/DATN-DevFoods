@@ -2,6 +2,62 @@
 
 @section('title', 'Chi tiết đơn hàng #' . ($order->order_code ?? $order->id))
 
+@push('styles')
+<style>
+    /* CSS để giảm thiểu hiệu ứng nháy màn hình */
+    .status-bar, .driver-info-container, .action-buttons-container {
+        transition: opacity 0.3s ease-in-out;
+        will-change: opacity;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+    
+    /* Hiệu ứng mượt mà cho các phần tử được cập nhật */
+    .smooth-update {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+    
+    .smooth-update.updating {
+        opacity: 0.7;
+        transform: translateY(-2px);
+    }
+    
+    /* Tối ưu hóa hiệu suất rendering */
+    .gpu-accelerated {
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        will-change: transform, opacity;
+    }
+    
+    /* Ngăn chặn layout shift */
+    .order-content {
+        min-height: 100vh;
+    }
+    
+    /* Hiệu ứng loading mượt mà */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        z-index: 10;
+    }
+    
+    .loading-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+</style>
+@endpush
+
 @section('content')
     @php
         // Logic xử lý thanh trạng thái
@@ -15,7 +71,11 @@
         $statusMapToStep = [
             'awaiting_confirmation' => 'confirmed',
             'confirmed' => 'confirmed',
+            'waiting_for_driver' => 'driver_picked_up',
+            'finding_driver' => 'driver_picked_up',
             'awaiting_driver' => 'driver_picked_up',
+            'driver_confirmed' => 'driver_picked_up',
+            'waiting_driver_pick_up' => 'driver_picked_up',
             'driver_picked_up' => 'driver_picked_up',
             'in_transit' => 'in_transit',
             'delivered' => 'item_received',
@@ -37,9 +97,9 @@
         <div class="container-ft mx-auto px-4 relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
-                    <a href="{{ route('customer.orders.index') }}" class="text-white hover:text-gray-200 mr-4">
+                    <button onclick="history.back()" class="text-white hover:text-gray-200 mr-4">
                         <i class="fas fa-arrow-left text-lg"></i>
-                    </a>
+                    </button>
                     <div>
                         <h1 class="text-2xl font-bold text-white">Chi tiết đơn hàng #{{ $order->order_code ?? $order->id }}
                         </h1>
@@ -138,6 +198,8 @@
 
                                     @if (in_array($order->status, [
                                             'confirmed',
+                                            'waiting_for_driver',
+                                            'finding_driver',
                                             'awaiting_driver',
                                             'driver_confirmed',
                                             'waiting_driver_pick_up',
@@ -527,6 +589,23 @@
                                                 (Đã bao gồm topping)
                                             </p>
                                         @endif
+                                        
+                                        {{-- Nút đánh giá cho từng sản phẩm --}}
+                                        @if ($order->status === 'item_received')
+                                            <div class="mt-2">
+                                                @if ($item->productVariant && $item->productVariant->product)
+                                                    <a href="{{ route('products.show', $item->productVariant->product->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @elseif ($item->combo)
+                                                    <a href="{{ route('combos.show', $item->combo->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -552,6 +631,8 @@
                                         </div>
                                     </div>
                                 @endif
+
+
                             </div>
                         @endforeach
                     </div>
@@ -674,11 +755,6 @@
                                     <i class="fas fa-check mr-2"></i>Xác nhận đã nhận hàng
                                 </button>
                             </form>
-                        @elseif($order->status == 'item_received')
-                            <a href="#"
-                                class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium inline-block">
-                                <i class="fas fa-star mr-2"></i>Đánh giá đơn hàng
-                            </a>
                         @endif
 
                         @if (in_array($order->status, ['item_received', 'cancelled']))
@@ -853,6 +929,141 @@
             let formToSubmit = null;
             let modalAction = null;
             let selectedRating = 0; // Biến lưu số sao đã chọn
+            
+            // Hàm cập nhật trạng thái đơn hàng bằng AJAX với hiệu ứng mượt mà
+            function updateOrderStatusDisplay() {
+                console.log('🔄 Updating order status via AJAX...');
+                const orderId = {{ $order->id }};
+                
+                // Thêm loading indicator nhẹ
+                const statusElements = document.querySelectorAll('.status-bar, .driver-info-container, .action-buttons-container');
+                statusElements.forEach(el => {
+                    if (el) {
+                        el.classList.add('smooth-update', 'gpu-accelerated');
+                        el.classList.add('updating');
+                    }
+                });
+                
+                fetch(`/customer/orders/${orderId}/partial`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Tạo một DOM parser để parse HTML response
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Hàm helper để cập nhật element với hiệu ứng mượt mà
+                    function updateElementSmoothly(selector, newElement) {
+                        const currentElement = document.querySelector(selector);
+                        if (!currentElement || !newElement) return;
+                        
+                        // Kiểm tra xem nội dung có thay đổi không
+                        if (currentElement.innerHTML === newElement.innerHTML) {
+                            // Vẫn cần remove updating class
+                            currentElement.classList.remove('updating');
+                            return; // Không cập nhật nếu nội dung giống nhau
+                        }
+                        
+                        // Sử dụng requestAnimationFrame để tối ưu hóa rendering
+                        requestAnimationFrame(() => {
+                            // Cập nhật nội dung
+                            currentElement.innerHTML = newElement.innerHTML;
+                            
+                            // Remove updating class để trigger transition
+                            currentElement.classList.remove('updating');
+                            
+                            // Cleanup sau khi animation hoàn thành
+                            setTimeout(() => {
+                                currentElement.classList.remove('gpu-accelerated');
+                            }, 300);
+                        });
+                    }
+                    
+                    // Cập nhật thanh trạng thái với hiệu ứng mượt mà
+                    const newStatusBar = doc.querySelector('.status-bar');
+                    updateElementSmoothly('.status-bar', newStatusBar);
+                    
+                    // Cập nhật thông tin tài xế với hiệu ứng mượt mà
+                    const newDriverInfo = doc.querySelector('.driver-info-container');
+                    updateElementSmoothly('.driver-info-container', newDriverInfo);
+                    
+                    // Cập nhật các nút hành động với hiệu ứng mượt mà
+                    const newActionButtons = doc.querySelector('.action-buttons-container');
+                    const currentActionButtons = document.querySelector('.action-buttons-container');
+                    if (newActionButtons && currentActionButtons) {
+                        // Kiểm tra xem nội dung có thay đổi không
+                        if (currentActionButtons.innerHTML !== newActionButtons.innerHTML) {
+                            requestAnimationFrame(() => {
+                                currentActionButtons.innerHTML = newActionButtons.innerHTML;
+                                currentActionButtons.classList.remove('updating');
+                                
+                                // Gắn lại các sự kiện cho các nút mới
+                                rebindActionButtons();
+                                
+                                setTimeout(() => {
+                                    currentActionButtons.classList.remove('gpu-accelerated');
+                                }, 300);
+                            });
+                        } else {
+                            currentActionButtons.classList.remove('updating');
+                        }
+                    }
+                    
+                    console.log('✅ Order status updated successfully via AJAX');
+                })
+                .catch(error => {
+                    console.error('❌ Error updating order status:', error);
+                    
+                    // Remove updating classes on error
+                    statusElements.forEach(el => {
+                        if (el) {
+                            el.classList.remove('updating', 'gpu-accelerated');
+                        }
+                    });
+                    
+                    // Fallback to page reload if AJAX fails
+                    console.log('🔄 Falling back to page reload...');
+                    window.location.reload();
+                });
+            }
+            
+            // Hàm gắn lại sự kiện cho các nút hành động
+            function rebindActionButtons() {
+                // Gắn lại sự kiện cho nút hủy đơn hàng
+                const cancelBtn = document.getElementById('cancelOrderButton');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function() {
+                        document.getElementById('cancelOrderModal').classList.remove('hidden');
+                    });
+                }
+                
+                // Gắn lại sự kiện cho nút xác nhận đã nhận hàng
+                const receiveBtn = document.getElementById('receiveOrderButton');
+                if (receiveBtn) {
+                    receiveBtn.addEventListener('click', function() {
+                        document.getElementById('receiveOrderModal').classList.remove('hidden');
+                    });
+                }
+                
+                // Gắn lại sự kiện cho nút đánh giá tài xế
+                const rateBtn = document.getElementById('rateDriverButton');
+                if (rateBtn) {
+                    rateBtn.addEventListener('click', function() {
+                        document.getElementById('rateDriverModal').classList.remove('hidden');
+                    });
+                }
+            }
         
             // Định nghĩa hàm openActionModal
             function openActionModal(form, actionType) {
@@ -979,9 +1190,9 @@
                                         modal.classList.add('hidden'); // Ẩn modal
                                         if (data.success) {
                                             showToast(data.message || 'Hủy đơn hàng thành công!', 'success');
-                                            // Tự động tải lại trang sau khi hoàn thành
+                                            // Cập nhật UI bằng AJAX thay vì reload trang
                                             setTimeout(() => {
-                                                location.reload();
+                                                updateOrderStatusDisplay();
                                             }, 1300);
                                         } else {
                                             showToast(data.message || 'Có lỗi xảy ra!', 'error');
@@ -1010,7 +1221,7 @@
                                         if (data.success) {
                                             showToast(data.message || 'Đã nhận hàng thành công!', 'success');
                                             setTimeout(() => {
-                                                location.reload();
+                                                updateOrderStatusDisplay();
                                             }, 1300);
                                         } else {
                                             showToast(data.message || 'Có lỗi xảy ra!', 'error');
@@ -1146,9 +1357,9 @@
                             rateDriverModal.classList.add('hidden');
                             if (data.success) {
                                 showToast(data.message || 'Đánh giá tài xế thành công!', 'success');
-                                // Cập nhật UI hoặc tải lại trang nếu cần
+                                // Cập nhật UI bằng AJAX thay vì reload trang
                                 setTimeout(() => {
-                                    location.reload();
+                                    updateOrderStatusDisplay();
                                 }, 1300);
                             } else {
                                 showToast(data.message || 'Có lỗi xảy ra!', 'error');
@@ -1217,6 +1428,70 @@
                     ratingText.textContent = 'Chọn số sao để đánh giá';
                     rateDriverSubmitBtn.disabled = true;
                 }
+            });
+        </script>
+        
+        <!-- Pusher Real-time Order Status Updates -->
+        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+        <script>
+            Pusher.logToConsole = true;
+            var pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                encrypted: true,
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                }
+            });
+            
+            // Add Pusher debugging
+            pusher.connection.bind('connected', function() {
+                console.log('✅ Pusher connected successfully');
+            });
+
+            pusher.connection.bind('error', function(err) {
+                console.error('❌ Pusher connection error:', err);
+            });
+
+            pusher.connection.bind('disconnected', function() {
+                console.log('⚠️ Pusher disconnected');
+            });
+            
+            // Subscribe to order-specific channel
+            var orderId = {{ $order->id }};
+            var channel = pusher.subscribe('private-order.' + orderId);
+            
+            channel.bind('pusher:subscription_succeeded', function() {
+                console.log('✅ Subscribed to order channel:', 'private-order.' + orderId);
+            });
+            
+            channel.bind('pusher:subscription_error', function(error) {
+                console.error('❌ Failed to subscribe to order channel:', 'private-order.' + orderId, error);
+            });
+            
+
+            // Biến để debounce các cập nhật liên tiếp
+            let updateTimeout = null;
+            
+            channel.bind('order-status-updated', function(data) {
+                console.log('🔄 Pusher event order-status-updated received for order', orderId, data);
+                
+                // Show notification
+                if (typeof showToast === 'function') {
+                    showToast('🔄 Đơn hàng của bạn vừa được cập nhật trạng thái!', 'success');
+                }
+                
+                // Debounce để tránh cập nhật quá nhiều lần liên tiếp
+                if (updateTimeout) {
+                    clearTimeout(updateTimeout);
+                }
+                
+                updateTimeout = setTimeout(() => {
+                    // Cập nhật trạng thái bằng AJAX thay vì reload trang
+                    updateOrderStatusDisplay();
+                }, 500); // Đợi 500ms trước khi cập nhật
             });
         </script>
 @endpush

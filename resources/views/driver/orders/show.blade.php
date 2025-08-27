@@ -67,7 +67,7 @@
                 <div class="space-y-3">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-user text-gray-400"></i>
-                        <span>{{ $order->customer->full_name ?? $order->guest_name }}</span>
+                        <span>{{ $order->displayRecipientName }}</span>
                         {{-- Add data-action attribute to identify the action --}}
                         <button data-action="call-customer"
                             class="ml-auto text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
@@ -78,7 +78,7 @@
                         <i class="fas fa-map-marker-alt text-gray-400 mt-1"></i>
                         <div>
                             <p class="font-medium">Địa chỉ giao hàng</p>
-                            <p class="text-sm text-gray-600">{{ $order->delivery_address }}</p>
+                            <p class="text-sm text-gray-600">{{ $order->displayFullDeliveryAddress }}</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-3">
@@ -106,7 +106,7 @@
                     @foreach ($order->orderItems as $item)
                         <div class="flex justify-between">
                             <span>{{ $item->quantity }}x
-                                {{ $item->productVariant->product->name ?? 'Sản phẩm' }}</span>
+                                {{ $item->product_name_snapshot ?? $item->productVariant->product->name ?? 'Sản phẩm' }}</span>
                             <span>{{ number_format($item->total_price, 0, ',', '.') }} đ</span>
                         </div>
                     @endforeach

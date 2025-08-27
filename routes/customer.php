@@ -131,6 +131,7 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
 
     // Route để hiển thị trang "Chi tiết đơn hàng"
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
+    Route::get('/orders/{order}/partial', [CustomerOrderController::class, 'partial'])->name('customer.orders.partial');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
     Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
     Route::get('/profile/addresses', [CustomerProfileController::class, 'getAddresses'])->name('customer.profile.addresses.index');
