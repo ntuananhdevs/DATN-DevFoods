@@ -394,12 +394,16 @@
             <!-- Search and Sort Controls -->
             <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border">
                 <div class="flex flex-col md:flex-row gap-4 items-center">
-                    <!-- Search Input -->
+                    <!-- Search Text -->
                     <div class="flex-1">
                         <div class="relative">
-                            <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." 
-                                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                   value="{{ request('search') }}">
+                            <div class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                                @if(request('search'))
+                                    Từ khóa tìm kiếm: "{{ request('search') }}"
+                                @else
+                                    Không có từ khóa tìm kiếm
+                                @endif
+                            </div>
                             <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                         </div>
                     </div>
@@ -634,7 +638,9 @@
 
         // Apply filters and sorting
         function applyFilters() {
-            const searchQuery = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+            // Get search query from URL parameter since input is now static text
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchQuery = (urlParams.get('search') || '').toLowerCase().trim();
             const selectedCategory = document.querySelector('input[name="category"]:checked')?.value || 'Tất cả';
             const maxPrice = parseInt(document.getElementById('priceRange')?.value || 500) * 1000;
             const minRating = parseFloat(document.getElementById('ratingFilter')?.value || 0);
@@ -744,7 +750,8 @@
                     } else if (resultsContainer) {
                         resultsContainer.insertBefore(notice, resultsContainer.firstChild);
                     }
-                    const searchValue = document.getElementById('searchInput')?.value || '';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const searchValue = urlParams.get('search') || '';
                     const safeSearch = searchValue.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     if (safeSearch.trim()) {
                         notice.innerHTML = 'Không có sản phẩm thuộc danh mục này, bạn hãy tiếp tục tham khảo những món liên quan đến <span class="font-bold">' + safeSearch + '</span>';
@@ -913,7 +920,6 @@
         // Submit form function
         function submitSearchForm() {
             const form = document.getElementById('searchForm');
-            const searchInput = document.getElementById('searchInput');
             const selectedCategoryRadio = document.querySelector('input[name="category"]:checked');
             const priceRange = document.getElementById('priceRange');
             const ratingFilter = document.getElementById('ratingFilter');
@@ -981,23 +987,12 @@
         }
 
         // Event listeners
-        const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
         const typeSelect = document.getElementById('typeSelect');
         const ratingFilter = document.getElementById('ratingFilter');
         const priceRange = document.getElementById('priceRange');
         const searchForm = document.getElementById('searchForm');
         const searchSubmitBtn = document.querySelector('.search-submit-btn');
-
-        if (searchInput) {
-            searchInput.addEventListener('input', applyFilters);
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitSearchForm();
-                }
-            });
-        }
 
         if (sortSelect) {
             sortSelect.addEventListener('change', applyFilters);

@@ -20,6 +20,7 @@ use App\Models\Category;
 use App\Models\Combo;
 use App\Models\User;
 use App\Models\ProductVariant;
+use App\Models\Order;
 use App\Events\DiscountUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -922,7 +923,8 @@ class DiscountCodeController extends Controller
             'users.user'
         ])->findOrFail($id);
         
-        $usageCount = DiscountUsageHistory::where('discount_code_id', $id)->count();
+        // Đếm số lần sử dụng từ bảng order thay vì DiscountUsageHistory
+        $usageCount = Order::where('discount_code_id', $id)->count();
         $discountCode->current_usage_count = $usageCount;
         
         // Get available branches for this discount code

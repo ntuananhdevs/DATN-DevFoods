@@ -483,9 +483,10 @@
             <div class="px-6 py-6">
                 <div id="attributes-container">
                     <!-- Default attribute group -->
-                    <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50">
+                    <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 attribute-group">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
+                            <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
@@ -901,6 +902,41 @@
                 const attributeGroup = createAttributeGroup(attributeCount);
                 attributesContainer.appendChild(attributeGroup);
                 attributeCount++;
+                updateDeleteButtonVisibility();
+            });
+        }
+
+        // Initial call to set delete button visibility on page load
+        updateDeleteButtonVisibility();
+
+        // Function to update delete button visibility
+        function updateDeleteButtonVisibility() {
+            const attributeGroups = document.querySelectorAll('#attributes-container > .p-4.border.border-gray-200');
+            
+            attributeGroups.forEach(group => {
+                const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
+                const attributeValues = group.querySelectorAll('.attribute-value-item');
+                
+                // Hide attribute delete button if only 1 attribute exists
+                if (removeAttributeBtn) {
+                    if (attributeGroups.length <= 1) {
+                        removeAttributeBtn.style.display = 'none';
+                    } else {
+                        removeAttributeBtn.style.display = 'inline-block';
+                    }
+                }
+                
+                // Hide value delete buttons if only 1 value exists in this attribute
+                attributeValues.forEach(valueItem => {
+                    const removeValueBtn = valueItem.querySelector('.remove-attribute-value-btn');
+                    if (removeValueBtn) {
+                        if (attributeValues.length <= 1) {
+                            removeValueBtn.style.display = 'none';
+                        } else {
+                            removeValueBtn.style.display = 'inline-block';
+                        }
+                    }
+                });
             });
         }
 
@@ -912,16 +948,19 @@
                     if (attributeGroup) {
                         attributeGroup.remove();
                         reindexAttributeGroups();
+                        updateDeleteButtonVisibility();
                     }
                 } else if (e.target.classList.contains('add-attribute-value-btn')) {
                     const attributeIndex = e.target.getAttribute('data-index') || 0;
                     addAttributeValue(parseInt(attributeIndex));
+                    updateDeleteButtonVisibility();
                 } else if (e.target.classList.contains('remove-attribute-value-btn')) {
                     const valueContainer = e.target.closest('.attribute-value-item');
                     if (valueContainer) {
                         const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
                         valueContainer.remove();
                         reindexAttributeValues(attributeGroup);
+                        updateDeleteButtonVisibility();
                     }
                 }
             });
@@ -1207,6 +1246,9 @@
     });
 </script>
 
+@endsection
+
+@push('scripts')
 <!-- Topping Modal Script -->
 <script src="{{ asset('js/admin/topping-modal.js') }}"></script>
 
@@ -1221,21 +1263,26 @@
         console.log('release_at_container:', document.getElementById('release_at_container'));
         console.log('ingredients format radios:', document.querySelectorAll('input[name="ingredients_format"]').length);
         
-        // Khởi tạo topping modal
+        // Khởi tạo topping modal - tránh duplicate initialization
         try {
-            window.toppingModal = new ToppingModal();
+            if (!window.toppingModal) {
+                window.toppingModal = new ToppingModal();
+            }
             
-            // Override confirmSelection để cập nhật count
-            const originalConfirmSelection = window.toppingModal.confirmSelection;
-            window.toppingModal.confirmSelection = function() {
-                originalConfirmSelection.call(this);
-                
-                // Cập nhật số lượng toppings đã chọn
-                const countElement = document.getElementById('selected-toppings-count');
-                if (countElement) {
-                    countElement.textContent = this.selectedToppings.size;
-                }
-            };
+            // Override confirmSelection để cập nhật count (chỉ làm một lần)
+            if (window.toppingModal && !window.toppingModal.countOverridden) {
+                const originalConfirmSelection = window.toppingModal.confirmSelection;
+                window.toppingModal.confirmSelection = function() {
+                    originalConfirmSelection.call(this);
+                    
+                    // Cập nhật số lượng toppings đã chọn
+                    const countElement = document.getElementById('selected-toppings-count');
+                    if (countElement) {
+                        countElement.textContent = this.selectedToppings.size;
+                    }
+                };
+                window.toppingModal.countOverridden = true;
+            }
             
             console.log('ToppingModal initialized successfully');
         } catch (error) {
@@ -1243,5 +1290,4 @@
         }
     });
 </script>
-
-@endsection
+@endpush

@@ -434,37 +434,51 @@
                                         </button>
                                     </div>
                                 @else
+                                    <!-- Manual coupon code input -->
+                                    <div class="mb-4">
+                                        <div class="flex">
+                                            <input type="text" id="coupon-code-input" class="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="Nhập mã giảm giá">
+                                            <button type="button" id="apply-coupon-btn" class="bg-orange-500 text-white px-4 py-2 rounded-r-lg hover:bg-orange-600 font-medium transition-colors">
+                                                Áp dụng
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Available discount codes -->
                                     @if(isset($availableDiscountCodes) && count($availableDiscountCodes) > 0)
-                                        <div class="grid grid-cols-1 gap-3">
-                                            @foreach($availableDiscountCodes as $code)
-                                                <div class="coupon-item border border-gray-200 rounded-lg p-3 hover:border-orange-300 cursor-pointer transition-all">
-                                                    <div class="flex justify-between items-center">
-                                                        <div>
-                                                            <div class="font-medium text-gray-800">{{ $code->name }}</div>
-                                                            <div class="text-sm text-gray-600">Mã: <span class="font-medium text-orange-600">{{ $code->code }}</span></div>
-                                                            <div class="text-sm text-gray-600">
-                                                                @if($code->discount_type == 'percentage')
-                                                                    Giảm {{ $code->discount_value }}%
-                                                                    @if($code->max_discount_amount)
-                                                                        (tối đa {{ number_format($code->max_discount_amount) }}đ)
+                                        <div class="mt-4">
+                                            <h3 class="text-sm font-medium text-gray-700 mb-2">Mã giảm giá khả dụng:</h3>
+                                            <div class="grid grid-cols-1 gap-3">
+                                                @foreach($availableDiscountCodes as $code)
+                                                    <div class="coupon-item border border-gray-200 rounded-lg p-3 hover:border-orange-300 cursor-pointer transition-all">
+                                                        <div class="flex justify-between items-center">
+                                                            <div>
+                                                                <div class="font-medium text-gray-800">{{ $code->name }}</div>
+                                                                <div class="text-sm text-gray-600">Mã: <span class="font-medium text-orange-600">{{ $code->code }}</span></div>
+                                                                <div class="text-sm text-gray-600">
+                                                                    @if($code->discount_type == 'percentage')
+                                                                        Giảm {{ $code->discount_value }}%
+                                                                        @if($code->max_discount_amount)
+                                                                            (tối đa {{ number_format($code->max_discount_amount) }}đ)
+                                                                        @endif
+                                                                    @else
+                                                                        Giảm {{ number_format($code->discount_value) }}đ
                                                                     @endif
-                                                                @else
-                                                                    Giảm {{ number_format($code->discount_value) }}đ
+                                                                </div>
+                                                                @if($code->min_requirement_value)
+                                                                    <div class="text-xs text-gray-500">Đơn tối thiểu: {{ number_format($code->min_requirement_value) }}đ</div>
                                                                 @endif
                                                             </div>
-                                                            @if($code->min_requirement_value)
-                                                                <div class="text-xs text-gray-500">Đơn tối thiểu: {{ number_format($code->min_requirement_value) }}đ</div>
-                                                            @endif
+                                                            <button type="button" class="apply-coupon-btn bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 font-medium text-sm transition-colors" data-code="{{ $code->code }}">
+                                                                Áp dụng
+                                                            </button>
                                                         </div>
-                                                        <button type="button" class="apply-coupon-btn bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 font-medium text-sm transition-colors" data-code="{{ $code->code }}">
-                                                            Áp dụng
-                                                        </button>
                                                     </div>
-                                                </div>
-                                            @endforeach
+                                                @endforeach
+                                            </div>
                                         </div>
                                     @else
-                                        <div class="text-gray-500 text-center py-4">Không có mã giảm giá nào khả dụng</div>
+                                        <div class="text-gray-500 text-center py-4 mt-2">Không có mã giảm giá nào khả dụng</div>
                                     @endif
                                 @endif
                                 <div id="coupon-feedback" class="mt-2 text-sm"></div>
@@ -3794,7 +3808,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const subtotalElement = document.getElementById('subtotal-display');
                 const shippingElement = document.getElementById('shipping-fee-display');
                 const discountElement = document.getElementById('coupon-discount-display');
-                const totalElement = document.getElementById('total-display');
+                const totalElement = document.getElementById('total-amount-display');
                 
                 if (subtotalElement && shippingElement && totalElement) {
                     const subtotal = parseInt(subtotalElement.getAttribute('data-value') || 0);

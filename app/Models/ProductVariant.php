@@ -84,7 +84,15 @@ class ProductVariant extends Model
      */
     public function orderItems()
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(OrderItem::class, 'product_variant_id');
+    }
+
+    /**
+     * Get the cart items for this product variant.
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class, 'product_variant_id');
     }
 
     /**

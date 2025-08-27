@@ -192,9 +192,9 @@
                         {{-- Các trạng thái delivered/item_received/... không hiển thị nút --}}
                 @endSwitch
 
-                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn --}}
-                @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
-                    @if(is_null($order->batch_id))
+                {{-- Nút xem bản đồ lớn hoặc xem ghép đơn - chỉ hiển thị khi đã bắt đầu di chuyển --}}
+                @if (in_array($order->status, ['waiting_driver_pick_up', 'in_transit']))
+                    @if(!$order->isPartOfBatch())
                         {{-- Đơn lẻ: hiển thị nút xem bản đồ lớn --}}
                         <button data-action="view-large-map"
                             class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
@@ -203,7 +203,7 @@
                         </button>
                     @else
                         {{-- Đơn ghép: hiển thị nút xem ghép đơn --}}
-                        <a href="{{ route('driver.orders.batch.navigate', $order->batch_id) }}"
+                        <a href="{{ route('driver.orders.batch.navigate', $order->getBatchGroupId()) }}"
                             class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
                             <i class="fas fa-route w-4 h-4 mr-2"></i>
                             Xem ghép đơn

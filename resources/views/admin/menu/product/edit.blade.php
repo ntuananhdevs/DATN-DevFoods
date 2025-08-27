@@ -439,9 +439,10 @@
                         </div>
                     @empty
                         <!-- Default attribute group when no attributes exist -->
-                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50">
+                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 attribute-group">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
+                                <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
@@ -459,7 +460,7 @@
                                     <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                                     <div id="attribute_values_container_0" class="space-y-2">
                                         <!-- Default attribute value -->
-                                        <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                        <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                              <div class="grid grid-cols-2 gap-2">
                                                  <div>
                                                      <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -477,6 +478,7 @@
                                                          <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                                      @enderror
                                                  </div>
+                                                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
                                              </div>
                                          </div>
                                     </div>
@@ -750,12 +752,17 @@
         </section>
 
         <!-- Save Buttons -->
-        <div class="p-4 flex justify-end gap-2 mt-6">
+        <div class="fixed bottom-4 right-4 flex gap-2 z-50">
+            <a href="{{ route('admin.products.index') }}"
+                class="rounded-md bg-gray-600 px-6 py-2 text-white hover:bg-gray-700 shadow-lg">
+                Quay lại
+            </a>
             <button type="submit" id="save-product-btn"
-                class="fixed bottom-4 right-4 rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg z-50">
+                class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg">
                 Cập nhật sản phẩm
             </button>
         </div>
+
     </form>
 </main>
 
@@ -906,7 +913,7 @@
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                            <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                 <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
@@ -927,76 +934,49 @@
                 </div>
             `;
             
-            // Add event listeners for the new attribute group
-            const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
-            removeAttributeBtn.addEventListener('click', () => {
-                group.remove();
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
-                    }
-                });
-            });
-
-            // Add event listener for adding attribute values
-            const addValueBtn = group.querySelector('.add-attribute-value-btn');
-            addValueBtn.addEventListener('click', () => {
-                addAttributeValue(index);
-            });
-
-            // Add event listeners for removing attribute values
-            const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
-            removeValueBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const valueContainer = e.target.closest('.grid');
-                    valueContainer.remove();
-                });
-            });
+            // Event listeners will be handled by event delegation in the main container
             
             return group;
         }
 
-        // Function to reindex all attribute groups after deletion
         function reindexAttributeGroups() {
-            const attributeGroups = document.querySelectorAll('.attribute-group');
-            
-            attributeGroups.forEach((group, groupIndex) => {
+            const attributeGroups = attributesContainer.querySelectorAll('.p-4.border.border-gray-200');
+            attributeGroups.forEach((group, index) => {
                 // Update group title
                 const title = group.querySelector('h3');
                 if (title) {
-                    title.textContent = `Thuộc tính ${groupIndex + 1}`;
+                    title.textContent = `Thuộc tính ${index + 1}`;
                 }
                 
                 // Update attribute name input
                 const nameInput = group.querySelector('input[name*="[name]"]');
                 if (nameInput) {
-                    const newName = `attributes[${groupIndex}][name]`;
-                    const newId = `attribute_name_${groupIndex}`;
+                    const currentName = nameInput.getAttribute('name');
+                    const newName = currentName.replace(/attributes\[\d+\]/, `attributes[${index}]`);
                     nameInput.setAttribute('name', newName);
-                    nameInput.setAttribute('id', newId);
                     
-                    // Update corresponding label
-                    const label = group.querySelector(`label[for*="attribute_name"]`);
-                    if (label) {
-                        label.setAttribute('for', newId);
+                    const currentId = nameInput.getAttribute('id');
+                    if (currentId) {
+                        const newId = currentId.replace(/attribute_name_\d+/, `attribute_name_${index}`);
+                        nameInput.setAttribute('id', newId);
                     }
                 }
                 
                 // Update values container ID
-                const valuesContainer = group.querySelector('[id*="attribute_values_container"]');
+                const valuesContainer = group.querySelector('[id*="attribute_values_container_"]');
                 if (valuesContainer) {
-                    valuesContainer.setAttribute('id', `attribute_values_container_${groupIndex}`);
+                    const newId = `attribute_values_container_${index}`;
+                    valuesContainer.setAttribute('id', newId);
                 }
                 
                 // Update add value button data-index
                 const addValueBtn = group.querySelector('.add-attribute-value-btn');
                 if (addValueBtn) {
-                    addValueBtn.setAttribute('data-index', groupIndex);
+                    addValueBtn.setAttribute('data-index', index);
                 }
                 
                 // Reindex all attribute values in this group
-                reindexAttributeValues(group, groupIndex);
+                reindexAttributeValues(group, index);
             });
         }
         
@@ -1073,88 +1053,213 @@
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
             
-            // Add event listener for removing this value
-            const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
-            removeBtn.addEventListener('click', () => {
-                const valueContainer = removeBtn.closest('.attribute-value-item');
-                if (valueContainer) {
-                    valueContainer.remove();
-                }
-            });
-            
+            // Event listener will be handled by event delegation
+
             valuesContainer.appendChild(valueDiv);
+            updateDeleteButtonVisibility();
         }
 
-        // Event delegation for all dynamic elements
-        document.addEventListener('click', function(e) {
-            // Remove attribute group
-            if (e.target.classList.contains('remove-attribute-btn') || e.target.classList.contains('remove-attribute-group-btn')) {
-                e.target.closest('.attribute-group').remove();
-                // Reindex all remaining attribute groups
-                reindexAttributeGroups();
-            }
+        // Function to update delete button visibility
+        function updateDeleteButtonVisibility() {
+            const attributeGroups = document.querySelectorAll('#attributes-container > .p-4.border.border-gray-200');
             
-            // Add attribute value
-            if (e.target.classList.contains('add-attribute-value-btn') || e.target.closest('.add-attribute-value-btn')) {
-                const btn = e.target.classList.contains('add-attribute-value-btn') ? e.target : e.target.closest('.add-attribute-value-btn');
-                const attributeIndex = btn.getAttribute('data-index');
-                if (attributeIndex !== null) {
-                    addAttributeValue(parseInt(attributeIndex));
+            attributeGroups.forEach(group => {
+                const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
+                const attributeValues = group.querySelectorAll('.attribute-value-item');
+                
+                // Hide attribute delete button if only 1 attribute exists
+                if (removeAttributeBtn) {
+                    if (attributeGroups.length <= 1) {
+                        removeAttributeBtn.style.display = 'none';
+                    } else {
+                        removeAttributeBtn.style.display = 'inline-block';
+                    }
                 }
-            }
-            
-            // Remove attribute value
-            if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
-                // Find the parent div that contains the value inputs
-                const valueContainer = e.target.closest('.attribute-value-item');
-                if (valueContainer) {
-                    const attributeGroup = valueContainer.closest('.attribute-group');
-                    valueContainer.remove();
-                    // Reindex the remaining attribute values in this group
-                    reindexAttributeValues(attributeGroup);
-                }
-            }
-            
-            // Remove topping
-            if (e.target.classList.contains('remove-topping-btn')) {
-                e.target.closest('.topping-group').remove();
-            }
-        });
-        
-        // Add event listeners to existing attribute groups
-        document.querySelectorAll('.attribute-group .remove-attribute-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.attribute-group').remove();
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
+                
+                // Hide value delete buttons if only 1 value exists in this attribute
+                attributeValues.forEach(valueItem => {
+                    const removeValueBtn = valueItem.querySelector('.remove-attribute-value-btn');
+                    if (removeValueBtn) {
+                        if (attributeValues.length <= 1) {
+                            removeValueBtn.style.display = 'none';
+                        } else {
+                            removeValueBtn.style.display = 'inline-block';
+                        }
                     }
                 });
             });
-        });
-        
-        // Add event listeners to existing attribute value remove buttons
-        document.querySelectorAll('.remove-attribute-value-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const valueContainer = btn.closest('.attribute-value-item');
-                if (valueContainer) {
-                    valueContainer.remove();
+        }
+
+        // Function to check if attribute can be deleted
+        async function checkAttributeDeletable(attributeName) {
+            try {
+                const response = await fetch('{{ route("admin.products.check-attribute-deletable") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        attribute_name: attributeName,
+                        product_id: {{ $product->id }}
+                    })
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking attribute deletable:', error);
+                return { can_delete: false, message: 'Lỗi khi kiểm tra trạng thái thuộc tính.' };
+            }
+        }
+
+        // Function to check if value can be deleted
+        async function checkValueDeletable(valueId) {
+            try {
+                const response = await fetch('{{ route("admin.products.check-value-deletable") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        value_id: valueId,
+                        product_id: {{ $product->id }}
+                    })
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking value deletable:', error);
+                return { can_delete: false, message: 'Lỗi khi kiểm tra trạng thái giá trị.' };
+            }
+        }
+
+        // Function to show warning modal
+        function showWarningModal(message) {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('deletion-warning-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'deletion-warning-modal';
+                modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+                modal.innerHTML = `
+                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3 text-center">
+                            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Không thể xóa</h3>
+                            <div class="mt-2 px-7 py-3">
+                                <p class="text-sm text-gray-500" id="warning-message"></p>
+                            </div>
+                            <div class="items-center px-4 py-3">
+                                <button id="close-warning-modal" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Add close event listener
+                document.getElementById('close-warning-modal').addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+                
+                // Close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+            
+            document.getElementById('warning-message').textContent = message;
+            modal.style.display = 'block';
+        }
+
+        // Use event delegation for attribute-related buttons to avoid conflicts
+        if (attributesContainer) {
+            attributesContainer.addEventListener('click', async function(e) {
+                if (e.target.classList.contains('remove-attribute-btn')) {
+                    const attributeGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (attributeGroup) {
+                        // Get attribute name
+                        const attributeNameInput = attributeGroup.querySelector('input[name*="[name]"]');
+                        const attributeName = attributeNameInput ? attributeNameInput.value : '';
+                        
+                        if (attributeName) {
+                            // Check if attribute can be deleted
+                            const result = await checkAttributeDeletable(attributeName);
+                            if (!result.can_delete) {
+                                showWarningModal(result.message);
+                                return;
+                            }
+                        }
+                        
+                        attributeGroup.remove();
+                        reindexAttributeGroups();
+                        updateDeleteButtonVisibility();
+                    }
+                } else if (e.target.classList.contains('add-attribute-value-btn')) {
+                    const attributeIndex = e.target.getAttribute('data-index') || 0;
+                    addAttributeValue(parseInt(attributeIndex));
+                    updateDeleteButtonVisibility();
+                } else if (e.target.classList.contains('remove-attribute-value-btn')) {
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        // Get value ID from hidden input if exists
+                        const valueIdInput = valueContainer.querySelector('input[name*="[id]"]');
+                        const valueId = valueIdInput ? valueIdInput.value : null;
+                        
+                        if (valueId) {
+                            // Check if value can be deleted
+                            const result = await checkValueDeletable(valueId);
+                            if (!result.can_delete) {
+                                showWarningModal(result.message);
+                                return;
+                            }
+                        }
+                        
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                        updateDeleteButtonVisibility();
+                    }
                 }
             });
-        });
+        }
+        
+        // Toppings Logic - Initialize container first
+        const toppingsContainer = document.getElementById('toppings-container');
+        
+        // Use event delegation for topping-related buttons to avoid conflicts
+        if (toppingsContainer) {
+            toppingsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-topping-btn')) {
+                    const toppingGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (toppingGroup) {
+                        toppingGroup.remove();
+                    }
+                }
+            });
+        }
 
-        // Add new attribute group
+        // Add event listener for the main "Add Attribute" button
         if (addAttributeBtn) {
             addAttributeBtn.addEventListener('click', () => {
                 const attributeGroup = createAttributeGroup(attributeCount);
                 attributesContainer.appendChild(attributeGroup);
                 attributeCount++;
+                updateDeleteButtonVisibility();
             });
         }
-
-        // Toppings Logic
-        const toppingsContainer = document.getElementById('toppings-container');
+        
+        // Initial call to set delete button visibility on page load
+        updateDeleteButtonVisibility();
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
 
@@ -1518,6 +1623,12 @@
              lucide.createIcons();
          }
 
+        // Initial call to set delete button visibility on page load
+        updateDeleteButtonVisibility();
+        
+        // Also call after a short delay to ensure all elements are rendered
+        setTimeout(updateDeleteButtonVisibility, 100);
+
         // Toggle inactive variants visibility
         let showInactive = false;
         window.toggleInactive = function() {
@@ -1577,6 +1688,10 @@
                 }
             }
         }, 300);
+        
+        // Ensure delete button visibility is updated after DOM is ready
+        updateDeleteButtonVisibility();
+        setTimeout(updateDeleteButtonVisibility, 500);
     });
 </script>
 
