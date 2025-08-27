@@ -361,17 +361,21 @@ class DiscountCodeSeeder extends Seeder
         ];
 
         foreach ($codes as $i => $data) {
-            DiscountCode::create(array_merge([
-                'image' => null,
-                'applicable_ranks' => null,
-                'rank_exclusive' => false,
-                'valid_days_of_week' => null,
-                'is_active' => true,
-                'is_featured' => $i < 5, // 5 mã đầu nổi bật
-                'display_order' => $i + 1,
-                'created_by' => $adminId,
-                'current_usage_count' => 0,
-            ], $data));
+            // Idempotent seeding: cập nhật nếu đã tồn tại theo code, tạo mới nếu chưa có
+            DiscountCode::updateOrCreate(
+                ['code' => $data['code']],
+                array_merge([
+                    'image' => null,
+                    'applicable_ranks' => null,
+                    'rank_exclusive' => false,
+                    'valid_days_of_week' => null,
+                    'is_active' => true,
+                    'is_featured' => $i < 5, // 5 mã đầu nổi bật
+                    'display_order' => $i + 1,
+                    'created_by' => $adminId,
+                    'current_usage_count' => 0,
+                ], $data)
+            );
         }
     }
 }

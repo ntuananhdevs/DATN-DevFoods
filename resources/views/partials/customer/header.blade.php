@@ -90,6 +90,10 @@
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 Cài đặt
                             </a>
+                            <a href="{{ route('customer.wallet.index') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Số dư
+                            </a>
                             <form action="{{ route('customer.logout') }}" method="POST">
                                 @csrf
                                 <button type="submit"

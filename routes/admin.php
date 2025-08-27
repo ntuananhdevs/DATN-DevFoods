@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\UserRankHistoryController;
 use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\GeneralSettingController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\WalletController as AdminWalletController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
@@ -350,6 +351,18 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Wallet Management
+    Route::prefix('wallet')->name('wallet.')->group(function () {
+        Route::get('/', [AdminWalletController::class, 'index'])->name('index');
+        Route::get('/pending-withdrawals', [AdminWalletController::class, 'pendingWithdrawals'])->name('pending-withdrawals');
+        Route::get('/withdrawal-history', [AdminWalletController::class, 'withdrawalHistory'])->name('withdrawal-history');
+        Route::get('/withdrawals/{id}', [AdminWalletController::class, 'showWithdrawal'])->name('withdrawals.show');
+        Route::post('/withdrawals/{id}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+        Route::post('/withdrawals/{id}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+        Route::get('/analytics', [AdminWalletController::class, 'analytics'])->name('analytics');
+        Route::post('/batch-process', [AdminWalletController::class, 'batchProcess'])->name('batch-process');
+    });
     Route::get('notifications/item/{orderId}', [OrderController::class, 'notificationItem'])->name('admin.notifications.item');
     // Orders Management
     Route::prefix('orders')->name('orders.')->group(function () {
