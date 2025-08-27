@@ -309,7 +309,36 @@ class ProductController extends Controller
 
         // Xử lý AJAX request
         if ($request->ajax() || $request->has('ajax')) {
-            // Render partial view cho AJAX
+            // Xử lý request cho single product card
+            if ($request->has('ajax_single_product') && $request->has('product_id')) {
+                $productId = $request->get('product_id');
+                
+                // Tìm product trong categories đã load
+                $product = null;
+                foreach ($categories as $category) {
+                    $foundProduct = $category->products->where('id', $productId)->first();
+                    if ($foundProduct) {
+                        $product = $foundProduct;
+                        break;
+                    }
+                }
+                
+                if ($product) {
+                    // Render single product card
+                    $html = view('customer.shop._product_card', compact('product'))->render();
+                    return response()->json([
+                        'success' => true,
+                        'html' => $html
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Product not found'
+                    ], 404);
+                }
+            }
+            
+            // Render partial view cho AJAX (toàn bộ products)
             $html = view('customer.shop._ajax_products', compact('categories', 'selectedBranchId'))->render();
             return response()->json([
                 'success' => true,
