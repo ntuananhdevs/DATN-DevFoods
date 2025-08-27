@@ -26,7 +26,8 @@ class OrderController extends Controller
             $query->where('status', $request->status);
         }
         
-        $orders = $query->latest() // Sắp xếp đơn hàng mới nhất lên đầu
+        $orders = $query->with(['discountCode', 'branch', 'orderItems']) // Load relationships
+            ->latest() // Sắp xếp đơn hàng mới nhất lên đầu
             ->paginate(10) // Phân trang, mỗi trang 10 đơn hàng
             ->withQueryString(); // Giữ lại các tham số query khi phân trang
 
@@ -66,6 +67,7 @@ class OrderController extends Controller
         $order->load([
             'branch',
             'driver',
+            'discountCode', // Tải thông tin mã giảm giá
             'payment', // Tải thông tin thanh toán
             'orderItems.productVariant.product.primaryImage',
             'orderItems.productVariant.variantValues.attribute',
