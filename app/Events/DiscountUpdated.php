@@ -9,6 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 use App\Models\DiscountCode;
+use Illuminate\Support\Facades\Log;
 
 class DiscountUpdated implements ShouldBroadcast
 {
@@ -137,7 +138,7 @@ class DiscountUpdated implements ShouldBroadcast
         } catch (\Exception $e) {
             // If there's an error getting affected products (e.g., relationships deleted),
             // return empty array to avoid breaking the event
-            \Log::warning('Error getting affected products for discount: ' . $e->getMessage());
+            Log::warning('Error getting affected products for discount: ' . $e->getMessage());
             return [];
         }
         
