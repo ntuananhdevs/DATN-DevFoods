@@ -900,9 +900,15 @@ class CheckoutController extends Controller
                 $user->balance -= $total;
                 $user->save();
                 
+                // Deduct stock for products and toppings after successful balance payment
+                $this->deductOrderStock($order);
+                
             } else { // COD
                 $order->status = 'awaiting_confirmation';
                 $order->save();
+                
+                // Deduct stock for products and toppings for COD orders
+                $this->deductOrderStock($order);
             }
 
             if ($order->status === 'awaiting_confirmation') {
@@ -1057,6 +1063,9 @@ class CheckoutController extends Controller
                         OrderSnapshotService::snapshotOrder($order);
                     }
                     
+                    // Deduct stock for products and toppings after successful payment
+                    $this->deductOrderStock($order);
+                    
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
 
@@ -1174,6 +1183,9 @@ class CheckoutController extends Controller
                             if ($inputData['vnp_ResponseCode'] == '00' && $inputData['vnp_TransactionStatus'] == '00') {
                                 $order->status = 'awaiting_confirmation'; // hoặc 'processing' tùy vào logic của bạn
                                 $order->payment->payment_status = 'completed';
+                                
+                                // Deduct stock for products and toppings after successful payment confirmation
+                                $this->deductOrderStock($order);
                                 
                                 // Clear cart items that were ordered
                                 if ($order->customer_id) {
@@ -1817,5 +1829,134 @@ class CheckoutController extends Controller
         }
 
         return $vnp_Url;
+    }
+
+    /**
+     * Deduct stock for product variants after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductProductStock(Order $order)
+    {
+        try {
+            \DB::transaction(function () use ($order) {
+                foreach ($order->orderItems as $orderItem) {
+                    if ($orderItem->product_variant_id) {
+                        // Find the branch stock for this product variant
+                        $branchStock = \App\Models\BranchStock::where('branch_id', $order->branch_id)
+                            ->where('product_variant_id', $orderItem->product_variant_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($branchStock) {
+                            // Check if there's enough stock
+                            if ($branchStock->stock_quantity >= $orderItem->quantity) {
+                                // Deduct the stock
+                                $branchStock->decrement('stock_quantity', $orderItem->quantity);
+                                
+                                \Illuminate\Support\Facades\Log::info('Product stock deducted', [
+                                    'order_code' => $order->order_code,
+                                    'product_variant_id' => $orderItem->product_variant_id,
+                                    'quantity_deducted' => $orderItem->quantity,
+                                    'remaining_stock' => $branchStock->fresh()->stock_quantity
+                                ]);
+                            } else {
+                                \Illuminate\Support\Facades\Log::warning('Insufficient stock for product', [
+                                    'order_code' => $order->order_code,
+                                    'product_variant_id' => $orderItem->product_variant_id,
+                                    'requested_quantity' => $orderItem->quantity,
+                                    'available_stock' => $branchStock->stock_quantity
+                                ]);
+                            }
+                        } else {
+                            \Illuminate\Support\Facades\Log::warning('Branch stock not found for product', [
+                                'order_code' => $order->order_code,
+                                'branch_id' => $order->branch_id,
+                                'product_variant_id' => $orderItem->product_variant_id
+                            ]);
+                        }
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deducting product stock', [
+                'order_code' => $order->order_code,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Deduct stock for toppings after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductToppingStock(Order $order)
+    {
+        try {
+            \DB::transaction(function () use ($order) {
+                foreach ($order->orderItems as $orderItem) {
+                    // Check if this order item has toppings
+                    if ($orderItem->toppings && $orderItem->toppings->count() > 0) {
+                        foreach ($orderItem->toppings as $orderItemTopping) {
+                            // Find the topping stock for this topping
+                            $toppingStock = \App\Models\ToppingStock::where('branch_id', $order->branch_id)
+                                ->where('topping_id', $orderItemTopping->topping_id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($toppingStock) {
+                                $totalToppingQuantity = $orderItemTopping->quantity * $orderItem->quantity;
+                                
+                                // Check if there's enough stock
+                                if ($toppingStock->stock_quantity >= $totalToppingQuantity) {
+                                    // Deduct the stock
+                                    $toppingStock->decrement('stock_quantity', $totalToppingQuantity);
+                                    
+                                    \Illuminate\Support\Facades\Log::info('Topping stock deducted', [
+                                        'order_code' => $order->order_code,
+                                        'topping_id' => $orderItemTopping->topping_id,
+                                        'quantity_deducted' => $totalToppingQuantity,
+                                        'remaining_stock' => $toppingStock->fresh()->stock_quantity
+                                    ]);
+                                } else {
+                                    \Illuminate\Support\Facades\Log::warning('Insufficient stock for topping', [
+                                        'order_code' => $order->order_code,
+                                        'topping_id' => $orderItemTopping->topping_id,
+                                        'requested_quantity' => $totalToppingQuantity,
+                                        'available_stock' => $toppingStock->stock_quantity
+                                    ]);
+                                }
+                            } else {
+                                \Illuminate\Support\Facades\Log::warning('Topping stock not found', [
+                                    'order_code' => $order->order_code,
+                                    'branch_id' => $order->branch_id,
+                                    'topping_id' => $orderItemTopping->topping_id
+                                ]);
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deducting topping stock', [
+                'order_code' => $order->order_code,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Deduct stock for both products and toppings after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductOrderStock(Order $order)
+    {
+        $this->deductProductStock($order);
+        $this->deductToppingStock($order);
     }
 }
