@@ -158,7 +158,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 productCard.remove();
             }
         });
-        S
+
+        // Listen for product price update events
+        branchStockChannel.bind('product-price-updated', function(data) {
+            // Get current branch ID from multiple possible sources
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchIdFromUrl = urlParams.get('branch_id');
+            const branchIdFromMeta = document.querySelector('meta[name="selected-branch"]')?.content;
+            const currentBranchId = branchIdFromUrl || branchIdFromMeta || '1';
+
+            // Only update if the price change is for the current branch
+            if (data.branchId == currentBranchId) {
+                // Find the product card
+                const productCard = document.querySelector(`.product-card[data-product-id="${data.productId}"]`);
+                if (productCard) {
+                    try {
+                        // Update base price in the card (this will trigger recalculation of discounts in the view)
+                        // Since the discount calculation is done server-side in the Blade template,
+                        // we need to reload the product card or recalculate the final price
+                        
+                        // For now, we'll add a visual indicator that the price has been updated
+                        productCard.classList.add('price-updated');
+                        
+                        // Add animation to highlight the price change
+                        productCard.classList.add('highlight-update');
+                        setTimeout(() => {
+                            productCard.classList.remove('highlight-update');
+                        }, 1000);
+                        
+                        // Since discount calculations are complex and done server-side,
+                        // we should reload the specific product card content via AJAX
+                        console.log(`Product ${data.productId} price updated to ${data.basePrice} for branch ${data.branchId}`);
+                        
+                        // Reload the specific product card to get updated prices and discounts
+                        reloadProductCard(data.productId);
+                        
+                        // Optional: Show a toast notification
+                        if (window.dtmodalShowToast) {
+                            window.dtmodalShowToast('info', {
+                                title: 'Cập nhật giá',
+                                message: 'Giá sản phẩm đã được cập nhật'
+                            });
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error updating product price:', error);
+                    }
+                }
+            }
+        });
+
         // Listen for favorite updates if user is authenticated
         if (favoritesChannel) {
             favoritesChannel.bind('favorite-updated', function(data) {
@@ -188,10 +237,21 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('--- Pusher event "discount-updated" received ---');
             console.log('Data received:', data);
             
-            // Reload page after a short delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            // Instead of reloading individual cards, reload the entire product grid like lazy load
+            // This gives a smoother, unified update experience
+            console.log('Reloading entire product grid for discount update...');
+            
+            // Use the existing AJAX filter function to reload all products at once
+            // This maintains the current filter/search state and gives instant update
+            performAjaxFilter();
+            
+            // Show a toast notification about the discount update
+            if (window.dtmodalShowToast) {
+                window.dtmodalShowToast('info', {
+                    title: 'Cập nhật khuyến mãi',
+                    message: 'Giá sản phẩm đã được cập nhật với khuyến mãi mới'
+                });
+            }
         });
         
         // Listen for subscription success
@@ -397,6 +457,149 @@ function initializeAjaxFilters() {
             const categoryId = url.searchParams.get('category') || '';
             
             performAjaxFilter(categoryId);
+        });
+    });
+}
+
+// Function to reload a specific product card via AJAX
+function reloadProductCard(productId) {
+    const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+    if (!productCard) return;
+    
+    // Get current parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const branchId = urlParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content || '';
+    
+    // Add loading state to the specific card
+    productCard.style.opacity = '0.7';
+    productCard.style.pointerEvents = 'none';
+    
+    // Prepare AJAX data
+    const ajaxData = {
+        product_id: productId,
+        branch_id: branchId,
+        ajax_single_product: 1
+    };
+    
+    // Remove empty values
+    Object.keys(ajaxData).forEach(key => {
+        if (ajaxData[key] === '' || ajaxData[key] === null) {
+            delete ajaxData[key];
+        }
+    });
+    
+    // Perform AJAX request to get updated product card HTML
+    fetch(window.location.pathname + '?' + new URLSearchParams(ajaxData), {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.html) {
+            // Create a temporary container to parse the new HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = data.html;
+            const newProductCard = tempDiv.querySelector('.product-card');
+            
+            if (newProductCard) {
+                // Replace the old card with the new one
+                productCard.parentNode.replaceChild(newProductCard, productCard);
+                
+                // Re-initialize favorite buttons for the new card
+                const favoriteBtn = newProductCard.querySelector('.favorite-btn');
+                if (favoriteBtn) {
+                    initializeSingleFavoriteButton(favoriteBtn);
+                }
+                
+                // Add highlight animation - immediate visual feedback
+                newProductCard.classList.add('highlight-update');
+                setTimeout(() => {
+                    newProductCard.classList.remove('highlight-update');
+                }, 300); // Very fast 300ms animation for immediate feedback
+            }
+        } else {
+            console.error('Failed to reload product card:', data.message);
+            // Remove loading state
+            productCard.style.opacity = '1';
+            productCard.style.pointerEvents = 'auto';
+        }
+    })
+    .catch(error => {
+        console.error('AJAX request failed for product reload:', error);
+        // Remove loading state
+        productCard.style.opacity = '1';
+        productCard.style.pointerEvents = 'auto';
+    });
+}
+
+// Helper function to initialize a single favorite button
+function initializeSingleFavoriteButton(btn) {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Nếu là nút login-prompt-btn thì show popup đăng nhập
+        if (btn.classList.contains('login-prompt-btn')) {
+            document.getElementById('login-popup').classList.remove('hidden');
+            return;
+        }
+        // Đã đăng nhập
+        const productId = btn.getAttribute('data-product-id');
+        const icon = btn.querySelector('i');
+        const isFavorite = icon.classList.contains('fas');
+        // Optimistic UI
+        if (isFavorite) {
+            icon.classList.remove('fas', 'text-red-500');
+            icon.classList.add('far');
+        } else {
+            icon.classList.remove('far');
+            icon.classList.add('fas', 'text-red-500');
+        }
+        // Gửi AJAX
+        fetch('/wishlist', {
+            method: isFavorite ? 'DELETE' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': window.csrfToken
+            },
+            body: JSON.stringify({ product_id: productId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.message) {
+                dtmodalShowToast(isFavorite ? 'info' : 'success', {
+                    title: isFavorite ? 'Thông báo' : 'Thành công',
+                    message: data.message
+                });
+            } else {
+                // Nếu lỗi, revert lại UI
+                if (isFavorite) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas', 'text-red-500');
+                } else {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far');
+                }
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi khi cập nhật yêu thích'
+                });
+            }
+        })
+        .catch(() => {
+            // Nếu lỗi, revert lại UI
+            if (isFavorite) {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'text-red-500');
+            } else {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far');
+            }
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: 'Có lỗi khi cập nhật yêu thích'
+            });
         });
     });
 }
