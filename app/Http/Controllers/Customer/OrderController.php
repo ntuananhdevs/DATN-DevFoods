@@ -79,14 +79,17 @@ class OrderController extends Controller
      * Update the status of an order.
      * This single method handles cancelling, confirming receipt, etc.
      */
-    public function updateStatus(Request $request, Order $order): JsonResponse
+    public function updateStatus(Request $request, Order $order)
     {
         // 1. Bảo mật: Đảm bảo khách hàng chỉ có thể cập nhật đơn hàng của chính mình.
         if ($order->customer_id !== Auth::id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền truy cập đơn hàng này.'
-            ], 403);
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền truy cập đơn hàng này.'
+                ], 403);
+            }
+            abort(403, 'Bạn không có quyền truy cập đơn hàng này.');
         }
 
         // 2. Validate yêu cầu
@@ -143,10 +146,13 @@ class OrderController extends Controller
 
         // Xử lý lỗi nếu không thể thay đổi trạng thái
         if (!$canUpdate) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hành động không được phép hoặc trạng thái đơn hàng không hợp lệ.'
-            ], 422); // Trả về mã lỗi 422 nếu không thể xử lý
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hành động không được phép hoặc trạng thái đơn hàng không hợp lệ.'
+                ], 422);
+            }
+            return back()->with('error', 'Hành động không được phép hoặc trạng thái đơn hàng không hợp lệ.');
         }
 
         // 4. Cập nhật trạng thái và lưu dữ liệu
@@ -164,12 +170,39 @@ class OrderController extends Controller
             event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), $newStatus));
         }
 
-        // Trả về kết quả thành công và dữ liệu đơn hàng đã được cập nhật
-        return response()->json([
-            'success' => true,
-            'message' => $message,
-            'order'   => $freshOrder
+        // Trả về kết quả thành công
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'order'   => $freshOrder
+            ]);
+        }
+        
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Trả về HTML partial cho order status update (dùng cho AJAX)
+     */
+    public function partial(Order $order)
+    {
+        // Bảo mật: Đảm bảo khách hàng chỉ có thể xem đơn hàng của chính mình.
+        if ($order->customer_id !== Auth::id()) {
+            abort(403, 'BẠN KHÔNG CÓ QUYỀN TRUY CẬP ĐƠN HÀNG NÀY.');
+        }
+
+        // Tải sẵn các relationship để tối ưu truy vấn
+        $order->load([
+            'branch',
+            'driver',
+            'payment',
+            'orderItems.productVariant.product.primaryImage',
+            'orderItems.productVariant.variantValues.attribute',
+            'orderItems.toppings'
         ]);
+
+        return view('customer.orders.partials.status_update', compact('order'));
     }
 
     // Phương thức listPartial đã được xóa vì không còn cần thiết cho AJAX filtering

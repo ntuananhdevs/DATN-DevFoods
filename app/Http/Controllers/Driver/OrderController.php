@@ -548,9 +548,9 @@ class OrderController extends Controller
         $driverId = Auth::guard('driver')->id();
         
         $order = Order::where('id', $orderId)
+            ->where('batch_id', $batchId)
             ->where('driver_id', $driverId)
             ->firstOrFail();
-        
         // Các trạng thái cần thay đổi đồng bộ cho tất cả đơn trong batch
         $syncStatuses = ['driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up', 'in_transit'];
         

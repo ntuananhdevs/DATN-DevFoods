@@ -462,7 +462,7 @@
                 });
 
                 // Subscribe to cart channel
-                const cartChannel = window.pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
+                const cartChannel = pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
 
                 // Listen for cart updates - chỉ cập nhật khi thực sự thêm vào giỏ hàng
                 cartChannel.bind('cart-updated', function(data) {
@@ -528,6 +528,13 @@
 
         // Initialize Pusher on every page to listen for wishlist updates
         document.addEventListener('DOMContentLoaded', function() {
+            // Set global variables for Pusher configuration
+            @auth
+            window.currentUserId = {{ auth()->id() }};
+            window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+            window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
+            @endauth
+
             // Check if we should restore wishlist count from localStorage
             const savedCount = localStorage.getItem('wishlist_count');
             if (savedCount) {
@@ -681,20 +688,18 @@
                         'X-CSRF-TOKEN': newToken
                     }
                 });
-    }
-    if (window.axios) {
-        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
-    }
-}
-</script>
+            }
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+            }
+        }
+    </script>
 
     {{-- Thêm component CSRF Auto-Refresh --}}
     @include('partials.csrf-refresh')
     
     {{-- Thêm script xử lý thông báo realtime --}}
     <script src="{{ asset('js/Customer/notification-handler.js') }}"></script>
-{{-- Thêm component CSRF Auto-Refresh --}}
-@include('partials.csrf-refresh')
 </body>
 
 </html>
