@@ -219,17 +219,26 @@ class CouponController extends Controller
         $discountAmount = min($discountAmount, $discountableAmount);
 
         // --- 7. Store in session and respond ---
-        session([
+        $sessionData = [
             'coupon_code' => $coupon->code,
-            'coupon_discount_amount' => $discountAmount
-        ]);
+            'coupon_discount_amount' => $discountAmount,
+            'coupon_type' => $coupon->discount_type
+        ];
+        
+        // Lưu thêm thông tin phần trăm giảm giá nếu là loại percentage
+        if ($coupon->discount_type === 'percentage') {
+            $sessionData['coupon_discount_percentage'] = $coupon->discount_value;
+        }
+        
+        session($sessionData);
 
         return response()->json([
             'success' => true,
             'message' => 'Áp dụng mã giảm giá thành công!',
             'coupon' => [
                 'code' => $coupon->code,
-                'discount_amount' => $discountAmount
+                'discount_amount' => $discountAmount,
+                'type' => $coupon->discount_type
             ]
         ]);
     }
@@ -239,7 +248,7 @@ class CouponController extends Controller
      */
     public function remove()
     {
-        session()->forget(['coupon_code', 'coupon_discount_amount']);
+        session()->forget(['coupon_code', 'coupon_discount_amount', 'coupon_type']);
 
         return response()->json([
             'success' => true,
