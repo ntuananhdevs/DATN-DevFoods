@@ -428,6 +428,15 @@
                                         <div>
                                             <span class="font-medium">Mã đã áp dụng: </span>
                                             <span class="bg-green-100 text-green-800 px-2 py-1 rounded font-medium">{{ session('coupon_code') }}</span>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                @if(session('coupon_type') == 'free_shipping')
+                                                    Miễn phí vận chuyển
+                                                @elseif(session('coupon_type') == 'percentage')
+                                                    Giảm {{ session('coupon_discount_percentage') ?? '' }}%
+                                                @elseif(session('coupon_type') == 'fixed_amount')
+                                                    Giảm {{ number_format(session('coupon_discount_amount')) }}đ
+                                                @endif
+                                            </div>
                                         </div>
                                         <button type="button" id="remove-coupon-btn" class="text-red-500 hover:text-red-700 font-medium text-sm transition-colors">
                                             <i class="fas fa-times-circle mr-1"></i> Xóa
@@ -585,6 +594,18 @@
                                 <span>Giảm giá (voucher)</span>
                                 <span id="coupon-discount-display" data-value="{{ $discount }}">-{{ number_format($discount) }}đ</span>
                             </div>
+                            
+                            <script>
+                            // Cập nhật hiển thị giảm giá khi trang tải xong
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Kiểm tra nếu có mã giảm giá miễn phí vận chuyển
+                                const couponType = '{{ session('coupon_type') ?? '' }}';
+                                if (couponType === 'free_shipping') {
+                                    // Gọi hàm updateOrderTotal để cập nhật hiển thị
+                                    updateOrderTotal();
+                                }
+                            });
+                            </script>
 
 
                             <hr class="border-t border-gray-200">
@@ -3767,8 +3788,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             if (discountRow && discountDisplay) {
                                 discountRow.classList.remove('hidden');
-                                discountDisplay.textContent = new Intl.NumberFormat('vi-VN').format(data.coupon.discount_amount) + 'đ';
-                                discountDisplay.setAttribute('data-value', data.coupon.discount_amount);
+                                
+                                // Kiểm tra nếu là mã free shipping
+                                const shippingElement = document.getElementById('shipping-fee-display');
+                                const shippingValue = shippingElement ? parseInt(shippingElement.getAttribute('data-value') || 0) : 0;
+                                
+                                if (data.coupon.code === 'FREESHIP' || data.coupon.type === 'free_shipping') {
+                                    // Hiển thị giá trị phí vận chuyển như là số tiền giảm giá
+                                    discountDisplay.textContent = '-' + new Intl.NumberFormat('vi-VN').format(shippingValue) + 'đ';
+                                    discountDisplay.setAttribute('data-value', shippingValue);
+                                } else {
+                                    // Hiển thị giá trị giảm giá thông thường
+                                    discountDisplay.textContent = '-' + new Intl.NumberFormat('vi-VN').format(data.coupon.discount_amount) + 'đ';
+                                    discountDisplay.setAttribute('data-value', data.coupon.discount_amount);
+                                }
                             }
                             
                             // Update total
@@ -3846,22 +3879,70 @@ document.addEventListener('DOMContentLoaded', function() {
                     const shipping = parseInt(shippingElement.getAttribute('data-value') || 0);
                     const discount = discountElement ? parseInt(discountElement.getAttribute('data-value') || 0) : 0;
                     
-                    // Check if we have a free shipping coupon applied
-                    const isFreeShipping = document.querySelector('#coupon-area .bg-green-50 .bg-green-100')?.textContent?.includes('free_shipping');
+                    // Kiểm tra xem có mã giảm giá miễn phí vận chuyển được áp dụng không
+                    let isFreeShipping = false;
                     
-                    // If free shipping is applied, don't charge for shipping
-                    const effectiveShipping = isFreeShipping ? 0 : shipping;
+                    // Lấy mã giảm giá từ session nếu có
+                    const couponCode = '{{ session('coupon_code') }}';
+                    const couponType = '{{ session('coupon_type') ?? '' }}';
                     
-                    const total = subtotal + effectiveShipping - discount;
+                    // Kiểm tra nếu mã giảm giá là loại miễn phí vận chuyển
+                    if (couponType === 'free_shipping') {
+                        isFreeShipping = true;
+                    } else {
+                        // Kiểm tra trong nội dung trang
+                        const couponInfoElements = document.querySelectorAll('.text-sm.text-gray-600');
+                        couponInfoElements.forEach(element => {
+                            if (element.textContent.includes('Miễn phí vận chuyển')) {
+                                isFreeShipping = true;
+                            }
+                        });
+                    }
+                    
+                    let total = 0;
+                    
+                    if (isFreeShipping) {
+                        // Nếu là free shipping, hiển thị phí vận chuyển như là số tiền giảm giá
+                        if (shipping > 0) {
+                            // Hiển thị phí vận chuyển như là số tiền giảm giá
+                            const shippingDiscount = shipping;
+                            
+                            // Cập nhật hiển thị phí vận chuyển
+                            shippingElement.innerHTML = '<span class="line-through text-gray-400">' + 
+                                new Intl.NumberFormat('vi-VN').format(shipping) + 'đ</span> ' +
+                                '<span class="text-green-600 font-medium">Miễn phí</span>';
+                            
+                            // Hiển thị phần giảm giá
+                            const discountRow = document.getElementById('coupon-discount-row');
+                            if (discountRow) {
+                                discountRow.classList.remove('hidden');
+                                if (discountElement) {
+                                    discountElement.textContent = '-' + new Intl.NumberFormat('vi-VN').format(shippingDiscount) + 'đ';
+                                    discountElement.setAttribute('data-value', shippingDiscount);
+                                }
+                            }
+                            
+                            // Đặt giá trị phí vận chuyển thành 0 để tính toán đúng
+                            shippingElement.setAttribute('data-value', 0);
+                            
+                            // Tính tổng tiền
+                            total = subtotal - shippingDiscount;
+                        } else {
+                            total = subtotal - discount;
+                        }
+                        
+                        // Đảm bảo tổng tiền không âm
+                        if (total < 0) total = 0;
+                    } else {
+                        // Nếu không phải free shipping, tính bình thường
+                        total = subtotal + shipping - discount;
+                        
+                        // Đảm bảo tổng tiền không âm
+                        if (total < 0) total = 0;
+                    }
+                    
                     totalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
                     totalElement.setAttribute('data-value', total);
-                    
-                    // Update shipping display if free shipping is applied
-                    if (isFreeShipping && shipping > 0) {
-                        shippingElement.innerHTML = '<span class="line-through text-gray-400">' + 
-                            new Intl.NumberFormat('vi-VN').format(shipping) + 'đ</span> ' +
-                            '<span class="text-green-600 font-medium">Miễn phí</span>';
-                    }
                 }
             }
         });
