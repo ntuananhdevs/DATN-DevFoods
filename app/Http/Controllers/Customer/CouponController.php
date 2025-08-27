@@ -207,8 +207,12 @@ class CouponController extends Controller
             if ($coupon->max_discount_amount > 0 && $discountAmount > $coupon->max_discount_amount) {
                 $discountAmount = $coupon->max_discount_amount;
             }
-        } else { // fixed_amount
+        } elseif ($coupon->discount_type === 'fixed_amount') {
             $discountAmount = $coupon->discount_value;
+        } elseif ($coupon->discount_type === 'free_shipping') {
+            // Đối với free_shipping, giá trị giảm giá sẽ là phí vận chuyển
+            // Giá trị này sẽ được tính toán và áp dụng trong CheckoutController
+            $discountAmount = 0; // Tạm thời đặt là 0, sẽ được cập nhật trong quá trình thanh toán
         }
 
         // Ensure discount doesn't exceed the amount it applies to
