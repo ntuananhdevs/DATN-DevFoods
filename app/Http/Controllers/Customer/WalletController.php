@@ -12,6 +12,8 @@ use App\Models\WalletTransaction;
 use App\Notifications\WithdrawalRequestNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use App\Events\Wallet\NewWalletTransactionReceived;
+use App\Events\Wallet\WalletTransactionStatusUpdated;
 use Exception;
 
 class WalletController extends Controller
@@ -84,6 +86,9 @@ class WalletController extends Controller
                 'transaction_code' => 'WALLET_' . time() . '_' . $user->id,
                 'expires_at' => now()->addMinutes(15) // Hết hạn sau 15 phút
             ]);
+
+            // Trigger event for new wallet transaction
+            event(new NewWalletTransactionReceived($transaction));
 
             // Tích hợp VNPay
             return $this->createVnpayPayment($transaction);
@@ -161,6 +166,9 @@ class WalletController extends Controller
                         'account_holder' => $request->account_holder
                     ])
                 ]);
+
+                // Trigger event for new wallet transaction
+                event(new NewWalletTransactionReceived($transaction));
 
                 // Gửi notification cho admin nếu amount lớn
                 if ($amount >= 1000000) { // 1M VND
@@ -356,6 +364,7 @@ class WalletController extends Controller
                 // Thanh toán thành công
                 DB::beginTransaction();
                 try {
+                    $oldStatus = $transaction->status;
                     $transaction->update([
                         'status' => 'completed',
                         'processed_at' => now(),
@@ -369,6 +378,9 @@ class WalletController extends Controller
                     // Cộng tiền vào tài khoản
                     $transaction->user->increment('balance', $transaction->amount);
                     
+                    // Trigger event for status update
+                    event(new WalletTransactionStatusUpdated($transaction, $oldStatus));
+                    
                     DB::commit();
                     
                     return redirect()->route('customer.wallet.index')->with('success', 'Nạp tiền thành công!');
@@ -379,12 +391,16 @@ class WalletController extends Controller
                 }
             } else {
                 // Thanh toán thất bại
+                $oldStatus = $transaction->status;
                 $transaction->update(['status' => 'failed']);
+                event(new WalletTransactionStatusUpdated($transaction, $oldStatus));
                 return redirect()->route('customer.wallet.index')->with('error', 'Thanh toán không thành công');
             }
         } else {
             // Chữ ký không hợp lệ
+            $oldStatus = $transaction->status;
             $transaction->update(['status' => 'failed']);
+            event(new WalletTransactionStatusUpdated($transaction, $oldStatus));
             return redirect()->route('customer.wallet.index')->with('error', 'Chữ ký không hợp lệ');
         }
     }
@@ -433,11 +449,16 @@ class WalletController extends Controller
                                 // Cập nhật thành công
                                 DB::beginTransaction();
                                 try {
+                                    $oldStatus = $transaction->status;
                                     $transaction->update([
                                         'status' => 'completed',
                                         'processed_at' => now()
                                     ]);
                                     $transaction->user->increment('balance', $transaction->amount);
+                                    
+                                    // Trigger event for status update
+                                    event(new WalletTransactionStatusUpdated($transaction, $oldStatus));
+                                    
                                     DB::commit();
                                     
                                     $returnData['RspCode'] = '00';
@@ -448,7 +469,9 @@ class WalletController extends Controller
                                     $returnData['Message'] = 'Unknown error';
                                 }
                             } else {
+                                $oldStatus = $transaction->status;
                                 $transaction->update(['status' => 'failed']);
+                                event(new WalletTransactionStatusUpdated($transaction, $oldStatus));
                                 $returnData['RspCode'] = '00';
                                 $returnData['Message'] = 'Confirm Success';
                             }

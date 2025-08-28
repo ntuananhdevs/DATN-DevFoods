@@ -354,14 +354,40 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // Wallet Management
     Route::prefix('wallet')->name('wallet.')->group(function () {
+        // Dashboard & Overview
         Route::get('/', [AdminWalletController::class, 'index'])->name('index');
-        Route::get('/pending-withdrawals', [AdminWalletController::class, 'pendingWithdrawals'])->name('pending-withdrawals');
-        Route::get('/withdrawal-history', [AdminWalletController::class, 'withdrawalHistory'])->name('withdrawal-history');
-        Route::get('/withdrawals/{id}', [AdminWalletController::class, 'showWithdrawal'])->name('withdrawals.show');
-        Route::post('/withdrawals/{id}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('withdrawals.approve');
-        Route::post('/withdrawals/{id}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
         Route::get('/analytics', [AdminWalletController::class, 'analytics'])->name('analytics');
-        Route::post('/batch-process', [AdminWalletController::class, 'batchProcess'])->name('batch-process');
+        Route::get('/health-check', [AdminWalletController::class, 'systemHealthCheck'])->name('health-check');
+        
+        // Withdrawal Management
+        Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
+            Route::get('/pending', [AdminWalletController::class, 'pendingWithdrawals'])->name('pending');
+            Route::get('/history', [AdminWalletController::class, 'withdrawalHistory'])->name('history');
+            Route::get('/{id}', [AdminWalletController::class, 'showWithdrawal'])->name('show');
+            Route::post('/{id}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('approve');
+            Route::post('/{id}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('reject');
+            Route::post('/batch-process', [AdminWalletController::class, 'batchProcess'])->name('batch-process');
+        });
+        
+        // Deposit Management
+        Route::prefix('deposits')->name('deposits.')->group(function () {
+            Route::get('/history', [AdminWalletController::class, 'depositHistory'])->name('history');
+        });
+        
+        // Transaction Management
+        Route::prefix('transactions')->name('transactions.')->group(function () {
+            Route::get('/all', [AdminWalletController::class, 'allTransactions'])->name('all');
+            Route::get('/export', [AdminWalletController::class, 'exportTransactions'])->name('export');
+            Route::post('/force-expire', [AdminWalletController::class, 'forceExpireTransactions'])->name('force-expire');
+            Route::post('/bulk-update-status', [AdminWalletController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        });
+        
+        // User Wallet Management
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [AdminWalletController::class, 'userWallets'])->name('index');
+            Route::get('/{userId}', [AdminWalletController::class, 'userWalletDetail'])->name('detail');
+
+        });
     });
     Route::get('notifications/item/{orderId}', [OrderController::class, 'notificationItem'])->name('admin.notifications.item');
     // Orders Management

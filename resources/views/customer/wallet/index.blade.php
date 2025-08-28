@@ -55,19 +55,25 @@
 <div class="container mx-auto px-4 py-8">
     <!-- Flash Messages -->
     @if(session('success'))
-        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
-            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
-                <i class="fas fa-times cursor-pointer"></i>
+        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative shadow-lg animate-pulse" role="alert" id="success-message">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-600 mr-3 text-xl"></i>
+                <span class="block sm:inline font-medium">{{ session('success') }}</span>
+            </div>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3 hover:bg-green-200 rounded-r transition duration-300" onclick="hideFlashMessage(this.parentElement)">
+                <i class="fas fa-times cursor-pointer text-green-600"></i>
             </span>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('error') }}</span>
-            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
-                <i class="fas fa-times cursor-pointer"></i>
+        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative shadow-lg" role="alert" id="error-message">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-600 mr-3 text-xl"></i>
+                <span class="block sm:inline font-medium">{{ session('error') }}</span>
+            </div>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3 hover:bg-red-200 rounded-r transition duration-300" onclick="hideFlashMessage(this.parentElement)">
+                <i class="fas fa-times cursor-pointer text-red-600"></i>
             </span>
         </div>
     @endif
@@ -269,7 +275,7 @@
                         <div class="relative">
                             <input type="number" id="deposit-amount" name="amount" 
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                   placeholder="Hoặc nhập số tiền khác" min="10000" max="10000000">
+                                   placeholder="Hoặc nhập số tiền khác" min="10000" max="10000000" step="1000">
                             <span class="absolute right-3 top-3 text-gray-500">VND</span>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">Tối thiểu: 10,000 VND - Tối đa: 10,000,000 VND</p>
@@ -316,7 +322,7 @@
                         Giao Dịch Gần Đây
                     </h3>
                     <a href="{{ route('customer.wallet.transactions') }}" class="text-orange-500 hover:text-orange-600 font-medium">
-                        Xem tất cả <i class="fas fa-arrow-right ml-1"></i>
+                        Xem đầy đủ <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
 
@@ -422,7 +428,7 @@
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Số tiền rút</label>
                 <input type="number" name="amount" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500" 
-                       min="50000" max="5000000" placeholder="Nhập số tiền">
+                       min="50000" max="5000000" step="1000" placeholder="Nhập số tiền">
                 <p class="text-xs text-gray-500 mt-1">Tối thiểu: 50,000 VND - Tối đa: 5,000,000 VND</p>
             </div>
             
@@ -458,6 +464,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide flash messages after 5 seconds
+    const flashMessages = document.querySelectorAll('[role="alert"]');
+    flashMessages.forEach(message => {
+        // Stop pulse animation after 2 seconds
+        setTimeout(() => {
+            message.classList.remove('animate-pulse');
+        }, 2000);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideFlashMessage(message);
+        }, 5000);
+    });
+
     // Auto-refresh mechanism để cập nhật trạng thái expired - check mỗi 60 giây
     const autoRefreshInterval = setInterval(function() {
         checkForExpiredTransactions();
@@ -487,12 +507,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = document.getElementById('deposit-amount').value;
         
         if (!amount || amount < 10000) {
-            alert('Vui lòng nhập số tiền hợp lệ (tối thiểu 10,000 VND)');
+            showFlashMessage('Vui lòng nhập số tiền hợp lệ (tối thiểu 10,000 VND)', 'error');
             return;
         }
         
         if (amount > 10000000) {
-            alert('Số tiền tối đa là 10,000,000 VND');
+            showFlashMessage('Số tiền tối đa là 10,000,000 VND', 'error');
             return;
         }
         
@@ -510,17 +530,25 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success && data.redirect_url) {
-                // Chuyển hướng đến VNPay
-                window.location.href = data.redirect_url;
+                // Show success message before redirect
+                document.getElementById('deposit-btn').innerHTML = '<i class="fas fa-check mr-2"></i>Đang chuyển hướng đến VNPay...';
+                document.getElementById('deposit-btn').classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                document.getElementById('deposit-btn').classList.add('bg-green-500');
+                
+                // Redirect after a short delay to show the success state
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1000);
             } else {
-                alert(data.message || 'Có lỗi xảy ra');
+                // Show error message in flash style instead of alert
+                showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
                 document.getElementById('deposit-btn').disabled = false;
                 document.getElementById('deposit-btn').innerHTML = '<i class="fas fa-credit-card mr-2"></i>Nạp Tiền Ngay';
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra, vui lòng thử lại');
+            showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
             document.getElementById('deposit-btn').disabled = false;
             document.getElementById('deposit-btn').innerHTML = '<i class="fas fa-credit-card mr-2"></i>Nạp Tiền Ngay';
         });
@@ -542,19 +570,19 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
+                showFlashMessage(data.message, 'success');
                 hideWithdrawModal();
                 if (data.new_balance) {
                     document.getElementById('current-balance').textContent = data.new_balance + ' VND';
                 }
                 location.reload();
             } else {
-                alert(data.message || 'Có lỗi xảy ra');
+                showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra, vui lòng thử lại');
+            showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
         });
     });
 });
@@ -567,6 +595,77 @@ function showWithdrawModal() {
 function hideWithdrawModal() {
     document.getElementById('withdrawModal').classList.add('hidden');
     document.getElementById('withdrawModal').classList.remove('flex');
+}
+
+function showDepositModal() {
+    // Scroll to deposit form instead of showing modal
+    document.querySelector('.deposit-form').scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center' 
+    });
+    
+    // Focus on amount input
+    setTimeout(() => {
+        document.getElementById('deposit-amount').focus();
+    }, 500);
+}
+
+function hideFlashMessage(element) {
+    element.style.transition = 'all 0.5s ease-out';
+    element.style.opacity = '0';
+    element.style.transform = 'translateY(-20px)';
+    
+    setTimeout(() => {
+        if (element.parentElement) {
+            element.remove();
+        }
+    }, 500);
+}
+
+function showFlashMessage(message, type = 'success') {
+    // Remove existing flash messages
+    const existingMessages = document.querySelectorAll('[role="alert"]');
+    existingMessages.forEach(msg => msg.remove());
+    
+    const isSuccess = type === 'success';
+    const bgColor = isSuccess ? 'bg-green-100' : 'bg-red-100';
+    const borderColor = isSuccess ? 'border-green-400' : 'border-red-400';
+    const textColor = isSuccess ? 'text-green-700' : 'text-red-700';
+    const iconColor = isSuccess ? 'text-green-600' : 'text-red-600';
+    const hoverColor = isSuccess ? 'hover:bg-green-200' : 'hover:bg-red-200';
+    const icon = isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle';
+    
+    const flashMessage = document.createElement('div');
+    flashMessage.className = `mb-6 ${bgColor} border ${borderColor} ${textColor} px-4 py-3 rounded relative shadow-lg animate-pulse`;
+    flashMessage.setAttribute('role', 'alert');
+    flashMessage.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${icon} ${iconColor} mr-3 text-xl"></i>
+            <span class="block sm:inline font-medium">${message}</span>
+        </div>
+        <span class="absolute top-0 bottom-0 right-0 px-4 py-3 ${hoverColor} rounded-r transition duration-300" onclick="hideFlashMessage(this.parentElement)">
+            <i class="fas fa-times cursor-pointer ${iconColor}"></i>
+        </span>
+    `;
+    
+    // Insert at the top of the container
+    const container = document.querySelector('.container.mx-auto');
+    const header = container.querySelector('.mb-8');
+    container.insertBefore(flashMessage, header);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        flashMessage.classList.remove('animate-pulse');
+    }, 2000);
+    
+    setTimeout(() => {
+        if (document.contains(flashMessage)) {
+            hideFlashMessage(flashMessage);
+        }
+    }, 5000);
+    
+    // Scroll to top to show the message
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
@@ -622,7 +721,7 @@ function retryPayment(transactionId) {
             // Chuyển hướng đến VNPay
             window.location.href = data.redirect_url;
         } else {
-            alert(data.message || 'Có lỗi xảy ra');
+            showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
             // Reset buttons
             buttons.forEach(button => {
                 button.disabled = false;
@@ -635,7 +734,7 @@ function retryPayment(transactionId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại');
+        showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
         // Reset buttons
         buttons.forEach(button => {
             button.disabled = false;
@@ -700,7 +799,7 @@ function continuePayment(transactionId) {
             // Chuyển hướng đến VNPay
             window.location.href = data.redirect_url;
         } else {
-            alert(data.message || 'Có lỗi xảy ra');
+            showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
             // Reset buttons
             buttons.forEach(button => {
                 button.disabled = false;
@@ -710,7 +809,7 @@ function continuePayment(transactionId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại');
+        showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
         // Reset buttons
         buttons.forEach(button => {
             button.disabled = false;
@@ -746,11 +845,11 @@ function cancelTransaction(transactionId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            showFlashMessage(data.message, 'success');
             // Reload trang để cập nhật trạng thái
             location.reload();
         } else {
-            alert(data.message || 'Có lỗi xảy ra');
+            showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
             // Reset buttons
             buttons.forEach(button => {
                 button.disabled = false;
@@ -760,7 +859,7 @@ function cancelTransaction(transactionId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại');
+        showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
         // Reset buttons
         buttons.forEach(button => {
             button.disabled = false;
@@ -792,7 +891,7 @@ function checkTransactionStatus(transactionId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(data.message);
+            showFlashMessage(data.message, 'success');
             
             // Nếu cần refresh thì reload trang
             if (data.transaction && data.transaction.needs_refresh) {
@@ -805,7 +904,7 @@ function checkTransactionStatus(transactionId) {
                 });
             }
         } else {
-            alert(data.message || 'Có lỗi xảy ra');
+            showFlashMessage(data.message || 'Có lỗi xảy ra', 'error');
             // Reset buttons
             buttons.forEach(button => {
                 button.disabled = false;
@@ -815,7 +914,7 @@ function checkTransactionStatus(transactionId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Có lỗi xảy ra, vui lòng thử lại');
+        showFlashMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
         // Reset buttons
         buttons.forEach(button => {
             button.disabled = false;

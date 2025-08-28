@@ -246,6 +246,97 @@
                     </span>
                     <span class="sidebar-text">Đơn hàng</span>
                 </a>
+                <!-- Wallet Management -->
+                <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Quản lý ví tiền">
+                    <button
+                        class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet">
+                                <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
+                                <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Quản lý ví tiền</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="ml-auto lucide lucide-chevron-down">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                        <a href="{{ route('admin.wallet.index') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Dashboard</span>
+                        </a>
+                        <a href="{{ route('admin.wallet.withdrawals.pending') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.withdrawals.pending') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12,6 12,12 16,14"></polyline>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Rút tiền chờ duyệt</span>
+                        </a>
+                        <a href="{{ route('admin.wallet.withdrawals.history') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.withdrawals.history') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-circle">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="8,12 12,16 16,12"></polyline>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Lịch sử rút tiền</span>
+                        </a>
+                        <a href="{{ route('admin.wallet.deposits.history') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.deposits.history') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-circle">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="16,12 12,8 8,12"></polyline>
+                                    <line x1="12" y1="16" x2="12" y2="8"></line>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Lịch sử nạp tiền</span>
+                        </a>
+                        <a href="{{ route('admin.wallet.transactions.all') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.transactions.all') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Tất cả giao dịch</span>
+                        </a>
+                        <a href="{{ route('admin.wallet.users.index') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.wallet.users.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </span>
+                            <span class="sidebar-text">Quản lý ví khách hàng</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Quản lý bình luận -->
                 <a href="{{ route('admin.reviews.index') }}"
                     class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.reviews.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
