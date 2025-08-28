@@ -59,6 +59,16 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('/orders/{order}/start-delivery', [OrderController::class, 'startDelivery'])->name('orders.start-delivery');
         Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm-delivery');
         Route::post('/orders/{order}/reject', [OrderController::class, 'reject'])->name('orders.reject');
+        
+        // General order status update
+        Route::post('/orders/{order}/update-status', [OrderController::class, 'updateOrderStatus'])->name('orders.update-status');
+
+        // Batch Orders (Ghép đơn)
+        Route::get('/orders/batchable', [OrderController::class, 'showBatchableOrders'])->name('orders.batchable');
+        Route::post('/orders/batch/create', [OrderController::class, 'createBatch'])->name('orders.batch.create');
+        Route::get('/orders/batch/{batchGroupId}/navigate', [OrderController::class, 'navigateBatch'])->name('orders.batch.navigate');
+        Route::post('/orders/batch/{batchGroupId}/{orderId}/update-status', [OrderController::class, 'updateBatchOrderStatus'])->name('orders.batch.update-status');
+        Route::delete('/orders/batch/{batchGroupId}/disband', [OrderController::class, 'disbandBatch'])->name('orders.batch.disband');
 
         // Driver profile and history
         Route::get('/profile', [DriverController::class, 'profile'])->name('profile');

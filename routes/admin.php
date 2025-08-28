@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\UserRankHistoryController;
 use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\GeneralSettingController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\WalletController as AdminWalletController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
@@ -152,6 +153,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
         // Topping management for products
         Route::get('get-toppings', [ToppingController::class, 'getToppings'])->name('get-toppings');
+        
+        // Attribute/Value deletion check routes
+        Route::post('check-attribute-deletable', [ProductController::class, 'checkAttributeDeletable'])->name('check-attribute-deletable');
+        Route::post('check-value-deletable', [ProductController::class, 'checkValueDeletable'])->name('check-value-deletable');
     });
 
     // Toppings Management
@@ -203,6 +208,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/tracking', [DriverController::class, 'tracking'])->name('tracking');
         Route::get('/create', [DriverController::class, 'create'])->name('create');
         Route::post('/store', [DriverController::class, 'store'])->name('store');
         Route::get('/show/{driver}', [DriverController::class, 'show'])->name('show');
@@ -345,6 +351,44 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Wallet Management
+    Route::prefix('wallet')->name('wallet.')->group(function () {
+        // Dashboard & Overview
+        Route::get('/', [AdminWalletController::class, 'index'])->name('index');
+        Route::get('/analytics', [AdminWalletController::class, 'analytics'])->name('analytics');
+        Route::get('/health-check', [AdminWalletController::class, 'systemHealthCheck'])->name('health-check');
+        
+        // Withdrawal Management
+        Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
+            Route::get('/pending', [AdminWalletController::class, 'pendingWithdrawals'])->name('pending');
+            Route::get('/history', [AdminWalletController::class, 'withdrawalHistory'])->name('history');
+            Route::get('/{id}', [AdminWalletController::class, 'showWithdrawal'])->name('show');
+            Route::post('/{id}/approve', [AdminWalletController::class, 'approveWithdrawal'])->name('approve');
+            Route::post('/{id}/reject', [AdminWalletController::class, 'rejectWithdrawal'])->name('reject');
+            Route::post('/batch-process', [AdminWalletController::class, 'batchProcess'])->name('batch-process');
+        });
+        
+        // Deposit Management
+        Route::prefix('deposits')->name('deposits.')->group(function () {
+            Route::get('/history', [AdminWalletController::class, 'depositHistory'])->name('history');
+        });
+        
+        // Transaction Management
+        Route::prefix('transactions')->name('transactions.')->group(function () {
+            Route::get('/all', [AdminWalletController::class, 'allTransactions'])->name('all');
+            Route::get('/export', [AdminWalletController::class, 'exportTransactions'])->name('export');
+            Route::post('/force-expire', [AdminWalletController::class, 'forceExpireTransactions'])->name('force-expire');
+            Route::post('/bulk-update-status', [AdminWalletController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        });
+        
+        // User Wallet Management
+        Route::prefix('users')->name('users.')->group(function () {
+            Route::get('/', [AdminWalletController::class, 'userWallets'])->name('index');
+            Route::get('/{userId}', [AdminWalletController::class, 'userWalletDetail'])->name('detail');
+
+        });
+    });
     Route::get('notifications/item/{orderId}', [OrderController::class, 'notificationItem'])->name('admin.notifications.item');
     // Orders Management
     Route::prefix('orders')->name('orders.')->group(function () {
@@ -354,7 +398,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/export', [OrderController::class, 'export'])->name('export');
         // Route để lấy HTML partial cho order row (cho realtime)
         Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
+        // Route để lấy số lượng đơn hàng theo trạng thái (cho real-time updates)
+        Route::get('/counts', [OrderController::class, 'getCounts'])->name('counts');
+        Route::post('/{id}/update-status', [OrderController::class, 'updateStatus'])->name('update-status');
         Route::post('/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('cancel');
+        
+        // AJAX routes for enhanced functionality
+        Route::get('/{id}/details', [OrderController::class, 'details'])->name('details');
+        Route::get('/{id}/refresh-status', [OrderController::class, 'refreshStatus'])->name('refresh-status');
+        Route::get('/{id}/available-transitions', [OrderController::class, 'availableTransitions'])->name('available-transitions');
     });
 
     // Reviews Management

@@ -58,7 +58,7 @@
     <div class="flex items-center gap-4">
         <!-- Theme toggle -->
         <button id="theme-toggle"
-            class="flex items-center justify-center h-8 w-8 rounded-full border border-input bg-background hover:bg-accent hover:text-accent-foreground">
+            class="flex items-center justify-center h-9 w-9 rounded-full border border-input bg-background hover:bg-accent hover:text-accent-foreground">
             <!-- Sun icon (shown in dark mode) -->
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun">
@@ -85,7 +85,7 @@
         <!-- Notifications -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open"
-                class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
+                class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative mt-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-bell animate-bell admin-header-bell-icon">
@@ -134,14 +134,20 @@
         <!-- User dropdown -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open"
-                class="flex items-center gap-2 rounded-full hover:bg-accent hover:text-accent-foreground">
-                <div class="relative h-8 w-8 rounded-full bg-muted">
+                class="flex items-center gap-2 rounded-full hover:bg-accent hover:text-accent-foreground mr-8">
+                <div class="relative h-9 w-9 rounded-full bg-muted">
                     @if (Auth::user()->avatar)
                         <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->full_name }}"
                             class="h-full w-full rounded-full object-cover">
                     @else
-                        <img src="{{ asset('images/placeholder.svg') }}" alt="{{ Auth::user()->full_name }}"
-                            class="h-full w-full rounded-full object-cover">
+                        @php
+                            $colors = ['bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-yellow-500', 'bg-purple-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
+                            $colorIndex = ord(strtoupper(substr(Auth::user()->full_name, 0, 1))) % count($colors);
+                            $selectedColor = $colors[$colorIndex];
+                        @endphp
+                        <div class="h-full w-full rounded-full {{ $selectedColor }} flex items-center justify-center text-white font-medium text-sm">
+                            {{ strtoupper(substr(Auth::user()->full_name, 0, 1)) }}
+                        </div>
                     @endif
                 </div>
             </button>
@@ -204,7 +210,7 @@
 </header>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<script src="public/js/modal.js"></script>
+<script src="{{ asset('js/modal.js') }}"></script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
     window.currentAdminId = "{{ auth('admin')->id() }}";
@@ -442,7 +448,8 @@
             if (redirectUrl) {
                 window.location.href = redirectUrl;
             } else {
-                location.reload();
+                // Cập nhật UI thay vì reload trang
+                fetchAdminNotifications();
             }
         });
     }

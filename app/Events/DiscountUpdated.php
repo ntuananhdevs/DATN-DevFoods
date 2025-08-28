@@ -9,6 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Queue\SerializesModels;
 use App\Models\DiscountCode;
+use Illuminate\Support\Facades\Log;
 
 class DiscountUpdated implements ShouldBroadcast
 {
@@ -20,7 +21,13 @@ class DiscountUpdated implements ShouldBroadcast
 
     public function __construct($discount, $action)
     {
-        $this->discount = $discount;
+        // For deleted action, we don't store the model to avoid serialization issues
+        if ($action === 'deleted') {
+            $this->discount = null;
+        } else {
+            $this->discount = $discount;
+        }
+        
         $this->action = $action;
         
         // Prepare discount data for broadcasting
@@ -44,6 +51,7 @@ class DiscountUpdated implements ShouldBroadcast
             'valid_to_time' => $discount->valid_to_time,
             'max_total_usage' => $discount->max_total_usage,
             'max_usage_per_user' => $discount->max_usage_per_user,
+            'affected_products' => $this->getAffectedProducts($discount),
             'timestamp' => now()->toISOString()
         ];
     }
@@ -56,6 +64,85 @@ class DiscountUpdated implements ShouldBroadcast
     public function broadcastAs()
     {
         return 'discount-updated';
+    }
+
+    /**
+     * Get the list of product IDs affected by this discount code
+     */
+    private function getAffectedProducts($discount)
+    {
+        $affectedProducts = [];
+        
+        // If this is a delete action, we don't need to get affected products
+        // because the discount is being removed, not updated
+        if ($this->action === 'deleted') {
+            return [];
+        }
+        
+        try {
+            switch ($discount->applicable_items) {
+                case 'all_items':
+                case 'all_products':
+                    // Get all active product IDs
+                    $affectedProducts = \App\Models\Product::where('status', 'selling')
+                        ->pluck('id')
+                        ->toArray();
+                    break;
+                    
+                case 'specific_products':
+                    // Get specific product IDs from discount_code_products table
+                    $affectedProducts = $discount->specificProducts()
+                        ->pluck('product_id')
+                        ->filter()
+                        ->toArray();
+                    break;
+                    
+                case 'specific_categories':
+                    // Get product IDs from specific categories
+                    $categoryIds = $discount->specificCategories()
+                        ->pluck('category_id')
+                        ->filter()
+                        ->toArray();
+                        
+                    if (!empty($categoryIds)) {
+                        $affectedProducts = \App\Models\Product::whereIn('category_id', $categoryIds)
+                            ->where('status', 'selling')
+                            ->pluck('id')
+                            ->toArray();
+                    }
+                    break;
+                    
+                case 'specific_variants':
+                    // Get product IDs from specific variants
+                    $variantIds = $discount->specificVariants()
+                        ->pluck('product_variant_id')
+                        ->filter()
+                        ->toArray();
+                        
+                    if (!empty($variantIds)) {
+                        $affectedProducts = \App\Models\ProductVariant::whereIn('id', $variantIds)
+                            ->with('product')
+                            ->get()
+                            ->pluck('product.id')
+                            ->filter()
+                            ->unique()
+                            ->toArray();
+                    }
+                    break;
+                    
+                default:
+                    // For other types like combos, we don't affect product cards
+                    $affectedProducts = [];
+                    break;
+            }
+        } catch (\Exception $e) {
+            // If there's an error getting affected products (e.g., relationships deleted),
+            // return empty array to avoid breaking the event
+            Log::warning('Error getting affected products for discount: ' . $e->getMessage());
+            return [];
+        }
+        
+        return array_values(array_unique($affectedProducts));
     }
 }
 

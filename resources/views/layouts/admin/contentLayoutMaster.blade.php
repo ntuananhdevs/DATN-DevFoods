@@ -113,6 +113,7 @@
         window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
     </script>
     <script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+    <script src="{{ asset('js/admin/wallet-realtime.js') }}"></script>
 
 </body>
 

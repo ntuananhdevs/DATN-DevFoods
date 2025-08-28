@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DiscountCode extends Model
 {
@@ -70,6 +71,20 @@ class DiscountCode extends Model
     {
         return $this->belongsToMany(PromotionProgram::class, 'promotion_discount_codes', 'discount_code_id', 'promotion_program_id');
     }
+    
+    /**
+     * Kiểm tra xem mã giảm giá có thuộc về chương trình giảm giá nào đang hoạt động không
+     * 
+     * @return bool
+     */
+    public function hasActivePromotionProgram()
+    {
+        return $this->promotionPrograms()
+            ->where('is_active', true)
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->exists();
+    }
 
     public function branches()
     {
@@ -134,17 +149,40 @@ class DiscountCode extends Model
     public function scopeActive($query)
     {
         $now = Carbon::now();
+        
+        // Lấy danh sách các mã giảm giá có chương trình giảm giá không hoạt động
+        $inactivePromotionDiscountCodeIds = DB::table('promotion_discount_codes')
+            ->join('promotion_programs', 'promotion_discount_codes.promotion_program_id', '=', 'promotion_programs.id')
+            ->where(function($q) use ($now) {
+                $q->where('promotion_programs.is_active', false)
+                  ->orWhere('promotion_programs.start_date', '>', $now)
+                  ->orWhere('promotion_programs.end_date', '<', $now);
+            })
+            ->pluck('promotion_discount_codes.discount_code_id')
+            ->toArray();
+        
         return $query->where('is_active', true)
                     ->where('start_date', '<=', $now)
-                    ->where('end_date', '>=', $now);
+                    ->where('end_date', '>=', $now)
+                    ->whereNotIn('id', $inactivePromotionDiscountCodeIds);
     }
 
     public function isActiveNow()
     {
         $now = Carbon::now();
-        return $this->is_active && 
-               $this->start_date <= $now && 
-               $this->end_date >= $now;
+        
+        // Kiểm tra trạng thái của mã giảm giá
+        $discountCodeActive = $this->is_active && 
+                             $this->start_date <= $now && 
+                             $this->end_date >= $now;
+        
+        // Nếu mã giảm giá không thuộc chương trình giảm giá nào, chỉ kiểm tra trạng thái của mã
+        if (!$this->promotionPrograms()->exists()) {
+            return $discountCodeActive;
+        }
+        
+        // Nếu mã giảm giá thuộc chương trình giảm giá, kiểm tra cả trạng thái của chương trình
+        return $discountCodeActive && $this->hasActivePromotionProgram();
     }
 
     public function isExpired()
@@ -159,15 +197,21 @@ class DiscountCode extends Model
 
     public function getStatusAttribute()
     {
+        // Kiểm tra trạng thái của mã giảm giá
         if (!$this->is_active) {
             return 'inactive';
         } elseif ($this->isExpired()) {
             return 'expired';
         } elseif ($this->isUpcoming()) {
             return 'upcoming';
-        } else {
-            return 'active';
         }
+        
+        // Nếu mã giảm giá thuộc chương trình giảm giá, kiểm tra trạng thái của chương trình
+        if ($this->promotionPrograms()->exists() && !$this->hasActivePromotionProgram()) {
+            return 'inactive';
+        }
+        
+        return 'active';
     }
 
     /**

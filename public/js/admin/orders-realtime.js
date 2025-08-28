@@ -114,6 +114,8 @@ if (window.adminOrdersRealtimeInitialized) {
 
             initializePusher() {
                 try {
+                    console.log('🚀 Initializing Pusher with key:', this.pusherKey, 'cluster:', this.pusherCluster);
+                    
                     this.pusher = new Pusher(this.pusherKey, {
                         cluster: this.pusherCluster,
                         encrypted: true,
@@ -122,14 +124,16 @@ if (window.adminOrdersRealtimeInitialized) {
 
                     // Connection events
                     this.pusher.connection.bind('connected', () => {
-                        // Connected successfully
+                        console.log('✅ Pusher connected successfully');
                     });
 
                     this.pusher.connection.bind('error', (err) => {
+                        console.error('❌ Pusher connection error:', err);
                         this.showNotification('Lỗi kết nối', 'Không thể kết nối Pusher');
                     });
 
                     this.pusher.connection.bind('disconnected', () => {
+                        console.log('⚠️ Pusher disconnected');
                         this.showNotification('Mất kết nối', 'Kết nối Pusher đã bị ngắt');
                     });
 
@@ -137,26 +141,414 @@ if (window.adminOrdersRealtimeInitialized) {
                     this.subscribeToPublicChannel();
 
                 } catch (error) {
+                    console.error('❌ Error initializing Pusher:', error);
                     this.showNotification('Lỗi khởi tạo', 'Không thể khởi tạo Pusher');
                 }
             }
 
             subscribeToPublicChannel() {
+                // Subscribe to branch orders channel for new orders
                 this.publicChannel = this.pusher.subscribe('branch-orders-channel');
                 
                 this.publicChannel.bind('pusher:subscription_succeeded', () => {
-                    // Successfully subscribed
+                    console.log('✅ Successfully subscribed to branch-orders-channel');
                 });
 
                 this.publicChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to branch-orders-channel:', status);
                     this.showNotification('Lỗi kết nối', 'Không thể kết nối kênh thông báo');
                 });
 
                 this.publicChannel.bind('new-order-received', (data) => {
                     // Admin nhận tất cả đơn hàng từ mọi branch
+                    console.log('📦 New order received:', data);
                     this.hasNewOrder = true;
                     this.startNotificationLoop();
                     this.handleNewOrder(data);
+                });
+
+                // Subscribe to admin orders channel for status updates
+                this.subscribeToAdminChannel();
+                
+                // Subscribe to individual order channels for status updates
+                this.subscribeToOrderStatusUpdates();
+            }
+
+            subscribeToAdminChannel() {
+                // Subscribe to admin orders channel for real-time status updates
+                console.log('🔔 Subscribing to admin-orders-channel');
+                this.adminChannel = this.pusher.subscribe('admin-orders-channel');
+                
+                this.adminChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('✅ Successfully subscribed to admin-orders-channel');
+                });
+
+                this.adminChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to admin-orders-channel:', status);
+                    this.showNotification('Lỗi kết nối', 'Không thể kết nối kênh admin');
+                });
+
+                // Listen for order status updates from admin channel
+                this.adminChannel.bind('order-status-updated', (data) => {
+                    console.log('📦 Admin channel - order-status-updated event received:', data);
+                    this.handleOrderStatusUpdate(data);
+                });
+
+                // Listen for OrderStatusUpdated events
+                this.adminChannel.bind('OrderStatusUpdated', (data) => {
+                    console.log('📦 Admin channel - OrderStatusUpdated event received:', data);
+                    this.handleOrderStatusUpdate(data);
+                });
+            }
+
+            subscribeToOrderStatusUpdates() {
+                // Subscribe to all order status update channels
+                // We'll use a general channel for all order status updates
+                console.log('🔔 Subscribing to order-status-updates channel');
+                this.orderStatusChannel = this.pusher.subscribe('order-status-updates');
+                
+                this.orderStatusChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('✅ Successfully subscribed to order status updates');
+                });
+
+                this.orderStatusChannel.bind('pusher:subscription_error', (status) => {
+                    console.error('❌ Failed to subscribe to order status updates:', status);
+                });
+
+                // Listen for order status updates
+                this.orderStatusChannel.bind('OrderStatusUpdated', (data) => {
+                    console.log('📦 OrderStatusUpdated event received:', data);
+                    console.log('📊 Event data details:', {
+                        order_id: data.order_id,
+                        old_status: data.old_status,
+                        new_status: data.new_status || data.status,
+                        status_text: data.status_text,
+                        order_code: data.order_code
+                    });
+                    this.handleOrderStatusUpdate(data);
+                });
+
+                // Also listen for any other status update events that might be broadcasted
+                this.orderStatusChannel.bind('order-status-updated', (data) => {
+                    console.log('📦 order-status-updated event received:', data);
+                    this.handleOrderStatusUpdate(data);
+                });
+            }
+
+            handleOrderStatusUpdate(data) {
+                console.log('🔄 Handling order status update:', data);
+                console.log('📊 Old status:', data.old_status, '→ New status:', data.status || data.new_status);
+                
+                // Check if we need to move the order to a different tab
+                const currentTab = this.getCurrentActiveTab();
+                const orderShouldBeInCurrentTab = this.shouldOrderBeInTab(data.status || data.new_status, currentTab);
+                
+                console.log('📋 Current tab:', currentTab, '| Order should be in tab:', orderShouldBeInCurrentTab);
+                
+                if (!orderShouldBeInCurrentTab) {
+                    // Remove order from current view since it no longer belongs here
+                    console.log('🗑️ Removing order from current view');
+                    this.removeOrderFromCurrentView(data.order_id);
+                } else {
+                    // Update the order row in the table
+                    console.log('🔄 Updating order row status');
+                    this.updateOrderRowStatus(data.order_id, data);
+                }
+                
+                // Update status counts for both old and new status
+                console.log('📊 Updating status counts');
+                this.updateStatusCountsForStatusChange(data.old_status, data.status || data.new_status);
+                
+                // Show notification
+                console.log('🔔 Showing status update notification');
+                this.showStatusUpdateNotification(data);
+            }
+
+            getCurrentActiveTab() {
+                // Get current status from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('status') || 'all';
+            }
+
+            shouldOrderBeInTab(orderStatus, tabStatus) {
+                // If it's the "all" tab, all orders should be shown
+                if (tabStatus === 'all' || !tabStatus) {
+                    return true;
+                }
+                
+                // For specific status tabs, only show orders with matching status
+                return orderStatus === tabStatus;
+            }
+
+            removeOrderFromCurrentView(orderId) {
+                const orderRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+                if (orderRow) {
+                    // Add fade out animation
+                    orderRow.style.transition = 'opacity 0.5s ease';
+                    orderRow.style.opacity = '0';
+                    
+                    // Remove after animation
+                    setTimeout(() => {
+                        orderRow.remove();
+                        
+                        // Check if table is empty and show empty message if needed
+                        this.checkAndShowEmptyMessage();
+                    }, 500);
+                }
+            }
+
+            checkAndShowEmptyMessage() {
+                const tableBody = document.querySelector('#orders-table tbody');
+                if (tableBody && tableBody.children.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = `
+                        <td colspan="9" class="px-6 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center justify-center py-8">
+                                <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <p class="text-lg font-medium text-gray-900 mb-1">Không có đơn hàng</p>
+                                <p class="text-gray-500">Chưa có đơn hàng nào trong trạng thái này.</p>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(emptyRow);
+                }
+            }
+
+            updateOrderRowStatus(orderId, statusData) {
+                // Find the order row in the table
+                const orderRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+                if (!orderRow) {
+                    console.log('Order row not found for ID:', orderId);
+                    return;
+                }
+
+                const status = statusData.status || statusData.new_status;
+                console.log('🔄 Updating row for order:', orderId, 'to status:', status);
+
+                // Update status badge
+                const statusBadge = orderRow.querySelector('.order-status-badge');
+                if (statusBadge) {
+                    // Get status mapping
+                    const statusMap = {
+                        'awaiting_confirmation': ['Chờ xác nhận', 'bg-yellow-100 text-yellow-800'],
+                        'confirmed': ['Đã xác nhận', 'bg-blue-100 text-blue-800'],
+                        'order_confirmed': ['Đã xác nhận', 'bg-blue-100 text-blue-800'],
+                        'awaiting_driver': ['Chờ tài xế', 'bg-blue-200 text-blue-900'],
+                        'driver_confirmed': ['Tài xế đã xác nhận', 'bg-indigo-100 text-indigo-800'],
+                        'waiting_driver_pick_up': ['Chờ tài xế lấy hàng', 'bg-purple-100 text-purple-800'],
+                        'driver_picked_up': ['Tài xế đã lấy hàng', 'bg-purple-200 text-purple-900'],
+                        'in_transit': ['Đang giao', 'bg-cyan-100 text-cyan-800'],
+                        'delivered': ['Đã giao', 'bg-green-100 text-green-800'],
+                        'item_received': ['Khách đã nhận hàng', 'bg-green-200 text-green-900'],
+                        'cancelled': ['Đã hủy', 'bg-red-100 text-red-800'],
+                        'refunded': ['Đã hoàn tiền', 'bg-pink-100 text-pink-800'],
+                        'payment_failed': ['Thanh toán thất bại', 'bg-red-200 text-red-900'],
+                        'payment_received': ['Đã nhận thanh toán', 'bg-lime-100 text-lime-800'],
+                        'order_failed': ['Đơn thất bại', 'bg-gray-300 text-gray-900'],
+                        'unpaid': ['Chưa thanh toán', 'bg-orange-100 text-orange-800'],
+                    };
+                    
+                    const [label, cssClasses] = statusMap[status] || [
+                        statusData.status_text || this.getStatusText(status),
+                        'bg-gray-100 text-gray-800'
+                    ];
+                    
+                    // Remove all existing classes and set new ones
+                    statusBadge.className = `order-status-badge ${status} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cssClasses}`;
+                    
+                    // Update status text
+                    statusBadge.textContent = label;
+                    
+                    // Add highlight effect
+                    statusBadge.style.animation = 'pulse 1s ease-in-out';
+                    setTimeout(() => {
+                        statusBadge.style.animation = '';
+                    }, 1000);
+                }
+
+                // Update payment status if exists
+                const paymentStatusBadge = orderRow.querySelector('.payment-status-badge');
+                if (paymentStatusBadge && statusData.payment_status) {
+                    // Get payment status mapping
+                    const paymentStatusMap = {
+                        'pending': ['Chưa thanh toán', 'bg-yellow-100 text-yellow-800'],
+                        'completed': ['Đã thanh toán', 'bg-green-100 text-green-800'],
+                        'failed': ['Thất bại', 'bg-red-100 text-red-800'],
+                        'refunded': ['Đã hoàn tiền', 'bg-pink-100 text-pink-800']
+                    };
+                    
+                    const [paymentLabel, paymentCssClasses] = paymentStatusMap[statusData.payment_status] || [
+                        statusData.payment_status_text || this.getPaymentStatusText(statusData.payment_status),
+                        'bg-gray-100 text-gray-800'
+                    ];
+                    
+                    // Update payment status badge with proper classes
+                    paymentStatusBadge.className = `order-payment-status payment-status-badge ${statusData.payment_status} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${paymentCssClasses}`;
+                    
+                    // Update payment status text
+                    paymentStatusBadge.textContent = paymentLabel;
+                }
+
+                // Update delivery time if provided
+                if (statusData.actual_delivery_time) {
+                    const timeCell = orderRow.querySelector('td:nth-child(8)'); // Assuming time is in 8th column
+                    if (timeCell) {
+                        const deliveryTimeDiv = document.createElement('div');
+                        deliveryTimeDiv.className = 'text-xs text-green-600 font-medium';
+                        deliveryTimeDiv.textContent = `Giao: ${statusData.actual_delivery_time}`;
+                        timeCell.appendChild(deliveryTimeDiv);
+                    }
+                }
+
+                // Add row highlight effect
+                orderRow.style.backgroundColor = '#e0f2fe';
+                setTimeout(() => {
+                    orderRow.style.backgroundColor = '';
+                    orderRow.style.transition = 'background-color 0.5s ease';
+                }, 2000);
+            }
+
+            getStatusText(status) {
+                const statusMap = {
+                    'awaiting_confirmation': 'Chờ xác nhận',
+                    'confirmed': 'Đã xác nhận',
+                    'awaiting_driver': 'Chờ tài xế nhận đơn',
+                    'driver_confirmed': 'Tài xế đã xác nhận đơn',
+                    'waiting_driver_pick_up': 'Tài xế đang chờ đơn',
+                    'driver_picked_up': 'Tài xế đã nhận đơn',
+                    'in_transit': 'Đang trong quá trình giao hàng',
+                    'delivered': 'Đã giao thành công',
+                    'item_received': 'Khách hàng đã nhận hàng',
+                    'cancelled': 'Đã bị hủy',
+                    'refunded': 'Đã được hoàn tiền',
+                    'payment_failed': 'Thanh toán thất bại',
+                    'payment_received': 'Thanh toán đã nhận',
+                    'order_failed': 'Đơn hàng đã thất bại'
+                };
+                return statusMap[status] || status;
+            }
+
+            getPaymentStatusText(paymentStatus) {
+                const paymentStatusMap = {
+                    'pending': 'Chưa thanh toán',
+                    'completed': 'Đã thanh toán',
+                    'failed': 'Thất bại',
+                    'refunded': 'Đã hoàn tiền'
+                };
+                return paymentStatusMap[paymentStatus] || paymentStatus;
+            }
+
+            showStatusUpdateNotification(data) {
+                const status = data.status || data.new_status;
+                const statusText = this.getStatusText(status);
+                console.log('🔔 Notification for status:', status, '→', statusText);
+                this.showNotification('Cập nhật đơn hàng', `Đơn hàng #${data.order_code || data.order_id} đã chuyển sang: ${statusText}`);
+            }
+
+            updateStatusCounts() {
+                // Refresh status counts by making an AJAX call
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+
+                fetch('/admin/orders/counts', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update each tab count
+                        Object.keys(data.counts).forEach(status => {
+                            const count = data.counts[status];
+                            const statusTabElement = document.querySelector(`[data-status="${status}"]`);
+                            if (statusTabElement) {
+                                const tabCountElement = statusTabElement.querySelector('.tab-count');
+                                if (tabCountElement) {
+                                    tabCountElement.textContent = count;
+                                    console.log(`✅ Updated ${status} count to ${count}`);
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating status counts:', error);
+                });
+            }
+
+            updateStatusCountsForStatusChange(oldStatus, newStatus) {
+                // Update counts for status change by adjusting the specific tabs
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+
+                console.log('🔄 Updating status counts:', { oldStatus, newStatus });
+
+                // Status text mapping
+                const statusTexts = {
+                    'awaiting_confirmation': 'Chờ xác nhận',
+                    'confirmed': 'Đã xác nhận',
+                    'awaiting_driver': 'Chờ tài xế',
+                    'driver_confirmed': 'Tài xế đã xác nhận',
+                    'waiting_driver_pick_up': 'Chờ tài xế lấy hàng',
+                    'driver_picked_up': 'Tài xế đã lấy hàng',
+                    'in_transit': 'Đang giao',
+                    'delivered': 'Đã giao',
+                    'item_received': 'Đã nhận hàng',
+                    'cancelled': 'Đã hủy',
+                    'refunded': 'Đã hoàn tiền',
+                    'payment_failed': 'Thanh toán thất bại',
+                    'payment_received': 'Đã thanh toán',
+                    'order_failed': 'Đơn hàng thất bại',
+                    'unpaid': 'Chưa thanh toán'
+                };
+
+                // Decrease count for old status tab
+                if (oldStatus && statusTexts[oldStatus]) {
+                    const oldStatusTabElement = document.querySelector(`[data-status="${oldStatus}"]`);
+                    if (oldStatusTabElement) {
+                        const oldStatusTab = oldStatusTabElement.querySelector('.tab-count');
+                        if (oldStatusTab) {
+                            const currentCount = parseInt(oldStatusTab.textContent) || 0;
+                            const newCount = Math.max(0, currentCount - 1);
+                            oldStatusTab.textContent = newCount;
+                            console.log(`📉 Decreased ${oldStatus} count to ${newCount}`);
+                        }
+                    }
+                }
+
+                // Increase count for new status tab
+                if (newStatus && statusTexts[newStatus]) {
+                    const newStatusTabElement = document.querySelector(`[data-status="${newStatus}"]`);
+                    if (newStatusTabElement) {
+                        const newStatusTab = newStatusTabElement.querySelector('.tab-count');
+                        if (newStatusTab) {
+                            const currentCount = parseInt(newStatusTab.textContent) || 0;
+                            const newCount = currentCount + 1;
+                            newStatusTab.textContent = newCount;
+                            console.log(`📈 Increased ${newStatus} count to ${newCount}`);
+                        }
+                    }
+                }
+
+                // Add visual feedback for the updated tabs
+                [oldStatus, newStatus].forEach(status => {
+                    if (status && statusTexts[status]) {
+                        const tabElement = document.querySelector(`[data-status="${status}"]`);
+                        if (tabElement) {
+                            tabElement.style.backgroundColor = '#e0f2fe';
+                            setTimeout(() => {
+                                tabElement.style.backgroundColor = '';
+                                tabElement.style.transition = 'background-color 0.5s ease';
+                            }, 1000);
+                        }
+                    }
                 });
             }
 
@@ -236,44 +628,44 @@ if (window.adminOrdersRealtimeInitialized) {
             }
 
             updateOrderCount(orderStatus = 'awaiting_confirmation') {
-                // Cập nhật tab "all" vì đơn hàng mới thuộc về tất cả
-                const allTab = document.querySelector('a[href*="status="]');
+                // Chỉ cập nhật count nếu đang ở trang quản lý đơn hàng
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+                
+                console.log('🔄 Updating order count for status:', orderStatus);
+                
+                // Cập nhật tab "all" - tìm tab có data-status rỗng (tab "Tất cả")
+                const allTab = document.querySelector('[data-status=""]');
                 if (allTab) {
-                    const currentText = allTab.textContent;
-                    const match = currentText.match(/Tất cả \((\d+)\)/);
-                    if (match) {
-                        const currentCount = parseInt(match[1]) || 0;
+                    const allTabCount = allTab.querySelector('.tab-count');
+                    if (allTabCount) {
+                        const currentCount = parseInt(allTabCount.textContent) || 0;
                         const newCount = currentCount + 1;
-                        allTab.textContent = `Tất cả (${newCount})`;
+                        allTabCount.textContent = newCount;
+                        console.log(`📈 Updated "Tất cả" count to ${newCount}`);
                     }
                 }
                 
                 // Cập nhật tab tương ứng với status của đơn hàng
-                const statusTexts = {
-                    'awaiting_confirmation': 'Chờ xác nhận',
-                    'awaiting_driver': 'Chờ tài xế',
-                    'in_transit': 'Đang giao',
-                    'delivered': 'Đã giao',
-                    'cancelled': 'Đã hủy',
-                    'refunded': 'Đã hoàn tiền'
-                };
-                
-                const statusText = statusTexts[orderStatus] || orderStatus;
-                const statusTab = document.querySelector(`a[href*="status=${orderStatus}"]`);
-                if (statusTab) {
-                    const currentText = statusTab.textContent;
-                    const regex = new RegExp(`${statusText} \\((\\d+)\\)`);
-                    const match = currentText.match(regex);
-                    
-                    if (match) {
-                        const currentCount = parseInt(match[1]) || 0;
+                const statusTabElement = document.querySelector(`[data-status="${orderStatus}"]`);
+                if (statusTabElement) {
+                    const statusTabCount = statusTabElement.querySelector('.tab-count');
+                    if (statusTabCount) {
+                        const currentCount = parseInt(statusTabCount.textContent) || 0;
                         const newCount = currentCount + 1;
-                        statusTab.textContent = `${statusText} (${newCount})`;
+                        statusTabCount.textContent = newCount;
+                        console.log(`📈 Updated ${orderStatus} count to ${newCount}`);
                     }
                 }
             }
 
             addOrderRow(order) {
+                // Chỉ thêm row nếu đang ở trang quản lý đơn hàng
+                if (!window.location.pathname.includes('/admin/orders')) {
+                    return;
+                }
+                
                 // Lấy status tab hiện tại
                 const urlParams = new URLSearchParams(window.location.search);
                 const currentStatus = urlParams.get('status') || '';
@@ -281,15 +673,19 @@ if (window.adminOrdersRealtimeInitialized) {
                 // Map trạng thái đơn hàng với tab
                 const statusTabMap = {
                     'awaiting_confirmation': 'awaiting_confirmation',
-                    'confirmed': 'awaiting_driver',
+                    'confirmed': 'confirmed',
                     'awaiting_driver': 'awaiting_driver',
-                    'driver_assigned': 'awaiting_driver',
-                    'driver_confirmed': 'awaiting_driver',
-                    'driver_picked_up': 'awaiting_driver',
+                    'driver_confirmed': 'driver_confirmed',
+                    'waiting_driver_pick_up': 'waiting_driver_pick_up',
+                    'driver_picked_up': 'driver_picked_up',
                     'in_transit': 'in_transit',
                     'delivered': 'delivered',
+                    'item_received': 'item_received',
                     'cancelled': 'cancelled',
-                    'refunded': 'refunded'
+                    'refunded': 'refunded',
+                    'payment_failed': 'payment_failed',
+                    'payment_received': 'payment_received',
+                    'order_failed': 'order_failed'
                 };
                 const orderTab = statusTabMap[order.status] || '';
                 
@@ -307,7 +703,11 @@ if (window.adminOrdersRealtimeInitialized) {
                         return response.text();
                     })
                     .then(html => {
-                        const tableBody = document.querySelector('tbody');
+                        // Chỉ tìm tbody trong table đơn hàng, không phải tất cả tbody
+                        const ordersTable = document.querySelector('#ordersTable tbody') || 
+                                          document.querySelector('.orders-table tbody') ||
+                                          document.querySelector('table[data-table="orders"] tbody');
+                        const tableBody = ordersTable || document.querySelector('tbody');
                         if (!tableBody) {
                             return;
                         }
@@ -400,11 +800,19 @@ if (window.adminOrdersRealtimeInitialized) {
                 // Map status text
                 const statusMap = {
                     'awaiting_confirmation': 'Chờ xác nhận',
-                    'order_confirmed': 'Đang chuẩn bị',
-                    'in_transit': 'Đang giao',
-                    'delivered': 'Hoàn thành',
-                    'cancelled': 'Đã hủy',
-                    'refunded': 'Đã hoàn tiền',
+                    'confirmed': 'Đã xác nhận',
+                    'awaiting_driver': 'Chờ tài xế nhận đơn',
+                    'driver_confirmed': 'Tài xế đã xác nhận đơn',
+                    'waiting_driver_pick_up': 'Tài xế đang chờ đơn',
+                    'driver_picked_up': 'Tài xế đã nhận đơn',
+                    'in_transit': 'Đang trong quá trình giao hàng',
+                    'delivered': 'Đã giao thành công',
+                    'item_received': 'Khách hàng đã nhận hàng',
+                    'cancelled': 'Đã bị hủy',
+                    'refunded': 'Đã được hoàn tiền',
+                    'payment_failed': 'Thanh toán thất bại',
+                    'payment_received': 'Thanh toán đã nhận',
+                    'order_failed': 'Đơn hàng đã thất bại'
                 };
                 
                 const statusText = statusMap[order.status] || 'Không xác định';
@@ -536,8 +944,16 @@ if (window.adminOrdersRealtimeInitialized) {
         window.AdminOrdersRealtime = AdminOrdersRealtime;
     }
 
-    // Initialize when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
+    // Initialize immediately or when DOM is loaded
+    function initializeAdminOrdersRealtime() {
+        console.log('🚀 Initializing AdminOrdersRealtime...');
         window.adminOrdersRealtime = new AdminOrdersRealtime();
-    }); 
-} 
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAdminOrdersRealtime);
+    } else {
+        // DOM is already loaded
+        initializeAdminOrdersRealtime();
+    }
+}

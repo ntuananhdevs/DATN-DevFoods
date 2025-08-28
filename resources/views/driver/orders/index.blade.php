@@ -31,7 +31,13 @@
         <div class="space-y-3">
             @forelse ($orders as $order)
                 {{-- Sử dụng các accessor từ Order model --}}
-                <a href="{{ route('driver.orders.show', $order->id) }}"
+                @php
+                    // Kiểm tra nếu đơn hàng là đơn ghép thì chuyển đến trang batch-navigate
+                    $href = $order->isPartOfBatch() 
+                        ? route('driver.orders.batch.navigate', $order->getBatchGroupId())
+                        : route('driver.orders.show', $order->id);
+                @endphp
+                <a href="{{ $href }}"
                     class="block bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
 
                     <div class="p-4 border-b border-gray-100">
@@ -40,7 +46,7 @@
                                 <div class="flex items-center gap-2 mb-2">
                                     {{-- Badge trạng thái sử dụng accessor --}}
                                     <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
-                                        style="background-color: {{ $order->status_color }};">
+                                        style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
                                         <i class="{{ $order->status_icon }} w-3 h-3 mr-1"></i> {{-- Font Awesome Icon --}}
                                         {{ $order->status_text }}
                                     </div>

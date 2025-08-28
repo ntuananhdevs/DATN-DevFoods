@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.customer.fullLayoutMaster')
 
 @section('title', 'FastFood - Danh Sách Yêu Thích')
@@ -154,29 +158,48 @@
     <div id="wishlist-container">
         <div id="grid-view" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse($wishlistItems as $item)
+                @php
+                    if ($item->product) {
+                        $isCombo = $item->product instanceof \App\Models\Combo;
+                        $image = $isCombo
+                            ? ($item->product->image_url ?? asset('images/default-combo.png'))
+                            : (
+                                $item->product->images->where('is_primary', true)->first()
+                                    ? Storage::disk('s3')->url($item->product->images->where('is_primary', true)->first()->img)
+                                    : '/placeholder.svg?height=400&width=400'
+                            );
+                        $name = $item->product->name;
+                        $slug = $item->product->slug;
+                        $url = $isCombo ? route('combos.show', $slug) : route('products.show', $slug);
+                    } elseif ($item->combo) {
+                        $image = $item->combo->image_url ?? asset('images/default-combo.png');
+                        $name = $item->combo->name;
+                        $slug = $item->combo->slug;
+                        $url = route('combos.show', $slug);
+                    } else {
+                        $image = '/placeholder.svg?height=400&width=400';
+                        $name = 'Không xác định';
+                        $url = '#';
+                    }
+                @endphp
                 <div class="wishlist-item bg-white rounded-lg overflow-hidden shadow-md" 
-                    data-category="{{ $item->product->category->name ?? 'other' }}" 
-                    data-price="{{ $item->product->base_price }}"
-                    data-name="{{ $item->product->name }}"
+                    data-category="{{ $item->product->category->name ?? ($item->combo ? 'Combo' : 'other') }}" 
+                    data-price="{{ $item->product->base_price ?? $item->combo->price ?? 0 }}"
+                    data-name="{{ $name }}"
                     data-date="{{ $item->added_at ? $item->added_at->toDateString() : '' }}"
-                    data-product-id="{{ $item->product->id }}"
+                    data-product-id="{{ $item->product->id ?? $item->combo->id ?? '' }}"
                     data-variant-values="{{ json_encode($item->variant_values ?? []) }}">
                     <div class="relative">
-                        <a href="{{ route('products.show', $item->product->slug) }}" class="block relative h-48 overflow-hidden">
-                            @php
-                                $image = $item->product->images->where('is_primary', true)->first() 
-                                    ? asset('storage/' . $item->product->images->where('is_primary', true)->first()->img)
-                                    : '/placeholder.svg?height=400&width=400';
-                            @endphp
-                            <img src="{{ $image }}" alt="{{ $item->product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                        <a href="{{ $url }}" class="block relative h-48 overflow-hidden">
+                            <img src="{{ $image }}" alt="{{ $name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                         </a>
                         
                         <button class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md heart-icon active" 
-                                data-product-id="{{ $item->product->id }}">
+                                data-product-id="{{ $item->product->id ?? $item->combo->id ?? '' }}">
                             <i class="fas fa-heart text-sm"></i>
                         </button>
                         
-                        @if($item->product->created_at->diffInDays() <= 7)
+                        @if(($item->product && $item->product->created_at && $item->product->created_at->diffInDays() <= 7) || ($item->combo && $item->combo->created_at && $item->combo->created_at->diffInDays() <= 7))
                             <div class="absolute top-3 left-3">
                                 <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
                             </div>
@@ -186,7 +209,16 @@
                     <div class="p-4">
                         <div class="flex items-center gap-1 mb-2">
                             @php
-                                $averageRating = $item->product->reviews->avg('rating') ?? 0;
+                                if ($item->product && $item->product->reviews) {
+                                    $averageRating = $item->product->reviews->avg('rating') ?? 0;
+                                    $reviewCount = $item->product->reviews->count();
+                                } elseif ($item->combo && $item->combo->reviews) {
+                                    $averageRating = $item->combo->reviews->avg('rating') ?? 0;
+                                    $reviewCount = $item->combo->reviews->count();
+                                } else {
+                                    $averageRating = 0;
+                                    $reviewCount = 0;
+                                }
                             @endphp
                             @for($i = 1; $i <= 5; $i++)
                                 @if($i <= floor($averageRating))
@@ -197,23 +229,35 @@
                                     <i class="far fa-star text-yellow-400"></i>
                                 @endif
                             @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $item->product->reviews->count() }})</span>
+                            <span class="text-xs text-gray-500 ml-1">({{ $reviewCount }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $item->product->slug) }}">
+                        <a href="{{ $url }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                {{ $item->product->name }}
+                                {{ $name }}
                             </h3>
                         </a>
 
                         <p class="text-gray-500 text-sm mb-3 line-clamp-2">
-                            {{ $item->product->short_description ?? Str::limit($item->product->description, 80) }}
+                            @if($item->product)
+                                {{ $item->product->short_description ?? Str::limit($item->product->description, 80) }}
+                            @elseif($item->combo)
+                                {{ Str::limit($item->combo->description, 80) }}
+                            @else
+                                Không có mô tả
+                            @endif
                         </p>
 
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center gap-2">
                                 <span class="font-bold text-lg text-orange-500">
-                                    {{ number_format($item->product->discount_price ?? $item->product->base_price, 0, ',', '.') }}₫
+                                    @if($item->product)
+                                        {{ number_format($item->product->discount_price ?? $item->product->base_price, 0, ',', '.') }}₫
+                                    @elseif($item->combo)
+                                        {{ number_format($item->combo->price ?? 0, 0, ',', '.') }}₫
+                                    @else
+                                        Liên hệ
+                                    @endif
                                 </span>
                             </div>
                             <span class="text-xs text-gray-400">Đã lưu: {{ $item->created_at ? $item->created_at->diffForHumans() : 'N/A' }}</span>

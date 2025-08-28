@@ -31,7 +31,7 @@ return new class extends Migration
             // OTP và các trường liên quan
             $table->string('otp', 6)->nullable();
             $table->timestamp('expires_at')->nullable();
-
+            
             // Ghi chú và lịch sử
             $table->text('admin_notes')->nullable();
             $table->timestamp('password_reset_at')->nullable();

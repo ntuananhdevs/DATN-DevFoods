@@ -1,8 +1,17 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.customer.fullLayoutMaster')
 
 @section('title', 'FastFood - Trang Chủ')
 
 @section('content')
+<!-- Add meta tag for selected branch -->
+@if(isset($selectedBranch))
+<meta name="selected-branch" content="{{ $selectedBranch->id }}">
+@endif
+
 <style>
    /* Example for badges - adjust to your styling system */
     .custom-badge {
@@ -36,7 +45,7 @@
     {{-- @foreach ($banners as $index => $banner)
         <div class="banner-slide absolute inset-0 transition-opacity duration-1000 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}">
             <div class="relative h-full w-full">
-                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path :  asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
+                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path : Storage::disk('s3')->url($banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
                 <div class="absolute inset-0 bg-black/30"></div>
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
                     <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{{ $banner->title }}</h2>
@@ -103,6 +112,66 @@
         </div>
     </section>
 
+    <!-- Combo Nổi Bật Section -->
+    @if(isset($featuredCombos) && $featuredCombos->count() > 0)
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Combo Nổi Bật</h2>
+            <a href="{{ route('customer.search', ['type' => 'combos']) }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            @foreach ($featuredCombos as $combo)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-combo-id="{{ $combo->id }}"
+                    data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
+                    <div class="relative">
+                        <a href="{{ route('combos.show', $combo->slug) }}">
+                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
+                            <div class="absolute top-2 left-2">
+                                @if($combo->discount_percent > 0)
+                                    <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
+                                @elseif($combo->created_at->diffInDays(now()) <= 7)
+                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
+                                @endif
+                            </div>
+                        </a>
+                    </div>
+                    <div class="p-4">
+                        <a href="{{ route('combos.show', $combo->slug) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
+                        </a>
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-row items-center gap-2">
+                                @if($combo->original_price && $combo->original_price > $combo->price)
+                                    <span class="font-bold text-lg text-black-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
+                                @else
+                                    <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                @endif
+                            </div>
+                            @if($combo->has_stock)
+                                <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors" data-combo-id="{{ $combo->id }}">
+                                    <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                    Thêm
+                                </button>
+                            @else
+                                <span class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
+                                    Hết hàng
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
+
     <section class="py-10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Nổi Bật</h2>
@@ -167,16 +236,23 @@
                     <div class="p-4">
                         <div class="flex items-center gap-1 mb-2">
                             {{-- Rating Stars --}}
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                @else
-                                    <i class="far fa-star text-yellow-400"></i> {{-- or text-gray-300 for empty --}}
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                            @if(isset($product->average_rating) && $product->average_rating > 0)
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($product->average_rating))
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @elseif($i - 0.5 <= $product->average_rating)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300"></i>
+                                    @endif
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
+                            @else
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="far fa-star text-gray-300"></i>
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">(0)</span>
+                            @endif
                         </div>
 
                         <a href="{{ route('products.show', $product->slug) }}">
@@ -225,64 +301,6 @@
         </div>
     </section>
 
-    <!-- Combo Nổi Bật Section -->
-    @if(isset($featuredCombos) && $featuredCombos->count() > 0)
-    <section class="py-10">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl md:text-3xl font-bold">Combo Nổi Bật</h2>
-            <a href="{{ route('customer.search', ['type' => 'combos']) }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
-                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
-            </a>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            @foreach ($featuredCombos as $combo)
-                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
-                    data-combo-id="{{ $combo->id }}"
-                    data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
-                    <div class="relative">
-                        <a href="{{ route('combos.show', $combo->slug) }}">
-                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
-                            <div class="absolute top-2 left-2">
-                                @if($combo->discount_percent > 0)
-                                    <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
-                                @elseif($combo->created_at->diffInDays(now()) <= 7)
-                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
-                                @endif
-                            </div>
-                        </a>
-                    </div>
-                    <div class="p-4">
-                        <a href="{{ route('combos.show', $combo->slug) }}">
-                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
-                        </a>
-                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
-                        <div class="flex items-center justify-between">
-                            <div class="flex flex-col">
-                                @if($combo->original_price && $combo->original_price > $combo->price)
-                                    <span class="font-bold text-lg text-black-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
-                                    <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
-                                @else
-                                    <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
-                                @endif
-                            </div>
-                            @if($combo->has_stock)
-                                <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors" data-combo-id="{{ $combo->id }}">
-                                    <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                                    Thêm
-                                </button>
-                            @else
-                                <span class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
-                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
-                                    Hết hàng
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </section>
-    @endif
 
     <section class="py-10">
         <div class="flex items-center justify-between mb-6">
@@ -301,23 +319,31 @@
 
                     <div class="relative">
                         <a href="{{ route('products.show', $product->slug) }}" class="block relative h-48 overflow-hidden">
-                            <img src="{{ $product->primary_image->s3_url ?? asset('images/default-placeholder.png') }}"
+                                <img src="{{ $product->primary_image_url ?? asset('images/default-placeholder.png') }}"
                                 alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                         </a>
                     </div>
 
                     <div class="p-4">
                         <div class="flex items-center gap-1 mb-2">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
-                                @else
-                                    <i class="far fa-star text-yellow-400"></i>
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
+                            {{-- Rating Stars --}}
+                            @if(isset($product->average_rating) && $product->average_rating > 0)
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($product->average_rating))
+                                        <i class="fas fa-star text-yellow-400"></i>
+                                    @elseif($i - 0.5 <= $product->average_rating)
+                                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300"></i>
+                                    @endif
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">({{ number_format($product->average_rating ?? 0, 1) }})</span>
+                            @else
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="far fa-star text-gray-300"></i>
+                                @endfor
+                                <span class="text-xs text-gray-500 ml-1">(0)</span>
+                            @endif
                         </div>
 
                         <a href="{{ route('products.show', $product->slug) }}">
@@ -413,15 +439,17 @@
             let slideInterval;
 
             function showSlide(index) {
-                // Hide all slides
-                slides.forEach(slide => {
+                // Hide all slides and reset z-index
+                slides.forEach((slide, i) => {
                     slide.classList.remove('opacity-100');
                     slide.classList.add('opacity-0');
+                    slide.style.zIndex = '1';
                 });
 
-                // Show the selected slide
+                // Show the selected slide and set higher z-index
                 slides[index].classList.remove('opacity-0');
                 slides[index].classList.add('opacity-100');
+                slides[index].style.zIndex = '10';
 
                 // Update dots
                 dots.forEach((dot, i) => {
@@ -435,6 +463,9 @@
                 });
 
                 currentSlide = index;
+                
+                // Debug log
+                console.log('Showing slide:', index, 'Banner ID:', slides[index].dataset.bannerId, 'Link:', slides[index].dataset.bannerLink);
             }
 
             function nextSlide() {
@@ -513,7 +544,9 @@
 <script>
     window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
     window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+    window.csrfToken = '{{ csrf_token() }}';
 </script>
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
+<script src="{{ asset('js/Customer/add-to-cart-direct.js') }}"></script>
 @endsection

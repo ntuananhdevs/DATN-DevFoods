@@ -163,13 +163,13 @@ function dtmodalCloseToast(toast) {
 function dtmodalCreateModal(options) {
     const {
         type = "info",
-        title = "",
-        subtitle = "",
-        message = "",
-        confirmText = "Xác nhận",
-        cancelText = "Hủy bỏ",
-        onConfirm = null,
-        onCancel = null,
+            title = "",
+            subtitle = "",
+            message = "",
+            confirmText = "Xác nhận",
+            cancelText = "Hủy bỏ",
+            onConfirm = null,
+            onCancel = null,
     } = options;
 
     const modalId = "dtmodal" + Math.random().toString(36).substr(2, 9);
@@ -248,42 +248,87 @@ function dtmodalHandleAction(modalId, isConfirm) {
 function dtmodalConfirmDelete(options) {
     const {
         title = "Xác nhận xóa",
-        subtitle = "Bạn có chắc chắn muốn xóa?",
-        message = "Hành động này không thể hoàn tác.",
-        itemName = "",
-        onConfirm = null,
+            subtitle = "Bạn có chắc chắn muốn xóa?",
+            message = "Hành động này không thể hoàn tác.",
+            itemName = "",
+            onConfirm = null,
     } = options;
 
     return dtmodalCreateModal({
         type: "warning",
         title: title,
         subtitle: subtitle,
-        message: itemName
-            ? `Bạn đang xóa: <strong>"${itemName}"</strong><br>${message}`
-            : message,
+        message: itemName ?
+            `Bạn đang xóa: <strong>"${itemName}"</strong><br>${message}` : message,
         confirmText: "Xác nhận xóa",
         cancelText: "Hủy bỏ",
         onConfirm: onConfirm,
         onCancel: null,
     });
 }
+
 function dtmodalConfirmIndex(options) {
     const {
         title = "Xác nhận xóa",
-        subtitle = "Bạn có chắc chắn muốn xóa?",
-        message = "Hành động này không thể hoàn tác.",
-        itemName = "",
-        onConfirm = null,
+            subtitle = "Bạn có chắc chắn muốn xóa?",
+            message = "Hành động này không thể hoàn tác.",
+            itemName = "",
+            onConfirm = null,
     } = options;
 
     return dtmodalCreateModal({
         type: "warning",
         title: title,
         subtitle: subtitle,
-        message: itemName
-            ? `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}`
-            : message,
+        message: itemName ?
+            `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}` : message,
         confirmText: "Xác nhận thay đổi",
+        cancelText: "Hủy bỏ",
+        onConfirm: onConfirm,
+        onCancel: null,
+    });
+}
+
+// Xác nhận khôi phục
+function dtmodalConfirmRestore(options) {
+    const {
+        title = "Xác nhận khôi phục",
+            subtitle = "Bạn có chắc chắn muốn khôi phục?",
+            message = "Sản phẩm sẽ được hiển thị trở lại.",
+            itemName = "",
+            onConfirm = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "info",
+        title: title,
+        subtitle: subtitle,
+        message: itemName ?
+            `Bạn đang khôi phục: <strong>"${itemName}"</strong><br>${message}` : message,
+        confirmText: "Xác nhận khôi phục",
+        cancelText: "Hủy bỏ",
+        onConfirm: onConfirm,
+        onCancel: null,
+    });
+}
+
+// Xác nhận xóa vĩnh viễn
+function dtmodalConfirmForceDelete(options) {
+    const {
+        title = "Xác nhận xóa vĩnh viễn",
+            subtitle = "Bạn có chắc chắn muốn xóa vĩnh viễn?",
+            message = "Hành động này không thể hoàn tác và sẽ xóa hoàn toàn khỏi hệ thống.",
+            itemName = "",
+            onConfirm = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "error",
+        title: title,
+        subtitle: subtitle,
+        message: itemName ?
+            `Bạn đang xóa vĩnh viễn: <strong>"${itemName}"</strong><br>${message}` : message,
+        confirmText: "Xác nhận xóa vĩnh viễn",
         cancelText: "Hủy bỏ",
         onConfirm: onConfirm,
         onCancel: null,
@@ -309,8 +354,7 @@ function dtmodalHandleStatusToggle(options) {
 
     dtmodalConfirmIndex({
         title: confirmTitle,
-        subtitle:
-            confirmSubtitle || `Bạn có chắc chắn muốn ${statusText} mục này?`,
+        subtitle: confirmSubtitle || `Bạn có chắc chắn muốn ${statusText} mục này?`,
         message: confirmMessage,
         itemName: userName,
         onConfirm: () => {
@@ -347,7 +391,7 @@ function updateSelectedStatus(status) {
         message: `Bạn có chắc chắn muốn ${statusText} ${selectedIds.length} người dùng đã chọn không?`,
         confirmText: "Xác nhận",
         cancelText: "Hủy",
-        onConfirm: function () {
+        onConfirm: function() {
             document.getElementById("selectedUserIds").value =
                 selectedIds.join(",");
             document.getElementById("selectedStatus").value = status;
@@ -383,10 +427,34 @@ function updateSelectedBannerStatus(status) {
         message: `Bạn có chắc chắn muốn ${statusText} ${selectedIds.length} banner đã chọn không?`,
         confirmText: "Xác nhận",
         cancelText: "Hủy",
-        onConfirm: function () {
+        onConfirm: function() {
             document.getElementById("ids").value = JSON.stringify(selectedIds);
             document.getElementById("status").value = status;
             document.getElementById("bulkStatusForm").submit();
         },
+    });
+}
+
+// Hàm xác nhận trạng thái đơn hàng cho tài xế
+function dtmodalConfirmOrderStatus(options) {
+    const {
+        orderCode = "",
+            newStatusText = "Cập nhật trạng thái",
+            message = "Bạn có chắc chắn muốn thực hiện hành động này?",
+            confirmText = "Xác nhận",
+            cancelText = "Hủy bỏ",
+            onConfirm = null,
+            onCancel = null,
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "warning",
+        title: `${newStatusText} - Đơn hàng #${orderCode}`,
+        subtitle: "Xác nhận hành động",
+        message: message,
+        confirmText: confirmText,
+        cancelText: cancelText,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
     });
 }

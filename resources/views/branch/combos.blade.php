@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 @extends('layouts.branch.contentLayoutMaster')
 
 @section('title', 'Quản lý Combo')
@@ -68,7 +72,7 @@
                         <td class="p-4 font-mono text-sm text-muted-foreground">{{ $combo->sku }}</td>
                         <td class="p-4">
                             @if ($combo->image)
-                                <img src="{{ asset('storage/' . $combo->image) }}" alt="{{ $combo->name }}"
+                                <img src="{{ Storage::disk('s3')->url($combo->image) }}" alt="{{ $combo->name }}"
                                     class="w-12 h-12 rounded-lg object-cover border">
                             @else
                                 <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border">
@@ -100,7 +104,7 @@
                         </td>
                         <td class="p-4">
                             <div class="flex items-center gap-2">
-                                <a class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                                <a href="{{ route('branch.combos.show', $combo->slug) }}" class="inline-flex items-center justify-center w-8 h-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
                                     title="Xem chi tiết">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

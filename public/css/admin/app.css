@@ -1,4 +1,4 @@
- :root {
+:root {
      --background: 0 0% 100%;
      --foreground: 222.2 84% 4.9%;
      --card: 0 0% 100%;
@@ -286,10 +286,6 @@
      transition: width 0.3s ease;
  }
 
- /* Animation classes */
- .fade-in {
-     animation: fadeIn 0.3s ease-in-out;
- }
 
  @keyframes fadeIn {
      from {
@@ -400,4 +396,84 @@
          opacity: 1;
          transform: translateY(0);
      }
+ }
+
+ /* Payment Status Badge Styles */
+ .payment-status-badge {
+     display: inline-flex;
+     align-items: center;
+     padding: 0.25rem 0.625rem;
+     border-radius: 9999px;
+     font-size: 0.75rem;
+     font-weight: 500;
+     transition: all 0.2s ease;
+ }
+
+ .payment-status-badge.pending {
+     background-color: #fef3c7;
+     color: #92400e;
+ }
+
+ .payment-status-badge.completed {
+     background-color: #d1fae5;
+     color: #065f46;
+ }
+
+ .payment-status-badge.failed {
+     background-color: #fee2e2;
+     color: #991b1b;
+ }
+
+ .payment-status-badge.refunded {
+     background-color: #fce7f3;
+     color: #be185d;
+ }
+
+ .payment-status-badge.processing {
+     background-color: #dbeafe;
+     color: #1e40af;
+ }
+
+ /* Real-time update animations */
+ @keyframes pulse {
+     0% {
+         transform: scale(1);
+         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+     }
+     50% {
+         transform: scale(1.05);
+         box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+     }
+     100% {
+         transform: scale(1);
+         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+     }
+ }
+
+ .pulse-animation {
+     animation: pulse 2s infinite;
+ }
+
+ /* Order row highlight animation */
+ @keyframes highlight {
+     0% {
+         background-color: transparent;
+     }
+     50% {
+         background-color: #fef3c7;
+     }
+     100% {
+         background-color: transparent;
+     }
+ }
+
+ .order-row.updated {
+     animation: highlight 3s ease-in-out;
+ }
+
+ /* Order Status Badge Styles */
+ .order-status-badge.confirmed {
+     background-color: #dbeafe;
+     color: #1e40af;
+     border: 1px solid #93c5fd;
  }

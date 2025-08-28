@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'category_id',
@@ -22,9 +23,9 @@ class Product extends Model
         'status',
         'release_at',
         'is_featured',
-        'created_by',
-        'updated_by',
         'slug',
+        'created_by',
+        'updated_by'
     ];
 
     protected $casts = [
@@ -149,5 +150,43 @@ class Product extends Model
     public function primaryImage()
     {
         return $this->hasOne(ProductImg::class, 'product_id')->where('is_primary', true);
+    }
+
+    /**
+     * Alias for images() relationship for backward compatibility
+     */
+    public function productImages()
+    {
+        return $this->images();
+    }
+
+    /**
+     * Get the total sold count for this product
+     */
+    public function getSoldCountAttribute()
+    {
+        return $this->variants()
+            ->join('order_items', 'product_variants.id', '=', 'order_items.product_variant_id')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereIn('orders.status', ['delivered', 'item_received'])
+            ->sum('order_items.quantity');
+    }
+
+    /**
+     * Kiểm tra xem sản phẩm có trong đơn hàng nào không
+     */
+    public function hasOrders()
+    {
+        return $this->variants()
+            ->join('order_items', 'product_variants.id', '=', 'order_items.product_variant_id')
+            ->exists();
+    }
+
+    /**
+     * Kiểm tra xem sản phẩm có thể xóa hoàn toàn không
+     */
+    public function canForceDelete()
+    {
+        return !$this->hasOrders();
     }
 }

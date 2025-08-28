@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'FastFood')</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('/images/logo.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('/images/logo.png') }}">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
@@ -199,11 +202,40 @@
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
     <script src="{{ asset('js/modal.js') }}"></script>
+    <script src="{{ asset('js/Customer/order-realtime-simple.js') }}"></script>
 
     <script>
         // Function to show notifications programmatically
         function showToast(message, type = 'info', duration = 5000) {
+            console.log('🔔 showToast called:', { message, type, duration });
+            
             const container = document.getElementById('notificationContainer');
+            if (!container) {
+                console.error('❌ notificationContainer not found');
+                // Fallback: create a simple toast
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : type === 'warning' ? '#ff9800' : '#2196F3'};
+                    color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    z-index: 9999;
+                    max-width: 300px;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, duration);
+                return;
+            }
+            
             const notificationId = 'notification_' + Date.now();
 
             const colors = {
@@ -375,6 +407,10 @@
         @else
             window.currentUserId = null;
         @endif
+        
+        // Set Pusher configuration for order-realtime-simple.js
+        window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+        window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
 
         // Global function to update the cart counter
         window.updateCartCount = function(count) {
@@ -404,8 +440,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Không dùng localStorage cho cart_count nữa
             // Khi reload trang, nếu có biến cartCountFromServer thì cập nhật luôn
+            // NHƯNG không cập nhật nếu đang ở trang checkout từ buy now
             if (typeof window.cartCountFromServer !== 'undefined') {
+                // Kiểm tra xem có phải đang ở trang checkout từ buy now không
+                const urlParams = new URLSearchParams(window.location.search);
+                const fromBuyNow = urlParams.get('from_buy_now');
+                
+                // Chỉ cập nhật cart count nếu không phải từ buy now
+                if (!fromBuyNow) {
                 window.updateCartCount(window.cartCountFromServer);
+                }
             }
 
             // Set up Pusher if the script is loaded
@@ -420,9 +464,12 @@
                 // Subscribe to cart channel
                 const cartChannel = pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
 
-                // Listen for cart updates
+                // Listen for cart updates - chỉ cập nhật khi thực sự thêm vào giỏ hàng
                 cartChannel.bind('cart-updated', function(data) {
+                    // Chỉ cập nhật cart count nếu action là 'add_to_cart', không phải 'buy_now'
+                    if (data.action === 'add_to_cart' || data.action === undefined) {
                     window.updateCartCount(data.count);
+                    }
                 });
             }
         });
@@ -481,6 +528,13 @@
 
         // Initialize Pusher on every page to listen for wishlist updates
         document.addEventListener('DOMContentLoaded', function() {
+            // Set global variables for Pusher configuration
+            @auth
+            window.currentUserId = {{ auth()->id() }};
+            window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+            window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
+            @endauth
+
             // Check if we should restore wishlist count from localStorage
             const savedCount = localStorage.getItem('wishlist_count');
             if (savedCount) {
@@ -495,7 +549,7 @@
             if (typeof Pusher !== 'undefined' && {{ auth()->check() ? 'true' : 'false' }}) {
                 // This Pusher instance is for layout elements.
                 // Page-specific scripts might have their own or should share this one.
-                const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                window.pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
                     cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
                     encrypted: true,
                     authEndpoint: '/broadcasting/auth',
@@ -508,21 +562,21 @@
                 });
 
                 // Add Pusher debugging
-                pusher.connection.bind('connected', function() {
+                window.pusher.connection.bind('connected', function() {
                     console.log('✅ Pusher connected successfully');
                 });
 
-                pusher.connection.bind('error', function(err) {
+                window.pusher.connection.bind('error', function(err) {
                     console.error('❌ Pusher connection error:', err);
                 });
 
-                pusher.connection.bind('disconnected', function() {
+                window.pusher.connection.bind('disconnected', function() {
                     console.log('⚠️ Pusher disconnected');
                 });
 
                 // Subscribe to the correct private wishlist channel
                 const channelName = 'private-user-wishlist-channel.{{ auth()->id() }}';
-                const wishlistChannel = pusher.subscribe(channelName);
+                const wishlistChannel = window.pusher.subscribe(channelName);
 
                 // Listen for wishlist updates
                 wishlistChannel.bind('favorite-updated', function(data) {
@@ -539,7 +593,7 @@
                 });
 
                 // Subscribe to user's private notification channel (Laravel style)
-                const notificationChannel = pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
+                const notificationChannel = window.pusher.subscribe('private-App.Models.User.{{ auth()->id() }}');
 
                 // Listen for Laravel's notification broadcast event
                 notificationChannel.bind('Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
@@ -549,15 +603,17 @@
 
 
                         // Gọi hàm có sẵn để fetch lại toàn bộ list noti từ server
-                        if (typeof fetchNotifications === 'function') {
+                        if (typeof window.fetchNotifications === 'function') {
+                            window.fetchNotifications();
+                        } else if (typeof fetchNotifications === 'function') {
                             fetchNotifications();
                         }
 
-                        // Gọi hiệu ứng rung chuông (nếu có)
-                        if (typeof triggerBellShake === 'function') {
-                            triggerBellShake();
-                        }
-                    });
+                    // Gọi hiệu ứng rung chuông (nếu có)
+                    if (typeof triggerBellShake === 'function') {
+                        triggerBellShake();
+                    }
+                });
 
                 notificationChannel.bind('pusher:subscription_succeeded', () => {
                     console.log(
@@ -569,16 +625,20 @@
                 });
 
                 // Subscribe to custom notification channel (used by custom events)
-                const customNotificationChannel = pusher.subscribe('customer.{{ auth()->id() }}.notifications');
+                const customNotificationChannel = window.pusher.subscribe('customer.{{ auth()->id() }}.notifications');
 
                 customNotificationChannel.bind('new-message', function(data) {
 
 
-                    if (typeof fetchNotifications === 'function') {
+                    if (typeof window.fetchNotifications === 'function') {
+                        window.fetchNotifications();
+                    } else if (typeof fetchNotifications === 'function') {
                         fetchNotifications();
                     }
 
-                    if (typeof triggerBellShake === 'function') {
+                    if (typeof window.triggerBellShake === 'function') {
+                        window.triggerBellShake();
+                    } else if (typeof triggerBellShake === 'function') {
                         triggerBellShake();
                     }
                 });
@@ -591,15 +651,17 @@
                 customNotificationChannel.bind('pusher:subscription_error', (error) => {
                     console.error('❌ Failed to subscribe to custom notifications channel:', error);
                 });
+
+                // Order status updates are now handled by order-realtime-simple.js
             }
         });
     </script>
     @include('components.modal')
 
-    @if (isset($cartItems))
-        <script>
-            window.cartCountFromServer = {{ count($cartItems) }};
-        </script>
+    @if (isset($cartItems) && !request()->has('from_buy_now'))
+    <script>
+        window.cartCountFromServer = {{ count($cartItems) }};
+    </script>
     @endif
 
     <script>
@@ -610,6 +672,8 @@
                 localStorage.removeItem('wishlist_count');
             }
         });
+
+        // Order notification functions are now handled by order-realtime-simple.js
 
         // Giữ lại các hàm cũ để tương thích ngược
         function getCsrfToken() {
@@ -633,6 +697,9 @@
 
     {{-- Thêm component CSRF Auto-Refresh --}}
     @include('partials.csrf-refresh')
+    
+    {{-- Thêm script xử lý thông báo realtime --}}
+    <script src="{{ asset('js/Customer/notification-handler.js') }}"></script>
 </body>
 
 </html>

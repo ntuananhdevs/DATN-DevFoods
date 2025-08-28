@@ -1,337 +1,396 @@
 // Product page functionality
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     // Debug log for initial state
-    console.log('Initial branch state:', {
+    console.log("Initial branch state:", {
         selectedBranchId: window.selectedBranchId || null,
-        productId: window.productId
+        productId: window.productId,
     });
 
     // Auto-show branch selector if no branch is selected
     const selectedBranchId = window.selectedBranchId;
     if (!selectedBranchId) {
-        const branchModal = document.getElementById('branch-selector-modal');
+        const branchModal = document.getElementById("branch-selector-modal");
         if (branchModal) {
-            branchModal.style.display = 'flex';
-            document.body.classList.add('overflow-hidden');
+            branchModal.style.display = "flex";
+            document.body.classList.add("overflow-hidden");
         }
     }
-    
+
     // Product image gallery
-    const mainImage = document.getElementById('main-product-image');
-    const thumbnails = document.querySelectorAll('.product-thumbnail');
-    
-    thumbnails.forEach(thumb => {
-        thumb.addEventListener('click', function() {
+    const mainImage = document.getElementById("main-product-image");
+    const thumbnails = document.querySelectorAll(".product-thumbnail");
+
+    thumbnails.forEach((thumb) => {
+        thumb.addEventListener("click", function () {
             // Update main image
-            mainImage.src = this.querySelector('img').src;
-            
+            mainImage.src = this.querySelector("img").src;
+
             // Update active state
-            thumbnails.forEach(t => t.classList.remove('border-orange-500'));
-            this.classList.add('border-orange-500');
+            thumbnails.forEach((t) => t.classList.remove("border-orange-500"));
+            this.classList.add("border-orange-500");
         });
     });
-    
+
     // Price calculation
     const basePrice = window.basePrice;
-    const basePriceDisplay = document.getElementById('base-price');
-    const currentPriceDisplay = document.getElementById('current-price');
-    const variantInputs = document.querySelectorAll('.variant-input');
-    const toppingInputs = document.querySelectorAll('.topping-input');
-    const quantityDisplay = document.getElementById('quantity');
+    const basePriceDisplay = document.getElementById("base-price");
+    const currentPriceDisplay = document.getElementById("current-price");
+    const variantInputs = document.querySelectorAll(".variant-input");
+    const toppingInputs = document.querySelectorAll(".topping-input");
+    const quantityDisplay = document.getElementById("quantity");
     let quantity = 1;
     let totalPrice = basePrice;
-    
+
     // Discount code info from server (window)
     const bestDiscount = window.bestDiscountCode || null;
     const bestDiscountAmount = window.bestDiscountAmount || 0;
-    
+
     // Helper: tính số tiền giảm giá tốt nhất cho 1 sản phẩm
     function calcBestDiscountAmount(price) {
         // Debug log
-        console.log('calcBestDiscountAmount called with price:', price);
-        console.log('window.bestDiscountAmount:', window.bestDiscountAmount);
-        console.log('window.bestDiscountCode:', window.bestDiscountCode);
-        
+        console.log("calcBestDiscountAmount called with price:", price);
+        console.log("window.bestDiscountAmount:", window.bestDiscountAmount);
+        console.log("window.bestDiscountCode:", window.bestDiscountCode);
+
         // Sử dụng giá trị đã tính sẵn từ server thay vì tính lại
         if (window.bestDiscountAmount && window.bestDiscountAmount > 0) {
-            console.log('Using server-calculated discount amount:', window.bestDiscountAmount);
+            console.log(
+                "Using server-calculated discount amount:",
+                window.bestDiscountAmount
+            );
             return window.bestDiscountAmount;
         }
-        
+
         // Fallback: tính toán như cũ nếu không có giá trị từ server
         if (!bestDiscount) return 0;
         let discountAmount = 0;
-        if (bestDiscount.discount_type === 'percentage') {
+        if (bestDiscount.discount_type === "percentage") {
             discountAmount = price * (bestDiscount.discount_value / 100);
-            if (bestDiscount.max_discount_amount && bestDiscount.max_discount_amount > 0) {
-                discountAmount = Math.min(discountAmount, bestDiscount.max_discount_amount);
+            if (
+                bestDiscount.max_discount_amount &&
+                bestDiscount.max_discount_amount > 0
+            ) {
+                discountAmount = Math.min(
+                    discountAmount,
+                    bestDiscount.max_discount_amount
+                );
             }
-        } else if (bestDiscount.discount_type === 'fixed_amount') {
+        } else if (bestDiscount.discount_type === "fixed_amount") {
             discountAmount = bestDiscount.discount_value;
         }
-        if (bestDiscount.min_order_amount > 0 && price < bestDiscount.min_order_amount) {
+        if (
+            bestDiscount.min_order_amount > 0 &&
+            price < bestDiscount.min_order_amount
+        ) {
             discountAmount = 0;
         }
-        console.log('Calculated discount amount:', discountAmount);
+        console.log("Calculated discount amount:", discountAmount);
         return discountAmount;
     }
 
     // Define updatePrice function in global scope
-    window.updatePrice = function() {
+    window.updatePrice = function () {
         // Calculate variant price adjustments
         let variantAdjustment = 0;
-        document.querySelectorAll('.variant-input:checked').forEach(input => {
+        document.querySelectorAll(".variant-input:checked").forEach((input) => {
             variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
         });
-        
+
         // Calculate current variant price
         const currentVariantPrice = window.basePrice + variantAdjustment;
 
         // Calculate topping price
         let toppingPrice = 0;
-        document.querySelectorAll('.topping-input:checked').forEach(input => {
+        document.querySelectorAll(".topping-input:checked").forEach((input) => {
             toppingPrice += parseFloat(input.dataset.price || 0);
         });
 
         // This is the price before any discounts, including toppings
-        const priceBeforeDiscount = currentVariantPrice; 
-        
+        const priceBeforeDiscount = currentVariantPrice;
+
         // Calculate the discount amount based on the current variant's price
         let discountAmount = 0;
         if (bestDiscount) {
-            if (bestDiscount.discount_type === 'percentage') {
-                discountAmount = priceBeforeDiscount * (bestDiscount.discount_value / 100);
-            } else if (bestDiscount.discount_type === 'fixed_amount') {
+            if (bestDiscount.discount_type === "percentage") {
+                discountAmount =
+                    priceBeforeDiscount * (bestDiscount.discount_value / 100);
+            } else if (bestDiscount.discount_type === "fixed_amount") {
                 discountAmount = bestDiscount.discount_value;
             }
         }
-        
+
         // The total price顧客 pays, including toppings
-        const finalPrice = Math.max(0, priceBeforeDiscount - discountAmount) + toppingPrice;
+        const finalPrice =
+            Math.max(0, priceBeforeDiscount - discountAmount) + toppingPrice;
         const displayOriginalPrice = priceBeforeDiscount + toppingPrice;
 
         // Update display
         if (discountAmount > 0 && finalPrice < displayOriginalPrice) {
-            basePriceDisplay.textContent = `${Math.round(displayOriginalPrice).toLocaleString('vi-VN')} đ`;
-            basePriceDisplay.classList.remove('hidden');
-            currentPriceDisplay.textContent = `${Math.round(finalPrice).toLocaleString('vi-VN')} đ`;
+            basePriceDisplay.textContent = `${Math.round(
+                displayOriginalPrice
+            ).toLocaleString("vi-VN")} đ`;
+            basePriceDisplay.classList.remove("hidden");
+            currentPriceDisplay.textContent = `${Math.round(
+                finalPrice
+            ).toLocaleString("vi-VN")} đ`;
         } else {
-            basePriceDisplay.classList.add('hidden');
-            currentPriceDisplay.textContent = `${Math.round(displayOriginalPrice).toLocaleString('vi-VN')} đ`;
+            basePriceDisplay.classList.add("hidden");
+            currentPriceDisplay.textContent = `${Math.round(
+                displayOriginalPrice
+            ).toLocaleString("vi-VN")} đ`;
         }
     };
-    
+
     // Variant selection
-    variantInputs.forEach(input => {
-        input.addEventListener('change', function() {
+    variantInputs.forEach((input) => {
+        input.addEventListener("change", function () {
             // Update visual state of labels
             const attributeId = this.dataset.attributeId;
-            document.querySelectorAll(`[data-attribute-id="${attributeId}"] + .variant-label`).forEach(label => {
-                label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
-            });
-            
-            this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
+            document
+                .querySelectorAll(
+                    `[data-attribute-id="${attributeId}"] + .variant-label`
+                )
+                .forEach((label) => {
+                    label.classList.remove(
+                        "bg-orange-100",
+                        "border-orange-500",
+                        "text-orange-600"
+                    );
+                });
+
+            this.nextElementSibling.classList.add(
+                "bg-orange-100",
+                "border-orange-500",
+                "text-orange-600"
+            );
             updatePrice();
         });
     });
-    
+
     // Topping selection
-    toppingInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const toppingContainer = this.closest('label');
+    toppingInputs.forEach((input) => {
+        input.addEventListener("change", function () {
+            const toppingContainer = this.closest("label");
             if (this.checked) {
-                toppingContainer.classList.add('topping-checked');
-                toppingContainer.querySelector('.w-full').classList.add('scale-110');
-                toppingContainer.querySelector('.bg-orange-500').classList.add('scale-100');
+                toppingContainer.classList.add("topping-checked");
+                toppingContainer
+                    .querySelector(".w-full")
+                    .classList.add("scale-110");
+                toppingContainer
+                    .querySelector(".bg-orange-500")
+                    .classList.add("scale-100");
             } else {
-                toppingContainer.classList.remove('topping-checked');
-                toppingContainer.querySelector('.w-full').classList.remove('scale-110');
-                toppingContainer.querySelector('.bg-orange-500').classList.remove('scale-100');
+                toppingContainer.classList.remove("topping-checked");
+                toppingContainer
+                    .querySelector(".w-full")
+                    .classList.remove("scale-110");
+                toppingContainer
+                    .querySelector(".bg-orange-500")
+                    .classList.remove("scale-100");
             }
             updatePrice();
         });
     });
-    
+
     // Quantity controls
-    const decreaseBtn = document.getElementById('decrease-quantity');
-    const increaseBtn = document.getElementById('increase-quantity');
-    
-    decreaseBtn.addEventListener('click', function() {
+    const decreaseBtn = document.getElementById("decrease-quantity");
+    const increaseBtn = document.getElementById("increase-quantity");
+
+    decreaseBtn.addEventListener("click", function () {
         if (quantity > 1) {
             quantity--;
             quantityDisplay.textContent = quantity;
             // Không cần updatePrice() vì số lượng không ảnh hưởng đến giá hiển thị trên trang chi tiết
         }
     });
-    
-    increaseBtn.addEventListener('click', function() {
+
+    increaseBtn.addEventListener("click", function () {
         quantity++;
         quantityDisplay.textContent = quantity;
         // Không cần updatePrice() vì số lượng không ảnh hưởng đến giá hiển thị trên trang chi tiết
     });
-    
+
     // Add to cart functionality
-    const addToCartBtn = document.getElementById('add-to-cart');
-    const buyNowBtn = document.getElementById('buy-now');
-    
+    const addToCartBtn = document.getElementById("add-to-cart");
+    const buyNowBtn = document.getElementById("buy-now-product-btn");
+
     // Function to get selected product data
     function getSelectedProductData() {
         // Get selected branch
-        const branchId = document.getElementById('branch-select').value;
+        const branchId = document.getElementById("branch-select").value;
         if (!branchId) {
-            dtmodalShowToast('warning', {
-                title: 'Chọn chi nhánh',
-                message: 'Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng'
+            dtmodalShowToast("warning", {
+                title: "Chọn chi nhánh",
+                message: "Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng",
             });
             return null;
         }
-        
+
         // Lấy product_id từ data attribute của nút add-to-cart
-        const productId = document.getElementById('add-to-cart').getAttribute('data-product-id');
-        
+        const productId = document
+            .getElementById("add-to-cart")
+            .getAttribute("data-product-id");
+
         // Get all selected variant values
         const selectedVariantValueIds = [];
-        const variantGroups = document.querySelectorAll('#variants-container > div');
-        
-        variantGroups.forEach(group => {
-            const checkedInput = group.querySelector('input:checked');
+        const variantGroups = document.querySelectorAll(
+            "#variants-container > div"
+        );
+
+        variantGroups.forEach((group) => {
+            const checkedInput = group.querySelector("input:checked");
             if (checkedInput) {
                 selectedVariantValueIds.push(parseInt(checkedInput.value));
             }
         });
-        
+
         // Get selected toppings
-        const selectedToppings = Array.from(document.querySelectorAll('.topping-input:checked'))
-            .map(input => parseInt(input.value));
-        
+        const selectedToppings = Array.from(
+            document.querySelectorAll(".topping-input:checked")
+        ).map((input) => parseInt(input.value));
+
         // Get quantity
-        const quantity = parseInt(document.getElementById('quantity').textContent);
-        
+        const quantity = parseInt(
+            document.getElementById("quantity").textContent
+        );
+
         return {
             product_id: productId,
             variant_values: selectedVariantValueIds,
             branch_id: branchId,
             quantity: quantity,
-            toppings: selectedToppings
+            toppings: selectedToppings,
         };
     }
-    
+
     // Add to cart button click handler
-    addToCartBtn.addEventListener('click', function() {
+    addToCartBtn.addEventListener("click", function () {
         const productData = getSelectedProductData();
         if (!productData) return;
-        
+
         // Send request using Fetch API
-        fetch('/cart/add', {
-            method: 'POST',
+        fetch("/cart/add", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': window.csrfToken
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": window.csrfToken,
             },
-            body: JSON.stringify(productData)
+            body: JSON.stringify(productData),
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                dtmodalShowToast('success', {
-                    title: 'Thành công',
-                    message: data.message
-                });
-                // Cập nhật số lượng giỏ hàng trên header
-                const cartCounter = document.getElementById('cart-counter');
-                if (cartCounter) {
-                    cartCounter.textContent = data.cart_count;
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Cập nhật số lượng giỏ hàng trên header
+                    if (window.updateCartCount && data.cart_count !== undefined) {
+                        window.updateCartCount(data.cart_count);
+                    }
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast("success", {
+                            title: "Thành công",
+                            message: data.message || "Đã thêm vào giỏ hàng!"
+                        });
+                    }
+                } else {
+                    dtmodalShowToast("error", {
+                        title: "Lỗi",
+                        message: data.message || "Có lỗi xảy ra",
+                    });
                 }
-            } else {
-                dtmodalShowToast('error', {
-                    title: 'Lỗi',
-                    message: data.message || 'Có lỗi xảy ra'
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                dtmodalShowToast("error", {
+                    title: "Lỗi",
+                    message: "Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng",
                 });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            dtmodalShowToast('error', {
-                title: 'Lỗi',
-                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
             });
-        });
     });
 
-    // Buy now button click handler
-    buyNowBtn.addEventListener('click', function() {
+    // Buy now button click handler (SỬA LẠI ĐÚNG CHUẨN)
+    buyNowBtn.addEventListener("click", function () {
         const productData = getSelectedProductData();
         if (!productData) return;
-        
-        // Add buy_now flag to the data
-        productData.buy_now = true;
-        
-        // Send request using Fetch API
-        fetch('/cart/add', {
-            method: 'POST',
+
+        // Lấy variant_id từ các giá trị variant đã chọn
+        let variantId = null;
+        if (window.variantCombinations) {
+            // Tạo key từ các variant value id đã chọn
+            const key = productData.variant_values
+                .sort((a, b) => a - b)
+                .join("_");
+            variantId = window.variantCombinations[key];
+        }
+
+        // Gọi API "Mua ngay"
+        fetch("/checkout/product-buy-now", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': window.csrfToken
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": window.csrfToken,
             },
-            body: JSON.stringify(productData)
+            body: JSON.stringify({
+                product_id: productData.product_id,
+                variant_id: variantId,
+                toppings: productData.toppings,
+                quantity: productData.quantity,
+            }),
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Redirect to checkout page
-                window.location.href = '/checkout';
-            } else {
-                dtmodalShowToast('error', {
-                    title: 'Lỗi',
-                    message: data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng'
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    dtmodalShowToast("error", {
+                        title: "Lỗi",
+                        message: data.message || "Có lỗi khi mua ngay sản phẩm",
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                dtmodalShowToast("error", {
+                    title: "Lỗi",
+                    message: "Có lỗi xảy ra khi mua ngay sản phẩm",
                 });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            dtmodalShowToast('error', {
-                title: 'Lỗi',
-                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
             });
-        });
     });
-    
+
     // Handle discount code copy functionality
-    const copyButtons = document.querySelectorAll('.copy-code');
-    copyButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+    const copyButtons = document.querySelectorAll(".copy-code");
+    copyButtons.forEach((button) => {
+        button.addEventListener("click", function (e) {
             e.stopPropagation();
             const code = this.dataset.code;
-            
+
             // Create a temporary input element
-            const tempInput = document.createElement('input');
+            const tempInput = document.createElement("input");
             tempInput.value = code;
             document.body.appendChild(tempInput);
-            
+
             // Select and copy the text
             tempInput.select();
-            document.execCommand('copy');
-            
+            document.execCommand("copy");
+
             // Remove the temporary element
             document.body.removeChild(tempInput);
-            
+
             // Update button text temporarily
             const originalText = this.textContent;
-            this.textContent = 'Đã sao chép!';
-            this.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-            this.classList.add('bg-green-500', 'hover:bg-green-600');
-            
+            this.textContent = "Đã sao chép!";
+            this.classList.remove("bg-orange-500", "hover:bg-orange-600");
+            this.classList.add("bg-green-500", "hover:bg-green-600");
+
             // Reset button text after a delay
             setTimeout(() => {
                 this.textContent = originalText;
-                this.classList.remove('bg-green-500', 'hover:bg-green-600');
-                this.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                this.classList.remove("bg-green-500", "hover:bg-green-600");
+                this.classList.add("bg-orange-500", "hover:bg-orange-600");
             }, 2000);
-            
+
             // Show toast notification
-            dtmodalShowToast('success', {
-                title: 'Đã sao chép',
-                message: `Mã "${code}" đã được sao chép vào clipboard`
+            dtmodalShowToast("success", {
+                title: "Đã sao chép",
+                message: `Mã "${code}" đã được sao chép vào clipboard`,
             });
         });
     });
@@ -340,72 +399,100 @@ document.addEventListener("DOMContentLoaded", function() {
     updatePrice();
 
     // Favorite button handling
-    const favoriteBtn = document.querySelector('.favorite-btn');
+    const favoriteBtn = document.querySelector(".favorite-btn");
     if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', function(e) {
+        favoriteBtn.addEventListener("click", function (e) {
             e.preventDefault();
             // Nếu là nút login-prompt-btn thì show popup đăng nhập
-            if (this.classList.contains('login-prompt-btn')) {
-                document.getElementById('login-popup').classList.remove('hidden');
+            if (this.classList.contains("login-prompt-btn")) {
+                document
+                    .getElementById("login-popup")
+                    .classList.remove("hidden");
                 return;
             }
-            const productId = this.getAttribute('data-product-id');
-            const icon = this.querySelector('i');
-            const isFavorite = icon.classList.contains('fas');
+            const productId = this.getAttribute("data-product-id");
+            const icon = this.querySelector("i");
+            const isFavorite = icon.classList.contains("fas");
             // Optimistic UI
             if (isFavorite) {
-                icon.classList.remove('fas', 'text-red-500');
-                icon.classList.add('far');
+                icon.classList.remove("fas", "text-red-500");
+                icon.classList.add("far");
             } else {
-                icon.classList.remove('far');
-                icon.classList.add('fas', 'text-red-500');
+                icon.classList.remove("far");
+                icon.classList.add("fas", "text-red-500");
             }
             // Gửi AJAX
-            fetch('/wishlist', {
-                method: isFavorite ? 'DELETE' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken
-                },
-                body: JSON.stringify({ product_id: productId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.message) {
-                    // Thành công hoặc lỗi đều show message
-                    dtmodalShowToast(isFavorite ? 'info' : 'success', {
-                        title: isFavorite ? 'Thông báo' : 'Thành công',
-                        message: data.message
+            if (isFavorite) {
+                // Bỏ tim: DELETE /wishlist với body { product_id }
+                fetch("/wishlist", {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": window.csrfToken,
+                    },
+                    body: JSON.stringify({ product_id: productId }),
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data && data.message) {
+                            dtmodalShowToast("info", {
+                                title: "Thông báo",
+                                message: data.message,
+                            });
+                        } else {
+                            // Nếu lỗi, revert lại UI
+                            icon.classList.remove("far");
+                            icon.classList.add("fas", "text-red-500");
+                            dtmodalShowToast("error", {
+                                title: "Lỗi",
+                                message: "Có lỗi khi cập nhật yêu thích",
+                            });
+                        }
+                    })
+                    .catch(() => {
+                        icon.classList.remove("far");
+                        icon.classList.add("fas", "text-red-500");
+                        dtmodalShowToast("error", {
+                            title: "Lỗi",
+                            message: "Có lỗi khi cập nhật yêu thích",
+                        });
                     });
-                } else {
-                    // Nếu lỗi, revert lại UI
-                    if (isFavorite) {
-                        icon.classList.remove('far');
-                        icon.classList.add('fas', 'text-red-500');
-                    } else {
-                        icon.classList.remove('fas', 'text-red-500');
-                        icon.classList.add('far');
-                    }
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Có lỗi khi cập nhật yêu thích'
+            } else {
+                // Thêm tim: POST /wishlist với body { product_id }
+                fetch("/wishlist", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": window.csrfToken,
+                    },
+                    body: JSON.stringify({ product_id: productId }),
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data && data.message) {
+                            dtmodalShowToast("success", {
+                                title: "Thành công",
+                                message: data.message,
+                            });
+                        } else {
+                            // Nếu lỗi, revert lại UI
+                            icon.classList.remove("fas", "text-red-500");
+                            icon.classList.add("far");
+                            dtmodalShowToast("error", {
+                                title: "Lỗi",
+                                message: "Có lỗi khi cập nhật yêu thích",
+                            });
+                        }
+                    })
+                    .catch(() => {
+                        icon.classList.remove("fas", "text-red-500");
+                        icon.classList.add("far");
+                        dtmodalShowToast("error", {
+                            title: "Lỗi",
+                            message: "Có lỗi khi cập nhật yêu thích",
+                        });
                     });
-                }
-            })
-            .catch(() => {
-                // Nếu lỗi, revert lại UI
-                if (isFavorite) {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas', 'text-red-500');
-                } else {
-                    icon.classList.remove('fas', 'text-red-500');
-                    icon.classList.add('far');
-                }
-                dtmodalShowToast('error', {
-                    title: 'Lỗi',
-                    message: 'Có lỗi khi cập nhật yêu thích'
-                });
-            });
+            }
         });
     }
 
@@ -413,736 +500,824 @@ document.addEventListener("DOMContentLoaded", function() {
     const reviewForm = document.querySelector('form[action*="/review"]');
     if (reviewForm) {
         let selectedRating = 0;
-        const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+        const ratingInputs = reviewForm.querySelectorAll(
+            'input[name="rating"]'
+        );
         const ratingLabels = reviewForm.querySelectorAll('label[for^="star"]');
         function updateStarDisplay(rating) {
             ratingLabels.forEach((label, idx) => {
                 if (idx < rating) {
-                    label.classList.add('text-yellow-400');
+                    label.classList.add("text-yellow-400");
                 } else {
-                    label.classList.remove('text-yellow-400');
+                    label.classList.remove("text-yellow-400");
                 }
             });
         }
-        ratingInputs.forEach(input => { input.checked = false; });
+        ratingInputs.forEach((input) => {
+            input.checked = false;
+        });
         updateStarDisplay(0);
         ratingLabels.forEach((label, idx) => {
-            label.addEventListener('click', function(e) {
+            label.addEventListener("click", function (e) {
                 // Nếu click vào ngôi sao đã chọn thì bỏ chọn (rating = 0)
                 if (selectedRating === idx + 1) {
                     selectedRating = 0;
-                    ratingInputs.forEach((input, i) => { input.checked = false; });
+                    ratingInputs.forEach((input, i) => {
+                        input.checked = false;
+                    });
                     updateStarDisplay(0);
                 } else {
                     selectedRating = idx + 1;
-                    ratingInputs.forEach((input, i) => { input.checked = (i === idx); });
+                    ratingInputs.forEach((input, i) => {
+                        input.checked = i === idx;
+                    });
                     updateStarDisplay(selectedRating);
                 }
             });
         });
-        reviewForm.addEventListener('submit', function(e) {
+        reviewForm.addEventListener("submit", function (e) {
             // Nếu là reply thì dùng AJAX, không reload trang
-            if (reviewForm.action.includes('/reply')) {
+            if (reviewForm.action.includes("/reply")) {
                 e.preventDefault();
                 const formData = new FormData(reviewForm);
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                const submitBtn = reviewForm.querySelector('button[type="submit"]');
+                const csrfToken = document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute("content");
+                const submitBtn = reviewForm.querySelector(
+                    'button[type="submit"]'
+                );
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Đang gửi...';
+                submitBtn.textContent = "Đang gửi...";
 
                 fetch(reviewForm.action, {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
+                        "X-CSRF-TOKEN": csrfToken,
+                        Accept: "application/json",
                     },
-                    body: formData
+                    body: formData,
                 })
-                .then(async response => {
+                    .then(async (response) => {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent =
+                            submitBtn.getAttribute("data-default-text") ||
+                            "Gửi đánh giá";
+                        if (response.ok) {
+                            dtmodalShowToast("success", {
+                                title: "Thành công",
+                                message: "Phản hồi thành công!",
+                            });
+                            setTimeout(() => {
+                                // Lấy lại DOM mỗi lần
+                                const reviewForm =
+                                    document.getElementById(
+                                        "review-reply-form"
+                                    );
+                                const replyReviewIdInput =
+                                    document.getElementById("reply_review_id");
+                                const replyingToDiv =
+                                    document.getElementById("replying-to");
+                                const reviewTextarea =
+                                    document.getElementById("review-textarea");
+                                const reviewSubmitBtn =
+                                    document.getElementById(
+                                        "review-submit-btn"
+                                    );
+                                const formTitle =
+                                    document.getElementById("form-title");
+                                const ratingRow =
+                                    document.getElementById("rating-row");
+                                // Lấy lại giá trị mặc định từ data-attribute
+                                if (reviewForm)
+                                    reviewForm.setAttribute(
+                                        "action",
+                                        reviewForm.getAttribute(
+                                            "data-default-action"
+                                        ) || "/products/review"
+                                    );
+                                if (replyReviewIdInput)
+                                    replyReviewIdInput.value = "";
+                                if (replyingToDiv)
+                                    replyingToDiv.classList.add("hidden");
+                                if (reviewTextarea) {
+                                    reviewTextarea.value = "";
+                                    reviewTextarea.placeholder =
+                                        reviewTextarea.getAttribute(
+                                            "data-default-placeholder"
+                                        ) || "Chia sẻ cảm nhận của bạn...";
+                                    reviewTextarea.setAttribute(
+                                        "name",
+                                        "review"
+                                    );
+                                }
+                                if (reviewSubmitBtn)
+                                    reviewSubmitBtn.textContent =
+                                        reviewSubmitBtn.getAttribute(
+                                            "data-default-text"
+                                        ) || "Gửi đánh giá";
+                                if (formTitle)
+                                    formTitle.textContent =
+                                        formTitle.getAttribute(
+                                            "data-default-title"
+                                        ) || "Gửi đánh giá của bạn";
+                                if (ratingRow) ratingRow.style.display = "";
+                                if (typeof selectedRating !== "undefined")
+                                    selectedRating = 0;
+                                if (typeof updateStarDisplay === "function")
+                                    updateStarDisplay(0);
+                                console.log(
+                                    "[DEBUG] Reset reply form to default UI (after realtime)"
+                                );
+                            }, 200);
+                        } else {
+                            let errorMsg = "Có lỗi xảy ra khi gửi phản hồi!";
+                            try {
+                                const data = await response.json();
+                                if (data && data.errors) {
+                                    errorMsg = Object.values(data.errors).join(
+                                        "\n"
+                                    );
+                                } else if (data && data.message) {
+                                    errorMsg = data.message;
+                                }
+                            } catch {}
+                            dtmodalShowToast("error", {
+                                title: "Lỗi",
+                                message: errorMsg,
+                            });
+                        }
+                        return;
+                    })
+                    .catch(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent =
+                            submitBtn.getAttribute("data-default-text") ||
+                            "Gửi đánh giá";
+                        return;
+                    });
+                return;
+            }
+            // Nếu là gửi bình luận mới (không phải reply), cũng dùng AJAX
+            e.preventDefault();
+            const formData = new FormData(reviewForm);
+            const csrfToken = document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content");
+            const submitBtn = reviewForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Đang gửi...";
+            fetch(reviewForm.action, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": csrfToken,
+                    Accept: "application/json",
+                },
+                body: formData,
+            })
+                .then(async (response) => {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
+                    submitBtn.textContent =
+                        submitBtn.getAttribute("data-default-text") ||
+                        "Gửi đánh giá";
                     if (response.ok) {
-                        dtmodalShowToast('success', { title: 'Thành công', message: 'Phản hồi thành công!' });
+                        dtmodalShowToast("success", {
+                            title: "Thành công",
+                            message: "Đánh giá của bạn đã được gửi!",
+                        });
                         setTimeout(() => {
                             // Lấy lại DOM mỗi lần
-                            const reviewForm = document.getElementById('review-reply-form');
-                            const replyReviewIdInput = document.getElementById('reply_review_id');
-                            const replyingToDiv = document.getElementById('replying-to');
-                            const reviewTextarea = document.getElementById('review-textarea');
-                            const reviewSubmitBtn = document.getElementById('review-submit-btn');
-                            const formTitle = document.getElementById('form-title');
-                            const ratingRow = document.getElementById('rating-row');
-                            // Lấy lại giá trị mặc định từ data-attribute
-                            if (reviewForm) reviewForm.setAttribute('action', reviewForm.getAttribute('data-default-action') || '/products/review');
-                            if (replyReviewIdInput) replyReviewIdInput.value = '';
-                            if (replyingToDiv) replyingToDiv.classList.add('hidden');
+                            const reviewForm =
+                                document.getElementById("review-reply-form");
+                            const replyReviewIdInput =
+                                document.getElementById("reply_review_id");
+                            const replyingToDiv =
+                                document.getElementById("replying-to");
+                            const reviewTextarea =
+                                document.getElementById("review-textarea");
+                            const reviewSubmitBtn =
+                                document.getElementById("review-submit-btn");
+                            const formTitle =
+                                document.getElementById("form-title");
+                            const ratingRow =
+                                document.getElementById("rating-row");
+                            if (reviewForm)
+                                reviewForm.setAttribute(
+                                    "action",
+                                    reviewForm.getAttribute(
+                                        "data-default-action"
+                                    ) || "/products/review"
+                                );
+                            if (replyReviewIdInput)
+                                replyReviewIdInput.value = "";
+                            if (replyingToDiv)
+                                replyingToDiv.classList.add("hidden");
                             if (reviewTextarea) {
-                                reviewTextarea.value = '';
-                                reviewTextarea.placeholder = reviewTextarea.getAttribute('data-default-placeholder') || 'Chia sẻ cảm nhận của bạn...';
-                                reviewTextarea.setAttribute('name', 'review');
+                                reviewTextarea.value = "";
+                                reviewTextarea.placeholder =
+                                    reviewTextarea.getAttribute(
+                                        "data-default-placeholder"
+                                    ) || "Chia sẻ cảm nhận của bạn...";
+                                reviewTextarea.setAttribute("name", "review");
                             }
-                            if (reviewSubmitBtn) reviewSubmitBtn.textContent = reviewSubmitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
-                            if (formTitle) formTitle.textContent = formTitle.getAttribute('data-default-title') || 'Gửi đánh giá của bạn';
-                            if (ratingRow) ratingRow.style.display = '';
-                            if (typeof selectedRating !== 'undefined') selectedRating = 0;
-                            if (typeof updateStarDisplay === 'function') updateStarDisplay(0);
-                            console.log('[DEBUG] Reset reply form to default UI (after realtime)');
+                            if (reviewSubmitBtn)
+                                reviewSubmitBtn.textContent =
+                                    reviewSubmitBtn.getAttribute(
+                                        "data-default-text"
+                                    ) || "Gửi đánh giá";
+                            if (formTitle)
+                                formTitle.textContent =
+                                    formTitle.getAttribute(
+                                        "data-default-title"
+                                    ) || "Gửi đánh giá của bạn";
+                            if (ratingRow) ratingRow.style.display = "";
+                            if (typeof selectedRating !== "undefined")
+                                selectedRating = 0;
+                            if (typeof updateStarDisplay === "function")
+                                updateStarDisplay(0);
+                            // Reset ảnh preview nếu có
+                            const preview =
+                                document.getElementById("preview_image");
+                            if (preview) {
+                                preview.src = "#";
+                                preview.classList.add("hidden");
+                            }
+                            // Reset checkbox ẩn danh
+                            const isAnonymous =
+                                document.getElementById("is_anonymous");
+                            if (isAnonymous) isAnonymous.checked = false;
+                            // Reset rating radio
+                            const ratingInputs = reviewForm.querySelectorAll(
+                                'input[name="rating"]'
+                            );
+                            ratingInputs.forEach((input) => {
+                                input.checked = false;
+                            });
+                            console.log(
+                                "[DEBUG] Reset review form to default UI (after review submit)"
+                            );
                         }, 200);
                     } else {
-                        let errorMsg = 'Có lỗi xảy ra khi gửi phản hồi!';
+                        let errorMsg = "Có lỗi xảy ra khi gửi đánh giá!";
                         try {
                             const data = await response.json();
                             if (data && data.errors) {
-                                errorMsg = Object.values(data.errors).join('\n');
+                                errorMsg = Object.values(data.errors).join(
+                                    "\n"
+                                );
                             } else if (data && data.message) {
                                 errorMsg = data.message;
                             }
                         } catch {}
-                        dtmodalShowToast('error', { title: 'Lỗi', message: errorMsg });
+                        dtmodalShowToast("error", {
+                            title: "Lỗi",
+                            message: errorMsg,
+                        });
                     }
                     return;
                 })
                 .catch(() => {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
-                    return;
+                    submitBtn.textContent =
+                        submitBtn.getAttribute("data-default-text") ||
+                        "Gửi đánh giá";
+                    dtmodalShowToast("error", {
+                        title: "Lỗi",
+                        message: "Có lỗi xảy ra khi gửi đánh giá!",
+                    });
                 });
-                return;
-            }
-            // Nếu là gửi bình luận mới (không phải reply), cũng dùng AJAX
-            e.preventDefault();
-            
-            // Kiểm tra validation trước khi gửi
-            const rating = reviewForm.querySelector('input[name="rating"]:checked');
-            if (!rating) {
-                dtmodalShowToast('warning', { title: 'Thiếu thông tin', message: 'Vui lòng chọn số sao đánh giá!' });
-                return;
-            }
-            
-            const formData = new FormData(reviewForm);
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const submitBtn = reviewForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Đang gửi...';
-            fetch(reviewForm.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: formData
-            })
-            .then(async response => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
-                if (response.ok) {
-                    dtmodalShowToast('success', { title: 'Thành công', message: 'Đánh giá của bạn đã được gửi!' });
-                    setTimeout(() => {
-                        // Lấy lại DOM mỗi lần
-                        const reviewForm = document.getElementById('review-reply-form');
-                        const replyReviewIdInput = document.getElementById('reply_review_id');
-                        const replyingToDiv = document.getElementById('replying-to');
-                        const reviewTextarea = document.getElementById('review-textarea');
-                        const reviewSubmitBtn = document.getElementById('review-submit-btn');
-                        const formTitle = document.getElementById('form-title');
-                        const ratingRow = document.getElementById('rating-row');
-                        if (reviewForm) reviewForm.setAttribute('action', reviewForm.getAttribute('data-default-action') || '/products/review');
-                        if (replyReviewIdInput) replyReviewIdInput.value = '';
-                        if (replyingToDiv) replyingToDiv.classList.add('hidden');
-                        if (reviewTextarea) {
-                            reviewTextarea.value = '';
-                            reviewTextarea.placeholder = reviewTextarea.getAttribute('data-default-placeholder') || 'Chia sẻ cảm nhận của bạn...';
-                            reviewTextarea.setAttribute('name', 'review');
-                        }
-                        if (reviewSubmitBtn) reviewSubmitBtn.textContent = reviewSubmitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
-                        if (formTitle) formTitle.textContent = formTitle.getAttribute('data-default-title') || 'Gửi đánh giá của bạn';
-                        if (ratingRow) ratingRow.style.display = '';
-                        if (typeof selectedRating !== 'undefined') selectedRating = 0;
-                        if (typeof updateStarDisplay === 'function') updateStarDisplay(0);
-                        // Reset ảnh preview nếu có
-                        const preview = document.getElementById('preview_image');
-                        if (preview) { preview.src = '#'; preview.classList.add('hidden'); }
-                        // Reset checkbox ẩn danh
-                        const isAnonymous = document.getElementById('is_anonymous');
-                        if (isAnonymous) isAnonymous.checked = false;
-                        // Reset rating radio
-                        const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
-                        ratingInputs.forEach(input => { input.checked = false; });
-                        console.log('[DEBUG] Reset review form to default UI (after review submit)');
-                    }, 200);
-                } else {
-                    let errorMsg = 'Có lỗi xảy ra khi gửi đánh giá!';
-                    try {
-                        const data = await response.json();
-                        if (data && data.errors) {
-                            // Xử lý lỗi validation bằng tiếng Việt
-                            const errorMessages = [];
-                            Object.keys(data.errors).forEach(field => {
-                                const fieldErrors = data.errors[field];
-                                if (Array.isArray(fieldErrors)) {
-                                    errorMessages.push(...fieldErrors);
-                                } else {
-                                    errorMessages.push(fieldErrors);
-                                }
-                            });
-                            errorMsg = errorMessages.join('\n');
-                        } else if (data && data.message) {
-                            errorMsg = data.message;
-                        }
-                    } catch {}
-                    dtmodalShowToast('error', { title: 'Lỗi đánh giá', message: errorMsg });
-                }
-                return;
-            })
-            .catch(() => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
-                dtmodalShowToast('error', { title: 'Lỗi kết nối', message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau!' });
-            });
         });
     }
 
-    // XỬ LÝ XÓA BÌNH LUẬN (REVIEW) - dùng event delegation để hỗ trợ realtime
-    // Sửa lại: dùng closest('.delete-review-btn') để bắt sự kiện đúng cả khi click vào phần tử con
-    // Xóa đoạn cũ nếu còn
-
-    document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.delete-review-btn');
-        if (btn) {
-            const reviewId = btn.getAttribute('data-review-id');
+    // XỬ LÝ XÓA BÌNH LUẬN (REVIEW)
+    document.querySelectorAll(".delete-review-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
             dtmodalCreateModal({
-                type: 'warning',
-                title: 'Xác nhận xóa',
-                message: 'Bạn có chắc chắn muốn xóa bình luận này?',
-                confirmText: 'Xóa',
-                cancelText: 'Hủy',
-                onConfirm: function() {
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                type: "warning",
+                title: "Xác nhận xóa",
+                message: "Bạn có chắc chắn muốn xóa bình luận này?",
+                confirmText: "Xóa",
+                cancelText: "Hủy",
+                onConfirm: function () {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content");
                     fetch(`/reviews/${reviewId}`, {
-                        method: 'DELETE',
+                        method: "DELETE",
                         headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
+                            "X-CSRF-TOKEN": csrfToken,
+                            Accept: "application/json",
                         },
                     })
-                    .then(async res => {
-                        if (res.ok) {
-                            dtmodalShowToast('success', { title: 'Thành công', message: 'Đã xóa bình luận thành công!' });
-                            // Ẩn review khỏi giao diện
-                            const reviewDiv = btn.closest('.p-6');
-                            if (reviewDiv) reviewDiv.remove();
-                        } else {
-                            let msg = 'Không thể xóa bình luận. Vui lòng thử lại!';
-                            try {
-                                const data = await res.json();
-                                if (data && data.message) msg = data.message;
-                            } catch {}
-                            dtmodalShowToast('error', { title: 'Lỗi', message: msg });
-                        }
-                    })
-                    .catch(() => {
-                        dtmodalShowToast('error', { title: 'Lỗi kết nối', message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau!' });
-                    });
-                }
+                        .then(async (res) => {
+                            if (res.ok) {
+                                dtmodalShowToast("success", {
+                                    title: "Thành công",
+                                    message: "Đã xóa bình luận!",
+                                });
+                                const reviewDiv = btn.closest(".p-6");
+                                if (reviewDiv) reviewDiv.remove();
+                            } else {
+                                let msg = "Không thể xóa bình luận!";
+                                try {
+                                    const data = await res.json();
+                                    if (data && data.message)
+                                        msg = data.message;
+                                } catch {}
+                                dtmodalShowToast("error", {
+                                    title: "Lỗi",
+                                    message: msg,
+                                });
+                            }
+                        })
+                        .catch(() => {
+                            dtmodalShowToast("error", {
+                                title: "Lỗi",
+                                message: "Lỗi mạng hoặc server!",
+                            });
+                        });
+                },
             });
-        }
+        });
     });
-
     // Preview image functionality
-    const input = document.getElementById('review_image');
-    const preview = document.getElementById('preview_image');
-    const removeBtn = document.getElementById('remove_preview_image');
-    if (input && preview && removeBtn) {
-        input.addEventListener('change', function(e) {
+    const input = document.getElementById("review_image");
+    const preview = document.getElementById("preview_image");
+    if (input && preview) {
+        input.addEventListener("change", function (e) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(ev) {
+                reader.onload = function (ev) {
                     preview.src = ev.target.result;
-                    preview.classList.remove('hidden');
-                    removeBtn.classList.remove('hidden');
-                }
+                    preview.classList.remove("hidden");
+                };
                 reader.readAsDataURL(input.files[0]);
             } else {
-                preview.src = '#';
-                preview.classList.add('hidden');
-                removeBtn.classList.add('hidden');
+                preview.src = "#";
+                preview.classList.add("hidden");
             }
-        });
-        removeBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            input.value = '';
-            preview.src = '#';
-            preview.classList.add('hidden');
-            removeBtn.classList.add('hidden');
         });
     }
 
     // XỬ LÝ XÓA REPLY (fetch API)
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-reply-btn')) {
-            // Thay confirm bằng modal xác nhận đẹp
+    document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("delete-reply-btn")) {
             dtmodalCreateModal({
-                type: 'warning',
-                title: 'Xác nhận xóa',
-                message: 'Bạn có chắc chắn muốn xóa phản hồi này không?',
-                confirmText: 'Xóa',
-                cancelText: 'Hủy',
-                onConfirm: function() {
+                type: "warning",
+                title: "Xác nhận xóa",
+                message: "Bạn có chắc chắn muốn xóa phản hồi này không?",
+                confirmText: "Xóa",
+                cancelText: "Hủy",
+                onConfirm: function () {
                     const btn = e.target;
-                    const replyId = btn.getAttribute('data-reply-id');
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    fetch('/review-replies/' + replyId, {
-                        method: 'DELETE',
+                    const replyId = btn.getAttribute("data-reply-id");
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content");
+                    fetch("/review-replies/" + replyId, {
+                        method: "DELETE",
                         headers: {
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json',
+                            "X-CSRF-TOKEN": csrfToken,
+                            Accept: "application/json",
                         },
-                        credentials: 'same-origin'
+                        credentials: "same-origin",
                     })
-                    .then(async res => {
-                        if (res.ok) {
-                            let data = await res.json();
-                            if (window.dtmodalShowToast) {
-                                dtmodalShowToast('success', { title: 'Thành công', message: 'Phản hồi đã được gửi thành công!' });
+                        .then(async (res) => {
+                            if (res.ok) {
+                                let data = await res.json();
+                                if (window.dtmodalShowToast) {
+                                    dtmodalShowToast("success", {
+                                        title: "Thành công",
+                                        message: data.message,
+                                    });
+                                } else {
+                                    alert(data.message);
+                                }
+                                // Chỉ xóa reply-item gần nhất với nút xóa
+                                const replyItem = btn.closest(".reply-item");
+                                if (replyItem) replyItem.remove();
                             } else {
-                                alert('Phản hồi đã được gửi thành công!');
+                                let msg = "Đã xảy ra lỗi!";
+                                try {
+                                    const data = await res.json();
+                                    if (data && data.message)
+                                        msg = data.message;
+                                } catch {}
+                                if (window.dtmodalShowToast) {
+                                    dtmodalShowToast("error", {
+                                        title: "Lỗi",
+                                        message: msg,
+                                    });
+                                } else {
+                                    alert(msg);
+                                }
                             }
-                            btn.closest('.reply-item').remove();
-                        } else {
-                            let msg = 'Không thể xóa phản hồi. Vui lòng thử lại!';
-                            try {
-                                const data = await res.json();
-                                if (data && data.message) msg = data.message;
-                            } catch {}
+                        })
+                        .catch(() => {
                             if (window.dtmodalShowToast) {
-                                dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                                dtmodalShowToast("error", {
+                                    title: "Lỗi",
+                                    message: "Lỗi mạng hoặc server!",
+                                });
                             } else {
-                                alert(msg);
+                                alert("Lỗi mạng hoặc server!");
                             }
-                        }
-                    })
-                    .catch(() => {
-                        if (window.dtmodalShowToast) {
-                            dtmodalShowToast('error', { title: 'Lỗi kết nối', message: 'Không thể kết nối đến máy chủ. Vui lòng thử lại sau!' });
-                        } else {
-                            alert('Không thể kết nối đến máy chủ. Vui lòng thử lại sau!');
-                        }
-                    });
-                }
+                        });
+                },
             });
             return;
         }
     });
-
-    // Mở modal khi bấm nút báo cáo
-    document.querySelectorAll('.report-review-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewId = this.getAttribute('data-review-id');
-            document.getElementById('report_review_id').value = reviewId;
-            document.getElementById('report_reason').value = '';
-            document.getElementById('report-review-modal').classList.remove('hidden');
-        });
-    });
-
-    // Đóng modal
-    const closeReportModal = document.getElementById('close-report-modal');
-    const cancelReportBtn = document.getElementById('cancel-report-btn');
-    if (closeReportModal) closeReportModal.onclick = function() {
-        document.getElementById('report-review-modal').classList.add('hidden');
-    };
-    if (cancelReportBtn) cancelReportBtn.onclick = function() {
-        document.getElementById('report-review-modal').classList.add('hidden');
-    };
-
-    // Gửi báo cáo
-    const reportForm = document.getElementById('report-review-form');
-    if (reportForm) {
-        reportForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const reviewId = document.getElementById('report_review_id').value;
-            const reason = document.getElementById('report_reason').value.trim();
-            if (!reason) {
-                if (window.dtmodalShowToast) {
-                    dtmodalShowToast('warning', { title: 'Thiếu thông tin', message: 'Vui lòng nhập lý do báo cáo!' });
-                } else {
-                    alert('Vui lòng nhập lý do báo cáo!');
-                }
-                return;
-            }
-            fetch(`/reviews/${reviewId}/report`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': window.csrfToken,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ reason })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (window.dtmodalShowToast) {
-                        dtmodalShowToast('success', { title: 'Thành công', message: data.message });
-                    } else {
-                        alert('Báo cáo thành công!');
-                    }
-                    document.getElementById('report-review-modal').classList.add('hidden');
-                } else {
-                    if (window.dtmodalShowToast) {
-                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Báo cáo thất bại' });
-                    } else {
-                        alert(data.message || 'Báo cáo thất bại');
-                    }
-                }
-            })
-            .catch(() => {
-                if (window.dtmodalShowToast) {
-                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
-                } else {
-                    alert('Lỗi mạng hoặc server!');
-                }
-            });
-        });
-    }
 });
 
 // Tab switching functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('[data-tab]');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    tabButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            
+document.addEventListener("DOMContentLoaded", function () {
+    const tabButtons = document.querySelectorAll("[data-tab]");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach((button) => {
+        button.addEventListener("click", function () {
+            const tabName = this.getAttribute("data-tab");
+
             // Reset all tab buttons
-            tabButtons.forEach(btn => {
-                btn.classList.remove('border-orange-500', 'text-orange-500');
-                btn.classList.add('border-transparent');
+            tabButtons.forEach((btn) => {
+                btn.classList.remove("border-orange-500", "text-orange-500");
+                btn.classList.add("border-transparent");
             });
-            
+
             // Hide all tab contents
-            tabContents.forEach(content => {
-                content.classList.add('hidden');
+            tabContents.forEach((content) => {
+                content.classList.add("hidden");
             });
-            
+
             // Activate clicked tab
-            this.classList.add('border-orange-500', 'text-orange-500');
-            this.classList.remove('border-transparent');
-            
+            this.classList.add("border-orange-500", "text-orange-500");
+            this.classList.remove("border-transparent");
+
             // Show corresponding content
-            document.getElementById('content-' + tabName).classList.remove('hidden');
+            document
+                .getElementById("content-" + tabName)
+                .classList.remove("hidden");
         });
     });
 });
 
 // Function to update product availability UI
 function updateProductAvailability() {
-    const addToCartBtn = document.getElementById('add-to-cart');
-    const buyNowBtn = document.getElementById('buy-now');
-    const quantityControls = document.querySelectorAll('#decrease-quantity, #increase-quantity');
-    const toppingInputs = document.querySelectorAll('.topping-input');
-    const outOfStockMessage = document.getElementById('out-of-stock-message');
-    
+    const addToCartBtn = document.getElementById("add-to-cart");
+    const buyNowBtn = document.getElementById("buy-now-product-btn");
+    const quantityControls = document.querySelectorAll(
+        "#decrease-quantity, #increase-quantity"
+    );
+    const toppingInputs = document.querySelectorAll(".topping-input");
+    const outOfStockMessage = document.getElementById("out-of-stock-message");
+
     // Check if any variant is available
-    const hasAvailableVariant = Array.from(document.querySelectorAll('.variant-input'))
-        .some(input => parseInt(input.dataset.stockQuantity || 0) > 0);
-        
+    const hasAvailableVariant = Array.from(
+        document.querySelectorAll(".variant-input")
+    ).some((input) => parseInt(input.dataset.stockQuantity || 0) > 0);
+
     // Check if currently selected variant is available
-    const selectedVariant = document.querySelector('.variant-input:checked');
-    const isSelectedVariantAvailable = selectedVariant && parseInt(selectedVariant.dataset.stockQuantity || 0) > 0;
-    
-    console.log('Availability check:', {
+    const selectedVariant = document.querySelector(".variant-input:checked");
+    const isSelectedVariantAvailable =
+        selectedVariant &&
+        parseInt(selectedVariant.dataset.stockQuantity || 0) > 0;
+
+    console.log("Availability check:", {
         hasAvailableVariant,
         isSelectedVariantAvailable,
-        selectedVariantStock: selectedVariant ? selectedVariant.dataset.stockQuantity : null
+        selectedVariantStock: selectedVariant
+            ? selectedVariant.dataset.stockQuantity
+            : null,
     });
-    
+
     // Update out of stock message
     if (outOfStockMessage) {
         if (!hasAvailableVariant) {
-            outOfStockMessage.style.display = 'block';
-            outOfStockMessage.innerHTML = '<p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>';
+            outOfStockMessage.style.display = "block";
+            outOfStockMessage.innerHTML =
+                "<p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>";
         } else if (!isSelectedVariantAvailable) {
-            outOfStockMessage.style.display = 'block';
-            outOfStockMessage.innerHTML = '<p>Biến thể đã chọn hiện đang hết hàng. Vui lòng chọn biến thể khác.</p>';
+            outOfStockMessage.style.display = "block";
+            outOfStockMessage.innerHTML =
+                "<p>Biến thể đã chọn hiện đang hết hàng. Vui lòng chọn biến thể khác.</p>";
         } else {
-            outOfStockMessage.style.display = 'none';
+            outOfStockMessage.style.display = "none";
         }
     }
-    
+
     // Update add to cart and buy now buttons
     if (addToCartBtn) {
         if (!hasAvailableVariant) {
             addToCartBtn.disabled = true;
-            addToCartBtn.classList.add('bg-gray-400');
-            addToCartBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-            const span = addToCartBtn.querySelector('span');
-            if (span) span.textContent = 'Hết hàng';
+            addToCartBtn.classList.add("bg-gray-400");
+            addToCartBtn.classList.remove(
+                "bg-orange-500",
+                "hover:bg-orange-600"
+            );
+            const span = addToCartBtn.querySelector("span");
+            if (span) span.textContent = "Hết hàng";
         } else if (!isSelectedVariantAvailable) {
             addToCartBtn.disabled = true;
-            addToCartBtn.classList.add('bg-gray-400');
-            addToCartBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-            const span = addToCartBtn.querySelector('span');
-            if (span) span.textContent = 'Chọn biến thể khác';
+            addToCartBtn.classList.add("bg-gray-400");
+            addToCartBtn.classList.remove(
+                "bg-orange-500",
+                "hover:bg-orange-600"
+            );
+            const span = addToCartBtn.querySelector("span");
+            if (span) span.textContent = "Chọn biến thể khác";
         } else {
             addToCartBtn.disabled = false;
-            addToCartBtn.classList.remove('bg-gray-400');
-            addToCartBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
-            const span = addToCartBtn.querySelector('span');
-            if (span) span.textContent = 'Thêm vào giỏ hàng';
+            addToCartBtn.classList.remove("bg-gray-400");
+            addToCartBtn.classList.add("bg-orange-500", "hover:bg-orange-600");
+            const span = addToCartBtn.querySelector("span");
+            if (span) span.textContent = "Thêm vào giỏ hàng";
         }
     }
-    
+
     if (buyNowBtn) {
         buyNowBtn.disabled = !isSelectedVariantAvailable;
-        buyNowBtn.classList.toggle('opacity-50', !isSelectedVariantAvailable);
-        buyNowBtn.classList.toggle('cursor-not-allowed', !isSelectedVariantAvailable);
+        buyNowBtn.classList.toggle("opacity-50", !isSelectedVariantAvailable);
+        buyNowBtn.classList.toggle(
+            "cursor-not-allowed",
+            !isSelectedVariantAvailable
+        );
     }
-    
+
     // Update quantity controls and toppings based on selected variant
     const isControlsEnabled = isSelectedVariantAvailable;
-    quantityControls.forEach(control => {
+    quantityControls.forEach((control) => {
         control.disabled = !isControlsEnabled;
-        control.classList.toggle('opacity-50', !isControlsEnabled);
-        control.classList.toggle('cursor-not-allowed', !isControlsEnabled);
+        control.classList.toggle("opacity-50", !isControlsEnabled);
+        control.classList.toggle("cursor-not-allowed", !isControlsEnabled);
     });
-    
-    toppingInputs.forEach(input => {
+
+    toppingInputs.forEach((input) => {
         input.disabled = !isControlsEnabled;
-        const label = input.closest('label');
+        const label = input.closest("label");
         if (label) {
-            label.classList.toggle('opacity-50', !isControlsEnabled);
-            label.classList.toggle('cursor-not-allowed', !isControlsEnabled);
+            label.classList.toggle("opacity-50", !isControlsEnabled);
+            label.classList.toggle("cursor-not-allowed", !isControlsEnabled);
         }
     });
 }
 
 // Initialize Pusher
 const pusher = new Pusher(window.pusherKey, {
-    cluster: window.pusherCluster
+    cluster: window.pusherCluster,
 });
 
 // Subscribe to the stock update channel
-const channel = pusher.subscribe('branch-stock-channel');
+const channel = pusher.subscribe("branch-stock-channel");
 
 // Track last update to prevent duplicate alerts
 let lastUpdate = {
     variantId: null,
     quantity: null,
-    timestamp: 0
+    timestamp: 0,
 };
 
 // Listen for stock updates
-channel.bind('stock-updated', function(data) {
-    console.log('Stock update received:', data);
-    
+channel.bind("stock-updated", function (data) {
+    console.log("Stock update received:", data);
+
     // Check for duplicate updates within 1 second
     const now = Date.now();
-    if (lastUpdate.variantId === data.productVariantId && 
-        lastUpdate.quantity === data.stockQuantity && 
-        now - lastUpdate.timestamp < 1000) {
-        console.log('Duplicate update detected, ignoring');
+    if (
+        lastUpdate.variantId === data.productVariantId &&
+        lastUpdate.quantity === data.stockQuantity &&
+        now - lastUpdate.timestamp < 1000
+    ) {
+        console.log("Duplicate update detected, ignoring");
         return;
     }
-    
+
     // Update last update info
     lastUpdate = {
         variantId: data.productVariantId,
         quantity: data.stockQuantity,
-        timestamp: now
+        timestamp: now,
     };
-    
+
     // Only process if branch ID matches
-    const currentBranchId = document.querySelector('.variant-input')?.dataset.branchId;
+    const currentBranchId =
+        document.querySelector(".variant-input")?.dataset.branchId;
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
+
     // Find all variant inputs that match the updated stock
-    const variantInputs = document.querySelectorAll(`.variant-input[data-variant-id="${data.productVariantId}"]`);
-    
+    const variantInputs = document.querySelectorAll(
+        `.variant-input[data-variant-id="${data.productVariantId}"]`
+    );
+
     if (variantInputs.length === 0) {
-        console.log('No matching variants found for productVariantId:', data.productVariantId);
+        console.log(
+            "No matching variants found for productVariantId:",
+            data.productVariantId
+        );
         return;
     }
-    
-    variantInputs.forEach(input => {
+
+    variantInputs.forEach((input) => {
         // Update the stock quantity data attribute
         input.dataset.stockQuantity = data.stockQuantity;
-        
+
         // Get the label element
         const label = input.nextElementSibling;
-        
+
         // Update stock display
-        let stockDisplay = label.querySelector('.stock-display');
+        let stockDisplay = label.querySelector(".stock-display");
         if (stockDisplay) {
             if (data.stockQuantity > 0) {
                 stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
-                stockDisplay.className = `text-xs ml-1 ${data.stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500'} stock-display`;
+                stockDisplay.className = `text-xs ml-1 ${
+                    data.stockQuantity <= 5
+                        ? "text-orange-500"
+                        : "text-gray-500"
+                } stock-display`;
             } else {
-                stockDisplay.textContent = '(Hết hàng)';
-                stockDisplay.className = 'text-xs ml-1 text-red-500 stock-display';
+                stockDisplay.textContent = "(Hết hàng)";
+                stockDisplay.className =
+                    "text-xs ml-1 text-red-500 stock-display";
             }
         }
-        
+
         // Update disabled state of variant input
         if (data.stockQuantity <= 0) {
             input.disabled = true;
-            label.classList.add('opacity-50', 'cursor-not-allowed');
-            label.classList.remove('hover:bg-gray-50');
-            
+            label.classList.add("opacity-50", "cursor-not-allowed");
+            label.classList.remove("hover:bg-gray-50");
+
             // If this is the currently selected variant, uncheck it
             if (input.checked) {
                 // Find first available variant in the same attribute group
                 const attributeId = input.dataset.attributeId;
-                const firstAvailableVariant = document.querySelector(`.variant-input[data-attribute-id="${attributeId}"]:not([disabled])`);
+                const firstAvailableVariant = document.querySelector(
+                    `.variant-input[data-attribute-id="${attributeId}"]:not([disabled])`
+                );
                 if (firstAvailableVariant) {
                     firstAvailableVariant.checked = true;
-                    firstAvailableVariant.dispatchEvent(new Event('change'));
+                    firstAvailableVariant.dispatchEvent(new Event("change"));
                 }
             }
         } else {
             input.disabled = false;
-            label.classList.remove('opacity-50', 'cursor-not-allowed');
-            label.classList.add('hover:bg-gray-50');
+            label.classList.remove("opacity-50", "cursor-not-allowed");
+            label.classList.add("hover:bg-gray-50");
         }
     });
-    
+
     // Force update product availability
     setTimeout(updateProductAvailability, 100);
 });
 
 // Listen for topping stock updates
-channel.bind('topping-stock-updated', function(data) {
-    console.log('Topping stock update received:', data);
-    
+channel.bind("topping-stock-updated", function (data) {
+    console.log("Topping stock update received:", data);
+
     // Only process if branch ID matches
-    const currentBranchId = document.querySelector('.topping-input')?.dataset.branchId;
+    const currentBranchId =
+        document.querySelector(".topping-input")?.dataset.branchId;
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
+
     // Find all topping inputs that match the updated stock
-    const toppingInputs = document.querySelectorAll(`.topping-input[data-topping-id="${data.toppingId}"]`);
-    
+    const toppingInputs = document.querySelectorAll(
+        `.topping-input[data-topping-id="${data.toppingId}"]`
+    );
+
     if (toppingInputs.length === 0) {
-        console.log('No matching toppings found for toppingId:', data.toppingId);
+        console.log(
+            "No matching toppings found for toppingId:",
+            data.toppingId
+        );
         return;
     }
-    
-    toppingInputs.forEach(input => {
+
+    toppingInputs.forEach((input) => {
         // Update the stock quantity data attribute
         input.dataset.stockQuantity = data.stockQuantity;
-        
+
         // Get the label element (parent of input)
-        const label = input.closest('label');
-        
+        const label = input.closest("label");
+
         // Get the stock display element
-        let stockDisplay = label.querySelector('.stock-display');
-        
+        let stockDisplay = label.querySelector(".stock-display");
+
         // If stock is 0, hide the entire topping
         if (data.stockQuantity <= 0) {
             // If this topping is currently checked, uncheck it
             if (input.checked) {
                 input.checked = false;
-                input.dispatchEvent(new Event('change'));
+                input.dispatchEvent(new Event("change"));
             }
-            
+
             // Hide the entire topping
-            label.style.display = 'none';
+            label.style.display = "none";
         } else {
             // Show the topping
-            label.style.display = 'block';
-            
+            label.style.display = "block";
+
             // Update or create stock display
             if (!stockDisplay) {
-                stockDisplay = document.createElement('div');
-                stockDisplay.className = 'absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display';
-                label.querySelector('.relative').appendChild(stockDisplay);
+                stockDisplay = document.createElement("div");
+                stockDisplay.className =
+                    "absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display";
+                label.querySelector(".relative").appendChild(stockDisplay);
             }
-            
+
             // Only show stock display if quantity is less than 5
             if (data.stockQuantity < 5) {
-                stockDisplay.style.display = 'block';
+                stockDisplay.style.display = "block";
                 stockDisplay.textContent = `Còn ${data.stockQuantity}`;
-                stockDisplay.className = 'absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display';
+                stockDisplay.className =
+                    "absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display";
             } else {
-                stockDisplay.style.display = 'none';
+                stockDisplay.style.display = "none";
             }
-            
+
             // Enable the input
             input.disabled = false;
-            label.classList.remove('opacity-50', 'cursor-not-allowed');
-            label.classList.add('hover:bg-gray-50');
+            label.classList.remove("opacity-50", "cursor-not-allowed");
+            label.classList.add("hover:bg-gray-50");
         }
     });
-    
+
     // Update overall product availability
     updateProductAvailability();
 });
 
 // Listen for product price updates
-channel.bind('product-price-updated', function(data) {
-    console.log('Product price update received:', data);
-    
+channel.bind("product-price-updated", function (data) {
+    console.log("Product price update received:", data);
+
     // Get current branch ID from the hidden input
-    const currentBranchId = document.getElementById('branch-select')?.value;
+    const currentBranchId = document.getElementById("branch-select")?.value;
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
+
     // Update base price
     window.basePrice = parseFloat(data.basePrice);
-    
+
     // Update price displays
-    const basePriceDisplay = document.getElementById('base-price');
-    const currentPriceDisplay = document.getElementById('current-price');
-    const priceUpdateNotification = document.getElementById('price-update-notification');
-    
+    const basePriceDisplay = document.getElementById("base-price");
+    const currentPriceDisplay = document.getElementById("current-price");
+    const priceUpdateNotification = document.getElementById(
+        "price-update-notification"
+    );
+
     // Add animation class to current price
-    currentPriceDisplay.classList.add('animate-price-update');
-    
+    currentPriceDisplay.classList.add("animate-price-update");
+
     // Update base price display
-    basePriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
-    basePriceDisplay.classList.remove('hidden');
-    
+    basePriceDisplay.textContent = `${Math.round(
+        window.basePrice
+    ).toLocaleString("en-US")} đ`;
+    basePriceDisplay.classList.remove("hidden");
+
     // Update current price display
-    currentPriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
-    currentPriceDisplay.classList.add('text-orange-500');
-    currentPriceDisplay.classList.remove('text-green-500');
-    
+    currentPriceDisplay.textContent = `${Math.round(
+        window.basePrice
+    ).toLocaleString("en-US")} đ`;
+    currentPriceDisplay.classList.add("text-orange-500");
+    currentPriceDisplay.classList.remove("text-green-500");
+
     // Show price update notification
-    priceUpdateNotification.classList.remove('hidden');
-    
+    priceUpdateNotification.classList.remove("hidden");
+
     // Force price recalculation
     window.updatePrice();
-    
+
     // Remove animation class after animation completes
     setTimeout(() => {
-        currentPriceDisplay.classList.remove('animate-price-update');
+        currentPriceDisplay.classList.remove("animate-price-update");
     }, 500);
-    
+
     // Hide notification after 5 seconds
     setTimeout(() => {
-        priceUpdateNotification.classList.add('hidden');
+        priceUpdateNotification.classList.add("hidden");
     }, 5000);
-    
-    // Show toast notification    
+
+    // Show toast notification
     // Update related products prices if they exist
-    const relatedProducts = document.querySelectorAll('.related-product');
-    relatedProducts.forEach(product => {
+    const relatedProducts = document.querySelectorAll(".related-product");
+    relatedProducts.forEach((product) => {
         const productId = product.dataset.productId;
         if (productId == data.productId) {
-            const priceElement = product.querySelector('.product-price');
+            const priceElement = product.querySelector(".product-price");
             if (priceElement) {
-                priceElement.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
-                priceElement.classList.add('animate-price-update');
+                priceElement.textContent = `${Math.round(
+                    window.basePrice
+                ).toLocaleString("en-US")} đ`;
+                priceElement.classList.add("animate-price-update");
                 setTimeout(() => {
-                    priceElement.classList.remove('animate-price-update');
+                    priceElement.classList.remove("animate-price-update");
                 }, 500);
             }
         }
@@ -1150,84 +1325,106 @@ channel.bind('product-price-updated', function(data) {
 });
 
 // Listen for variant price updates
-channel.bind('variant-price-updated', function(data) {
-    console.log('Variant price update received:', data);
-    
+channel.bind("variant-price-updated", function (data) {
+    console.log("Variant price update received:", data);
+
     // Get current branch ID from the hidden input
-    const currentBranchId = document.getElementById('branch-select')?.value;
+    const currentBranchId = document.getElementById("branch-select")?.value;
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
+
     // Find the variant input that matches the updated variant value
-    const variantInput = document.querySelector(`.variant-input[value="${data.variantValueId}"]`);
-    
+    const variantInput = document.querySelector(
+        `.variant-input[value="${data.variantValueId}"]`
+    );
+
     if (variantInput) {
         // Update the price adjustment data attribute
         variantInput.dataset.priceAdjustment = data.newPriceAdjustment;
-        
+
         // Get the label element
         const label = variantInput.nextElementSibling;
-        
+
         // Update the price display in the label
-        const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
+        const priceSpan = label.querySelector(
+            'span[class*="text-red-600"], span[class*="text-green-600"]'
+        );
         if (priceSpan) {
             if (data.newPriceAdjustment > 0) {
-                priceSpan.textContent = `+${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
+                priceSpan.textContent = `+${Math.round(
+                    parseFloat(data.newPriceAdjustment)
+                ).toLocaleString("en-US")} đ`;
             } else {
-                priceSpan.textContent = `${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
+                priceSpan.textContent = `${Math.round(
+                    parseFloat(data.newPriceAdjustment)
+                ).toLocaleString("en-US")} đ`;
             }
         } else if (data.newPriceAdjustment !== 0) {
             // Create new price span if it doesn't exist
-            const newPriceSpan = document.createElement('span');
-            newPriceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
+            const newPriceSpan = document.createElement("span");
+            newPriceSpan.className = `text-sm ml-1 ${
+                data.newPriceAdjustment > 0 ? "text-red-600" : "text-green-600"
+            }`;
+            newPriceSpan.textContent = `${
+                data.newPriceAdjustment > 0 ? "+" : ""
+            }${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString(
+                "en-US"
+            )} đ`;
             label.appendChild(newPriceSpan);
         }
-        
+
         // Add animation to the label
-        label.classList.add('animate-price-update');
+        label.classList.add("animate-price-update");
         setTimeout(() => {
-            label.classList.remove('animate-price-update');
+            label.classList.remove("animate-price-update");
         }, 500);
-        
+
         // Force price recalculation if this variant is currently selected
         if (variantInput.checked) {
             window.updatePrice();
-            
+
             // Show variant price update notification
-            const variantPriceNotification = document.getElementById('variant-price-update-notification');
+            const variantPriceNotification = document.getElementById(
+                "variant-price-update-notification"
+            );
             if (variantPriceNotification) {
-                variantPriceNotification.classList.remove('hidden');
+                variantPriceNotification.classList.remove("hidden");
                 setTimeout(() => {
-                    variantPriceNotification.classList.add('hidden');
+                    variantPriceNotification.classList.add("hidden");
                 }, 5000);
             }
         }
-        
+
         // Simple fade animation for variant price change (no toast)
         const variantLabel = variantInput.nextElementSibling;
-        variantLabel.classList.add('variant-price-updated');
+        variantLabel.classList.add("variant-price-updated");
         setTimeout(() => {
-            variantLabel.classList.remove('variant-price-updated');
+            variantLabel.classList.remove("variant-price-updated");
         }, 2000);
     }
-    
+
     // Update related products variant prices if they exist
-    const relatedProducts = document.querySelectorAll('.related-product');
-    relatedProducts.forEach(product => {
+    const relatedProducts = document.querySelectorAll(".related-product");
+    relatedProducts.forEach((product) => {
         const productId = product.dataset.productId;
         if (productId == data.productId) {
             // Update variant prices in related products if needed
-            const variantInputs = product.querySelectorAll('.variant-input');
-            variantInputs.forEach(input => {
+            const variantInputs = product.querySelectorAll(".variant-input");
+            variantInputs.forEach((input) => {
                 if (input.value == data.variantValueId) {
                     input.dataset.priceAdjustment = data.newPriceAdjustment;
                     const label = input.nextElementSibling;
-                    const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
+                    const priceSpan = label.querySelector(
+                        'span[class*="text-red-600"], span[class*="text-green-600"]'
+                    );
                     if (priceSpan && data.newPriceAdjustment !== 0) {
-                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
+                        priceSpan.textContent = `${
+                            data.newPriceAdjustment > 0 ? "+" : ""
+                        }${Math.round(
+                            parseFloat(data.newPriceAdjustment)
+                        ).toLocaleString("en-US")} đ`;
                     }
                 }
             });
@@ -1236,73 +1433,87 @@ channel.bind('variant-price-updated', function(data) {
 });
 
 // Listen for topping price updates
-channel.bind('topping-price-updated', function(data) {
-    console.log('Topping price update received:', data);
-    
+channel.bind("topping-price-updated", function (data) {
+    console.log("Topping price update received:", data);
+
     // Get current branch ID from the hidden input
-    const currentBranchId = document.getElementById('branch-select')?.value;
+    const currentBranchId = document.getElementById("branch-select")?.value;
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
+
     // Find all topping inputs that match the updated topping
-    const toppingInputs = document.querySelectorAll(`.topping-input[data-topping-id="${data.toppingId}"]`);
-    
+    const toppingInputs = document.querySelectorAll(
+        `.topping-input[data-topping-id="${data.toppingId}"]`
+    );
+
     if (toppingInputs.length > 0) {
-        toppingInputs.forEach(input => {
+        toppingInputs.forEach((input) => {
             // Update the price data attribute
             input.dataset.price = data.newPrice;
-            
+
             // Get the label element (parent of input)
-            const label = input.closest('label');
-            
+            const label = input.closest("label");
+
             // Update the price display
-            const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
+            const priceElement = label.querySelector(
+                ".text-xs.text-orange-500.font-medium"
+            );
             if (priceElement) {
-                priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
-                
+                priceElement.textContent = `+${Math.round(
+                    parseFloat(data.newPrice)
+                ).toLocaleString("en-US")} đ`;
+
                 // Add animation to the price element
-                priceElement.classList.add('topping-price-updated');
+                priceElement.classList.add("topping-price-updated");
                 setTimeout(() => {
-                    priceElement.classList.remove('topping-price-updated');
+                    priceElement.classList.remove("topping-price-updated");
                 }, 2000);
             }
-            
+
             // Add animation to the entire topping label
-            label.classList.add('topping-price-updated');
+            label.classList.add("topping-price-updated");
             setTimeout(() => {
-                label.classList.remove('topping-price-updated');
+                label.classList.remove("topping-price-updated");
             }, 2000);
         });
-        
+
         // Force price recalculation if any topping is currently selected
-        const selectedToppings = document.querySelectorAll('.topping-input:checked');
+        const selectedToppings = document.querySelectorAll(
+            ".topping-input:checked"
+        );
         if (selectedToppings.length > 0) {
             window.updatePrice();
         }
-        
+
         // Show topping price update notification
-        const toppingPriceNotification = document.getElementById('topping-price-update-notification');
+        const toppingPriceNotification = document.getElementById(
+            "topping-price-update-notification"
+        );
         if (toppingPriceNotification) {
-            toppingPriceNotification.classList.remove('hidden');
+            toppingPriceNotification.classList.remove("hidden");
             setTimeout(() => {
-                toppingPriceNotification.classList.add('hidden');
+                toppingPriceNotification.classList.add("hidden");
             }, 5000);
         }
     }
-    
+
     // Update related products topping prices if they exist
-    const relatedProducts = document.querySelectorAll('.related-product');
-    relatedProducts.forEach(product => {
-        const toppingInputs = product.querySelectorAll('.topping-input');
-        toppingInputs.forEach(input => {
+    const relatedProducts = document.querySelectorAll(".related-product");
+    relatedProducts.forEach((product) => {
+        const toppingInputs = product.querySelectorAll(".topping-input");
+        toppingInputs.forEach((input) => {
             if (input.dataset.toppingId == data.toppingId) {
                 input.dataset.price = data.newPrice;
-                const label = input.closest('label');
-                const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
+                const label = input.closest("label");
+                const priceElement = label.querySelector(
+                    ".text-xs.text-orange-500.font-medium"
+                );
                 if (priceElement) {
-                    priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
+                    priceElement.textContent = `+${Math.round(
+                        parseFloat(data.newPrice)
+                    ).toLocaleString("en-US")} đ`;
                 }
             }
         });
@@ -1310,193 +1521,231 @@ channel.bind('topping-price-updated', function(data) {
 });
 
 // Listen for product variant updates (create, update, delete)
-channel.bind('product-variant-updated', function(data) {
-    console.log('Product variant update received:', data);
-    console.log('Data structure:', {
+channel.bind("product-variant-updated", function (data) {
+    console.log("Product variant update received:", data);
+    console.log("Data structure:", {
         productId: data.productId,
         action: data.action,
         variantData: data.variantData,
-        branchId: data.branchId
+        branchId: data.branchId,
     });
-    
+
     // Get current branch ID from the hidden input
-    const currentBranchId = document.getElementById('branch-select')?.value;
-    console.log('Current branch ID:', currentBranchId, 'Event branch ID:', data.branchId);
-    
+    const currentBranchId = document.getElementById("branch-select")?.value;
+    console.log(
+        "Current branch ID:",
+        currentBranchId,
+        "Event branch ID:",
+        data.branchId
+    );
+
     if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
-        console.log('Branch ID mismatch, ignoring update');
+        console.log("Branch ID mismatch, ignoring update");
         return;
     }
-    
-    const variantsContainer = document.getElementById('variants-container');
-    console.log('Variants container found:', variantsContainer);
-    
+
+    const variantsContainer = document.getElementById("variants-container");
+    console.log("Variants container found:", variantsContainer);
+
     if (!variantsContainer) {
-        console.log('Variants container not found!');
+        console.log("Variants container not found!");
         return;
     }
-    
-    console.log('Processing action:', data.action);
-    
+
+    console.log("Processing action:", data.action);
+
     switch (data.action) {
-        case 'created':
+        case "created":
             handleVariantCreated(data, variantsContainer);
             break;
-        case 'updated':
+        case "updated":
             handleVariantUpdated(data, variantsContainer);
             break;
-        case 'deleted':
+        case "deleted":
             handleVariantDeleted(data, variantsContainer);
             break;
         default:
-            console.log('Unknown action:', data.action);
+            console.log("Unknown action:", data.action);
     }
-    
+
     // Force price recalculation
     window.updatePrice();
-    
+
     // Update product availability
     updateProductAvailability();
 });
 
 // Handle variant created
 function handleVariantCreated(data, container) {
-    console.log('Handling variant created:', data);
-    console.log('Container:', container);
-    console.log('Variant data:', data.variantData);
-    
+    console.log("Handling variant created:", data);
+    console.log("Container:", container);
+    console.log("Variant data:", data.variantData);
+
     // Check if variant data has values
-    if (!data.variantData.variant_values || data.variantData.variant_values.length === 0) {
-        console.log('No variant values found, reloading page...');
-        showVariantNotification('Biến thể mới đã được thêm - Đang tải lại trang...', 'info');
+    if (
+        !data.variantData.variant_values ||
+        data.variantData.variant_values.length === 0
+    ) {
+        console.log("No variant values found, reloading page...");
+        showVariantNotification(
+            "Biến thể mới đã được thêm - Đang tải lại trang...",
+            "info"
+        );
         setTimeout(() => {
             window.location.reload();
         }, 2000);
         return;
     }
-    
+
     // Add new variant options to the UI
-    data.variantData.variant_values.forEach(variantValue => {
-        console.log('Processing variant value:', variantValue);
-        
-        const attributeContainer = findOrCreateAttributeContainer(container, variantValue.attribute_name, variantValue.attribute_id);
-        console.log('Attribute container found/created:', attributeContainer);
-        
+    data.variantData.variant_values.forEach((variantValue) => {
+        console.log("Processing variant value:", variantValue);
+
+        const attributeContainer = findOrCreateAttributeContainer(
+            container,
+            variantValue.attribute_name,
+            variantValue.attribute_id
+        );
+        console.log("Attribute container found/created:", attributeContainer);
+
         // Check if variant value already exists
-        const existingInput = attributeContainer.querySelector(`input[value="${variantValue.id}"]`);
-        console.log('Existing input:', existingInput);
-        
+        const existingInput = attributeContainer.querySelector(
+            `input[value="${variantValue.id}"]`
+        );
+        console.log("Existing input:", existingInput);
+
         if (!existingInput) {
             // Create new variant option
-            const variantOption = createVariantOption(variantValue, data.variantData.id);
-            console.log('Created variant option:', variantOption);
-            
+            const variantOption = createVariantOption(
+                variantValue,
+                data.variantData.id
+            );
+            console.log("Created variant option:", variantOption);
+
             if (attributeContainer && variantOption) {
                 attributeContainer.appendChild(variantOption);
-                console.log('Variant option appended to container');
-                
+                console.log("Variant option appended to container");
+
                 // Add animation
-                variantOption.classList.add('variant-created');
+                variantOption.classList.add("variant-created");
                 setTimeout(() => {
-                    variantOption.classList.remove('variant-created');
+                    variantOption.classList.remove("variant-created");
                 }, 2000);
             } else {
-                console.error('Failed to append variant option - container or option is null');
+                console.error(
+                    "Failed to append variant option - container or option is null"
+                );
             }
         }
     });
-    
-    // Show notification
-    showVariantNotification('Biến thể mới đã được thêm', 'success');
+
+    // Show notification removed
 }
 
 // Handle variant updated
 function handleVariantUpdated(data, container) {
-    console.log('Handling variant updated:', data);
-    
+    console.log("Handling variant updated:", data);
+
     // Update existing variant options
-    data.variantData.variant_values.forEach(variantValue => {
-        const existingInput = container.querySelector(`input[value="${variantValue.id}"]`);
+    data.variantData.variant_values.forEach((variantValue) => {
+        const existingInput = container.querySelector(
+            `input[value="${variantValue.id}"]`
+        );
         if (existingInput) {
             const label = existingInput.nextElementSibling;
-            
+
             // Update variant value text
             const valueText = label.childNodes[0];
             if (valueText && valueText.nodeType === Node.TEXT_NODE) {
                 valueText.textContent = variantValue.value;
             }
-            
+
             // Update price adjustment
-            existingInput.dataset.priceAdjustment = variantValue.price_adjustment;
-            
+            existingInput.dataset.priceAdjustment =
+                variantValue.price_adjustment;
+
             // Update price display
             updateVariantPriceDisplay(label, variantValue.price_adjustment);
-            
+
             // Add animation
-            label.classList.add('variant-updated');
+            label.classList.add("variant-updated");
             setTimeout(() => {
-                label.classList.remove('variant-updated');
+                label.classList.remove("variant-updated");
             }, 2000);
         }
     });
-    
-    // Show notification
-    showVariantNotification('Biến thể đã được cập nhật', 'info');
+
+    // Show notification removed
 }
 
 // Handle variant deleted
 function handleVariantDeleted(data, container) {
-    console.log('Handling variant deleted:', data);
-    
+    console.log("Handling variant deleted:", data);
+
     // If variant_values is empty, we need to find the variant by its ID
-    if (!data.variantData.variant_values || data.variantData.variant_values.length === 0) {
-        console.log('No variant values found, trying to find variant by ID:', data.variantData.id);
-        
+    if (
+        !data.variantData.variant_values ||
+        data.variantData.variant_values.length === 0
+    ) {
+        console.log(
+            "No variant values found, trying to find variant by ID:",
+            data.variantData.id
+        );
+
         // Find all variant inputs that belong to this variant ID
-        const variantInputs = container.querySelectorAll(`input[data-variant-id="${data.variantData.id}"]`);
-        console.log('Found variant inputs by ID:', variantInputs.length);
-        console.log('All variant inputs in container:', container.querySelectorAll('input[data-variant-id]'));
-        
+        const variantInputs = container.querySelectorAll(
+            `input[data-variant-id="${data.variantData.id}"]`
+        );
+        console.log("Found variant inputs by ID:", variantInputs.length);
+        console.log(
+            "All variant inputs in container:",
+            container.querySelectorAll("input[data-variant-id]")
+        );
+
         if (variantInputs.length === 0) {
-            console.log('No variant inputs found, reloading page...');
-            showVariantNotification('Biến thể đã được xóa - Đang tải lại trang...', 'warning');
+            console.log("No variant inputs found, reloading page...");
+            showVariantNotification(
+                "Biến thể đã được xóa - Đang tải lại trang...",
+                "warning"
+            );
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
             return;
         }
-        
+
         variantInputs.forEach((input, index) => {
             console.log(`Processing variant input ${index}:`, input);
             const label = input.nextElementSibling;
-            console.log('Label found:', label);
-            
+            console.log("Label found:", label);
+
             if (label) {
                 // Add fade out animation
-                label.classList.add('variant-deleted');
-                console.log('Added variant-deleted class to label');
+                label.classList.add("variant-deleted");
+                console.log("Added variant-deleted class to label");
                 setTimeout(() => {
                     if (label.parentNode) {
                         label.parentNode.removeChild(label);
-                        console.log('Removed label from DOM');
+                        console.log("Removed label from DOM");
                     }
                 }, 500);
             }
         });
-        
-        // Show notification
-        showVariantNotification('Biến thể đã được xóa', 'warning');
+
+        // Show notification removed
         return;
     }
-    
+
     // Remove variant options from UI using variant values
-    data.variantData.variant_values.forEach(variantValue => {
-        const existingInput = container.querySelector(`input[value="${variantValue.id}"]`);
+    data.variantData.variant_values.forEach((variantValue) => {
+        const existingInput = container.querySelector(
+            `input[value="${variantValue.id}"]`
+        );
         if (existingInput) {
             const label = existingInput.nextElementSibling;
-            
+
             // Add fade out animation
-            label.classList.add('variant-deleted');
+            label.classList.add("variant-deleted");
             setTimeout(() => {
                 if (label.parentNode) {
                     label.parentNode.removeChild(label);
@@ -1504,147 +1753,192 @@ function handleVariantDeleted(data, container) {
             }, 500);
         }
     });
-    
-    // Show notification
-    showVariantNotification('Biến thể đã được xóa', 'warning');
+
+    // Show notification removed
 }
 
 // Helper function to find or create attribute container
 function findOrCreateAttributeContainer(container, attributeName, attributeId) {
-    console.log('Looking for attribute container:', attributeName, attributeId);
-    console.log('Container children:', container.children);
-    
+    console.log("Looking for attribute container:", attributeName, attributeId);
+    console.log("Container children:", container.children);
+
     // First, try to find existing attribute container by looking for h3 with the attribute name
     let attributeContainer = null;
-    const h3Elements = container.querySelectorAll('h3');
-    console.log('Found h3 elements:', h3Elements.length);
-    
+    const h3Elements = container.querySelectorAll("h3");
+    console.log("Found h3 elements:", h3Elements.length);
+
     for (let h3 of h3Elements) {
-        console.log('Checking h3:', h3.textContent.trim(), 'vs', attributeName);
+        console.log("Checking h3:", h3.textContent.trim(), "vs", attributeName);
         if (h3.textContent.trim() === attributeName) {
             attributeContainer = h3.parentElement;
-            console.log('Found existing attribute container:', attributeContainer);
+            console.log(
+                "Found existing attribute container:",
+                attributeContainer
+            );
             break;
         }
     }
-    
+
     if (!attributeContainer) {
-        console.log('Creating new attribute container for:', attributeName);
-        
+        console.log("Creating new attribute container for:", attributeName);
+
         // Create new attribute container
-        attributeContainer = document.createElement('div');
-        attributeContainer.setAttribute('data-attribute-name', attributeName);
-        attributeContainer.setAttribute('data-attribute-id', attributeId);
-        
-        const title = document.createElement('h3');
-        title.className = 'font-medium mb-2';
+        attributeContainer = document.createElement("div");
+        attributeContainer.setAttribute("data-attribute-name", attributeName);
+        attributeContainer.setAttribute("data-attribute-id", attributeId);
+
+        const title = document.createElement("h3");
+        title.className = "font-medium mb-2";
         title.textContent = attributeName;
-        
-        const optionsContainer = document.createElement('div');
-        optionsContainer.className = 'flex flex-wrap gap-2';
-        
+
+        const optionsContainer = document.createElement("div");
+        optionsContainer.className = "flex flex-wrap gap-2";
+
         attributeContainer.appendChild(title);
         attributeContainer.appendChild(optionsContainer);
         container.appendChild(attributeContainer);
-        
-        console.log('Created new attribute container:', attributeContainer);
+
+        console.log("Created new attribute container:", attributeContainer);
     }
-    
+
     // Try to find the options container
-    let optionsContainer = attributeContainer.querySelector('.flex.flex-wrap.gap-2');
-    
+    let optionsContainer = attributeContainer.querySelector(
+        ".flex.flex-wrap.gap-2"
+    );
+
     // If not found, try alternative selectors
     if (!optionsContainer) {
-        optionsContainer = attributeContainer.querySelector('div:last-child');
-        console.log('Using alternative selector for options container:', optionsContainer);
+        optionsContainer = attributeContainer.querySelector("div:last-child");
+        console.log(
+            "Using alternative selector for options container:",
+            optionsContainer
+        );
     }
-    
+
     // If still not found, create one
     if (!optionsContainer) {
-        console.log('Creating new options container');
-        optionsContainer = document.createElement('div');
-        optionsContainer.className = 'flex flex-wrap gap-2';
+        console.log("Creating new options container");
+        optionsContainer = document.createElement("div");
+        optionsContainer.className = "flex flex-wrap gap-2";
         attributeContainer.appendChild(optionsContainer);
     }
-    
-    console.log('Final options container:', optionsContainer);
+
+    console.log("Final options container:", optionsContainer);
     return optionsContainer;
 }
 
 // Helper function to create variant option
 function createVariantOption(variantValue, variantId) {
-    console.log('Creating variant option for:', variantValue, 'variantId:', variantId);
-    
-    const label = document.createElement('label');
-    label.className = 'relative flex items-center';
-    
-    const input = document.createElement('input');
-    input.type = 'radio';
+    console.log(
+        "Creating variant option for:",
+        variantValue,
+        "variantId:",
+        variantId
+    );
+
+    const label = document.createElement("label");
+    label.className = "relative flex items-center";
+
+    const input = document.createElement("input");
+    input.type = "radio";
     input.name = `attribute_${variantValue.attribute_id}`;
     input.value = variantValue.id;
     input.dataset.attributeId = variantValue.attribute_id;
     input.dataset.priceAdjustment = variantValue.price_adjustment;
     input.dataset.variantId = variantId;
-    input.dataset.stockQuantity = '0'; // Default stock
-    input.dataset.branchId = window.selectedBranchId || '';
-    input.className = 'sr-only variant-input';
-    
-    console.log('Created input:', input);
-    
-    const span = document.createElement('span');
-    span.className = 'px-4 py-2 rounded-md border cursor-pointer variant-label hover:bg-gray-50';
+    input.dataset.stockQuantity = "0"; // Default stock
+    input.dataset.branchId = window.selectedBranchId || "";
+    input.className = "sr-only variant-input";
+
+    console.log("Created input:", input);
+
+    const span = document.createElement("span");
+    span.className =
+        "px-4 py-2 rounded-md border cursor-pointer variant-label hover:bg-gray-50";
     span.textContent = variantValue.value;
-    
-    console.log('Created span with text:', variantValue.value);
-    
+
+    console.log("Created span with text:", variantValue.value);
+
     // Add price adjustment if not zero
     if (variantValue.price_adjustment !== 0) {
-        const priceSpan = document.createElement('span');
-        priceSpan.className = `text-sm ml-1 ${variantValue.price_adjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${Math.round(parseFloat(variantValue.price_adjustment)).toLocaleString('en-US')} đ`;
+        const priceSpan = document.createElement("span");
+        priceSpan.className = `text-sm ml-1 ${
+            variantValue.price_adjustment > 0
+                ? "text-red-600"
+                : "text-green-600"
+        }`;
+        priceSpan.textContent = `${
+            variantValue.price_adjustment > 0 ? "+" : ""
+        }${Math.round(parseFloat(variantValue.price_adjustment)).toLocaleString(
+            "en-US"
+        )} đ`;
         span.appendChild(priceSpan);
-        console.log('Added price span:', priceSpan.textContent);
+        console.log("Added price span:", priceSpan.textContent);
     }
-    
+
     // Add stock display
-    const stockSpan = document.createElement('span');
-    stockSpan.className = 'text-xs ml-1 text-gray-500 stock-display';
-    stockSpan.textContent = '(Còn 0)';
+    const stockSpan = document.createElement("span");
+    stockSpan.className = "text-xs ml-1 text-gray-500 stock-display";
+    stockSpan.textContent = "(Còn 0)";
     span.appendChild(stockSpan);
-    console.log('Added stock span');
-    
+    console.log("Added stock span");
+
     label.appendChild(input);
     label.appendChild(span);
-    
-    console.log('Final label created:', label);
-    
+
+    console.log("Final label created:", label);
+
     // Add event listener
-    input.addEventListener('change', function() {
-        console.log('Variant input changed:', this.value);
+    input.addEventListener("change", function () {
+        console.log("Variant input changed:", this.value);
         // Update visual state of labels
         const attributeId = this.dataset.attributeId;
-        document.querySelectorAll(`[data-attribute-id="${attributeId}"] + .variant-label`).forEach(label => {
-            label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
-        });
-        
-        this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
+        document
+            .querySelectorAll(
+                `[data-attribute-id="${attributeId}"] + .variant-label`
+            )
+            .forEach((label) => {
+                label.classList.remove(
+                    "bg-orange-100",
+                    "border-orange-500",
+                    "text-orange-600"
+                );
+            });
+
+        this.nextElementSibling.classList.add(
+            "bg-orange-100",
+            "border-orange-500",
+            "text-orange-600"
+        );
         window.updatePrice();
     });
-    
+
     return label;
 }
 
 // Helper function to update variant price display
 function updateVariantPriceDisplay(label, priceAdjustment) {
-    let priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
-    
+    let priceSpan = label.querySelector(
+        'span[class*="text-red-600"], span[class*="text-green-600"]'
+    );
+
     if (priceAdjustment !== 0) {
         if (priceSpan) {
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
+            priceSpan.textContent = `${
+                priceAdjustment > 0 ? "+" : ""
+            }${Math.round(parseFloat(priceAdjustment)).toLocaleString(
+                "en-US"
+            )} đ`;
         } else {
-            priceSpan = document.createElement('span');
-            priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
+            priceSpan = document.createElement("span");
+            priceSpan.className = `text-sm ml-1 ${
+                priceAdjustment > 0 ? "text-red-600" : "text-green-600"
+            }`;
+            priceSpan.textContent = `${
+                priceAdjustment > 0 ? "+" : ""
+            }${Math.round(parseFloat(priceAdjustment)).toLocaleString(
+                "en-US"
+            )} đ`;
             label.appendChild(priceSpan);
         }
     } else if (priceSpan) {
@@ -1654,62 +1948,76 @@ function updateVariantPriceDisplay(label, priceAdjustment) {
 
 // Helper function to show variant notification
 function showVariantNotification(message, type) {
-    const notification = document.getElementById('variant-update-notification');
+    const notification = document.getElementById("variant-update-notification");
     if (notification) {
-        const messageElement = notification.querySelector('span');
+        const messageElement = notification.querySelector("span");
         if (messageElement) {
             messageElement.textContent = message;
         }
-        
+
         // Update notification style based on type
-        const notificationDiv = notification.querySelector('div');
+        const notificationDiv = notification.querySelector("div");
         notificationDiv.className = `flex items-center gap-2 text-sm px-3 py-2 rounded-md border animate-fade-in`;
-        
+
         switch (type) {
-            case 'success':
-                notificationDiv.classList.add('text-green-600', 'bg-green-50', 'border-green-200');
+            case "success":
+                notificationDiv.classList.add(
+                    "text-green-600",
+                    "bg-green-50",
+                    "border-green-200"
+                );
                 break;
-            case 'warning':
-                notificationDiv.classList.add('text-yellow-600', 'bg-yellow-50', 'border-yellow-200');
+            case "warning":
+                notificationDiv.classList.add(
+                    "text-yellow-600",
+                    "bg-yellow-50",
+                    "border-yellow-200"
+                );
                 break;
             default:
-                notificationDiv.classList.add('text-blue-600', 'bg-blue-50', 'border-blue-200');
+                notificationDiv.classList.add(
+                    "text-blue-600",
+                    "bg-blue-50",
+                    "border-blue-200"
+                );
         }
-        
-        notification.classList.remove('hidden');
+
+        notification.classList.remove("hidden");
         setTimeout(() => {
-            notification.classList.add('hidden');
+            notification.classList.add("hidden");
         }, 5000);
     }
-    
+
     // Also show modal toast for better user experience
     dtmodalShowToast(type, {
-        title: type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : 'Thông báo',
-        message: message
+        title:
+            type === "success"
+                ? "Thành công"
+                : type === "warning"
+                ? "Cảnh báo"
+                : "Thông báo",
+        message: message,
     });
 }
-
 
 // Initialize Pusher for discount realtime
 const discountsPusher = new Pusher(window.pusherKey, {
     cluster: window.pusherCluster,
     encrypted: true,
-    enabledTransports: ['ws', 'wss']
+    enabledTransports: ["ws", "wss"],
 });
-const discountsChannel = discountsPusher.subscribe('discounts');
-discountsChannel.bind('discount-updated', function(data) {
+const discountsChannel = discountsPusher.subscribe("discounts");
+discountsChannel.bind("discount-updated", function (data) {
     console.log('--- Pusher event "discount-updated" received ---');
-    console.log('Data received:', data);
-    setTimeout(() => {
-        window.location.reload();
-    }, 1000);
+    console.log("Data received:", data);
+    window.location.reload();
 });
 
 // Thêm CSS hiệu ứng nửa sao vào cuối file (nếu chưa có)
-(function() {
-    if (!document.getElementById('star-half-style')) {
-        const style = document.createElement('style');
-        style.id = 'star-half-style';
+(function () {
+    if (!document.getElementById("star-half-style")) {
+        const style = document.createElement("style");
+        style.id = "star-half-style";
         style.innerHTML = `
         .star-half i.fas.fa-star-half-alt {
             position: relative;
@@ -1731,63 +2039,83 @@ discountsChannel.bind('discount-updated', function(data) {
 })();
 
 // === Reply review UX ===
-document.addEventListener('DOMContentLoaded', function() {
-    const reviewForm = document.getElementById('review-reply-form');
-    const replyReviewIdInput = document.getElementById('reply_review_id');
-    const replyingToDiv = document.getElementById('replying-to');
-    const replyingToUser = document.getElementById('replying-to-user');
-    const cancelReplyBtn = document.getElementById('cancel-reply');
-    const reviewTextarea = document.getElementById('review-textarea');
-    const reviewSubmitBtn = document.getElementById('review-submit-btn');
-    const formTitle = document.getElementById('form-title');
-    const ratingRow = document.getElementById('rating-row');
+document.addEventListener("DOMContentLoaded", function () {
+    const reviewForm = document.getElementById("review-reply-form");
+    const replyReviewIdInput = document.getElementById("reply_review_id");
+    const replyingToDiv = document.getElementById("replying-to");
+    const replyingToUser = document.getElementById("replying-to-user");
+    const cancelReplyBtn = document.getElementById("cancel-reply");
+    const reviewTextarea = document.getElementById("review-textarea");
+    const reviewSubmitBtn = document.getElementById("review-submit-btn");
+    const formTitle = document.getElementById("form-title");
+    const ratingRow = document.getElementById("rating-row");
     // Lưu mặc định ngay khi DOM load
-    const defaultAction = reviewForm ? reviewForm.getAttribute('action') : '';
-    const defaultPlaceholder = reviewTextarea ? reviewTextarea.getAttribute('placeholder') : '';
-    const defaultBtnText = reviewSubmitBtn ? reviewSubmitBtn.textContent : '';
-    const defaultTitle = formTitle ? formTitle.textContent : '';
+    const defaultAction = reviewForm ? reviewForm.getAttribute("action") : "";
+    const defaultPlaceholder = reviewTextarea
+        ? reviewTextarea.getAttribute("placeholder")
+        : "";
+    const defaultBtnText = reviewSubmitBtn ? reviewSubmitBtn.textContent : "";
+    const defaultTitle = formTitle ? formTitle.textContent : "";
     // Gắn sự kiện cho nút reply ở mỗi review
-    document.querySelectorAll('.reply-review-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewId = this.getAttribute('data-review-id');
-            const userName = this.getAttribute('data-user-name');
-            const routeReply = this.getAttribute('data-route-reply');
-            console.log('[Reply] Clicked reply for reviewId:', reviewId, 'userName:', userName, 'routeReply:', routeReply);
+    document.querySelectorAll(".reply-review-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
+            const userName = this.getAttribute("data-user-name");
+            const routeReply = this.getAttribute("data-route-reply");
+            console.log(
+                "[Reply] Clicked reply for reviewId:",
+                reviewId,
+                "userName:",
+                userName,
+                "routeReply:",
+                routeReply
+            );
             if (reviewForm) {
-                reviewForm.setAttribute('action', routeReply);
+                reviewForm.setAttribute("action", routeReply);
                 replyReviewIdInput.value = reviewId;
                 replyingToUser.textContent = userName;
-                replyingToDiv.classList.remove('hidden');
+                replyingToDiv.classList.remove("hidden");
                 reviewTextarea.placeholder = `Phản hồi cho ${userName}...`;
-                reviewSubmitBtn.textContent = 'Gửi phản hồi';
-                formTitle.textContent = 'Gửi phản hồi';
+                reviewSubmitBtn.textContent = "Gửi phản hồi";
+                formTitle.textContent = "Gửi phản hồi";
                 reviewTextarea.focus();
-                if (ratingRow) ratingRow.style.display = 'none';
-                console.log('[Reply] Form action set to:', reviewForm.getAttribute('action'));
+                if (ratingRow) ratingRow.style.display = "none";
+                console.log(
+                    "[Reply] Form action set to:",
+                    reviewForm.getAttribute("action")
+                );
             }
-            reviewTextarea.setAttribute('name', 'reply');
+            reviewTextarea.setAttribute("name", "reply");
         });
     });
     // Hủy reply, trở lại form đánh giá
     if (cancelReplyBtn) {
-        cancelReplyBtn.addEventListener('click', function() {
+        cancelReplyBtn.addEventListener("click", function () {
             if (reviewForm) {
-                reviewForm.setAttribute('action', defaultAction);
-                replyReviewIdInput.value = '';
-                replyingToDiv.classList.add('hidden');
+                reviewForm.setAttribute("action", defaultAction);
+                replyReviewIdInput.value = "";
+                replyingToDiv.classList.add("hidden");
                 reviewTextarea.placeholder = defaultPlaceholder;
                 reviewSubmitBtn.textContent = defaultBtnText;
                 formTitle.textContent = defaultTitle;
-                if (ratingRow) ratingRow.style.display = '';
-                console.log('[Reply] Cancel reply, form action reset to:', reviewForm.getAttribute('action'));
+                if (ratingRow) ratingRow.style.display = "";
+                console.log(
+                    "[Reply] Cancel reply, form action reset to:",
+                    reviewForm.getAttribute("action")
+                );
             }
-            reviewTextarea.setAttribute('name', 'review');
+            reviewTextarea.setAttribute("name", "review");
         });
     }
     // Debug submit
     if (reviewForm) {
-        reviewForm.addEventListener('submit', function(e) {
-            console.log('[Submit] Form action:', reviewForm.action, 'selectedRating:', typeof selectedRating !== 'undefined' ? selectedRating : 'N/A');
+        reviewForm.addEventListener("submit", function (e) {
+            console.log(
+                "[Submit] Form action:",
+                reviewForm.action,
+                "selectedRating:",
+                typeof selectedRating !== "undefined" ? selectedRating : "N/A"
+            );
         });
     }
 });
@@ -1796,61 +2124,68 @@ document.addEventListener('DOMContentLoaded', function() {
 const reviewRepliesPusher = new Pusher(window.pusherKey, {
     cluster: window.pusherCluster,
     encrypted: true,
-    enabledTransports: ['ws', 'wss']
+    enabledTransports: ["ws", "wss"],
 });
-const reviewRepliesChannel = reviewRepliesPusher.subscribe('review-replies');
-reviewRepliesChannel.bind('review-reply-created', function(data) {
-    console.log('[Realtime] Nhận reply mới:', data);
-    const reviewBlock = document.querySelector(`[data-review-id="${data.review_id}"]`);
+const reviewRepliesChannel = reviewRepliesPusher.subscribe("review-replies");
+reviewRepliesChannel.bind("review-reply-created", function (data) {
+    console.log("[Realtime] Nhận reply mới:", data);
+    const reviewBlock = document.querySelector(
+        `[data-review-id="${data.review_id}"]`
+    );
     if (!reviewBlock) return;
     // Kiểm tra quyền xóa
-    const canDelete = (window.currentUserId && (window.currentUserId == data.user_id || window.isAdmin === true));
+    const canDelete =
+        window.currentUserId &&
+        (window.currentUserId == data.user_id || window.isAdmin === true);
     const deleteBtnHtml = canDelete
         ? `<button class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn" data-reply-id="${data.reply_id}">
                 <i class="fas fa-trash-alt"></i> Xóa
            </button>`
-        : '';
+        : "";
     // Tạo HTML cho reply mới (format date, có nút xóa nếu đúng quyền)
     const replyHtml = `
-        <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative">
-            <div class="reply-arrow">
-                <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-blue-700">${data.user_name || 'Ẩn danh'}</span>
-                    <span class="text-xs text-gray-400">${formatDate(data.reply_date)}</span>
-                    ${deleteBtnHtml}
+        <div class="reply-item" data-reply-id="${data.reply_id}">
+            <div class="reply-bubble">
+                <div class="reply-header">
+                    <span class="reply-author">${
+                        data.user_name || "Ẩn danh"
+                    }</span>
+                    <span class="reply-time">${formatDate(
+                        data.reply_date
+                    )}</span>
+                    <span class="reply-actions">
+                        ${deleteBtnHtml}
+                    </span>
                 </div>
-                <div class="text-gray-700">${data.reply_content}</div>
+                <div class="reply-content">${data.reply_content}</div>
             </div>
         </div>
     `;
     // Chèn vào cuối danh sách reply của review này
     let lastReply = null;
     let sibling = reviewBlock.nextElementSibling;
-    while (sibling && sibling.classList.contains('reply-item')) {
+    while (sibling && sibling.classList.contains("reply-item")) {
         lastReply = sibling;
         sibling = sibling.nextElementSibling;
     }
     let newReplyElem;
     if (lastReply) {
-        lastReply.insertAdjacentHTML('afterend', replyHtml);
+        lastReply.insertAdjacentHTML("afterend", replyHtml);
         newReplyElem = lastReply.nextElementSibling;
     } else {
         // Nếu chưa có reply nào, chèn ngay sau reviewBlock
-        reviewBlock.insertAdjacentHTML('afterend', replyHtml);
+        reviewBlock.insertAdjacentHTML("afterend", replyHtml);
         newReplyElem = reviewBlock.nextElementSibling;
     }
     // Không highlight nữa, chỉ scroll tới reply mới nếu muốn
     if (newReplyElem) {
-        newReplyElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        newReplyElem.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 });
 
 // XÓA CSS hiệu ứng highlight nếu có
-(function() {
-    const style = document.getElementById('reply-highlight-style');
+(function () {
+    const style = document.getElementById("reply-highlight-style");
     if (style) style.remove();
 })();
 
@@ -1858,15 +2193,19 @@ reviewRepliesChannel.bind('review-reply-created', function(data) {
 function formatDate(dateStr) {
     const d = new Date(dateStr);
     if (isNaN(d)) return dateStr;
-    const pad = n => n < 10 ? '0' + n : n;
-    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const pad = (n) => (n < 10 ? "0" + n : n);
+    return `${pad(d.getDate())}/${pad(
+        d.getMonth() + 1
+    )}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 // Listen for review-reply-deleted event
-reviewRepliesChannel.bind('review-reply-deleted', function(data) {
-    console.log('[Realtime] Xóa reply:', data);
+reviewRepliesChannel.bind("review-reply-deleted", function (data) {
+    console.log("[Realtime] Xóa reply:", data);
     // Tìm reply-item theo data-reply-id
-    const replyElem = document.querySelector(`.reply-item[data-reply-id="${data.reply_id}"]`);
+    const replyElem = document.querySelector(
+        `.reply-item[data-reply-id="${data.reply_id}"]`
+    );
     if (replyElem) {
         replyElem.remove();
     }
@@ -1876,17 +2215,19 @@ reviewRepliesChannel.bind('review-reply-deleted', function(data) {
 const reviewEventsPusher = new Pusher(window.pusherKey, {
     cluster: window.pusherCluster,
     encrypted: true,
-    enabledTransports: ['ws', 'wss']
+    enabledTransports: ["ws", "wss"],
 });
-const reviewEventsChannel = reviewEventsPusher.subscribe('review-events');
-reviewEventsChannel.bind('review-deleted', function(data) {
-    console.log('[Realtime] Xóa bình luận:', data);
+const reviewEventsChannel = reviewEventsPusher.subscribe("review-events");
+reviewEventsChannel.bind("review-deleted", function (data) {
+    console.log("[Realtime] Xóa bình luận:", data);
     // Tìm review block theo data-review-id
-    const reviewElem = document.querySelector(`[data-review-id="${data.review_id}"]`);
+    const reviewElem = document.querySelector(
+        `[data-review-id="${data.review_id}"]`
+    );
     if (reviewElem) {
         // Xóa cả các reply-item liên tiếp phía sau (nếu có)
         let sibling = reviewElem.nextElementSibling;
-        while (sibling && sibling.classList.contains('reply-item')) {
+        while (sibling && sibling.classList.contains("reply-item")) {
             const toRemove = sibling;
             sibling = sibling.nextElementSibling;
             toRemove.remove();
@@ -1896,54 +2237,60 @@ reviewEventsChannel.bind('review-deleted', function(data) {
 });
 
 // === Hữu ích (AJAX + realtime) ===
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.helpful-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const reviewId = this.getAttribute('data-review-id');
-            const countSpan = this.querySelector('.helpful-count');
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".helpful-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
+            const countSpan = this.querySelector(".helpful-count");
             const button = this;
-            const icon = button.querySelector('i');
-            const isHelpful = button.getAttribute('data-helpful') === '1';
+            const icon = button.querySelector("i");
+            const isHelpful = button.getAttribute("data-helpful") === "1";
             if (!isHelpful) {
                 // Mark helpful (POST)
                 fetch(`/reviews/${reviewId}/helpful`, {
-                    method: 'POST',
+                    method: "POST",
                     headers: {
-                        'X-CSRF-TOKEN': window.csrfToken,
-                        'Accept': 'application/json',
+                        "X-CSRF-TOKEN": window.csrfToken,
+                        Accept: "application/json",
                     },
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        countSpan.textContent = data.helpful_count;
-                        button.classList.add('helpful-active', 'text-sky-600');
-                        icon.classList.add('text-sky-600');
-                        icon.classList.remove('far');
-                        icon.classList.add('fas');
-                        button.setAttribute('data-helpful', '1');
-                    }
-                });
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            countSpan.textContent = data.helpful_count;
+                            button.classList.add(
+                                "helpful-active",
+                                "text-sky-600"
+                            );
+                            icon.classList.add("text-sky-600");
+                            icon.classList.remove("far");
+                            icon.classList.add("fas");
+                            button.setAttribute("data-helpful", "1");
+                        }
+                    });
             } else {
                 // Unmark helpful (DELETE)
                 fetch(`/reviews/${reviewId}/helpful`, {
-                    method: 'DELETE',
+                    method: "DELETE",
                     headers: {
-                        'X-CSRF-TOKEN': window.csrfToken,
-                        'Accept': 'application/json',
+                        "X-CSRF-TOKEN": window.csrfToken,
+                        Accept: "application/json",
                     },
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        countSpan.textContent = data.helpful_count;
-                        button.classList.remove('helpful-active', 'text-sky-600');
-                        icon.classList.remove('text-sky-600');
-                        icon.classList.remove('fas');
-                        icon.classList.add('far');
-                        button.setAttribute('data-helpful', '0');
-                    }
-                });
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            countSpan.textContent = data.helpful_count;
+                            button.classList.remove(
+                                "helpful-active",
+                                "text-sky-600"
+                            );
+                            icon.classList.remove("text-sky-600");
+                            icon.classList.remove("fas");
+                            icon.classList.add("far");
+                            button.setAttribute("data-helpful", "0");
+                        }
+                    });
             }
         });
     });
@@ -1953,13 +2300,15 @@ document.addEventListener('DOMContentLoaded', function() {
 const helpfulPusher = new Pusher(window.pusherKey, {
     cluster: window.pusherCluster,
     encrypted: true,
-    enabledTransports: ['ws', 'wss']
+    enabledTransports: ["ws", "wss"],
 });
-const helpfulChannel = helpfulPusher.subscribe('review-helpful');
-helpfulChannel.bind('review-helpful-updated', function(data) {
-    const btn = document.querySelector(`.helpful-btn[data-review-id="${data.review_id}"]`);
+const helpfulChannel = helpfulPusher.subscribe("review-helpful");
+helpfulChannel.bind("review-helpful-updated", function (data) {
+    const btn = document.querySelector(
+        `.helpful-btn[data-review-id="${data.review_id}"]`
+    );
     if (btn) {
-        const countSpan = btn.querySelector('.helpful-count');
+        const countSpan = btn.querySelector(".helpful-count");
         if (countSpan) countSpan.textContent = data.helpful_count;
         // Đã bỏ fetch API kiểm tra trạng thái, chỉ cập nhật số
     }
@@ -1970,240 +2319,320 @@ if (window.currentUserId) {
     const wishlistPusher = new Pusher(window.pusherKey, {
         cluster: window.pusherCluster,
         encrypted: true,
-        enabledTransports: ['ws', 'wss']
+        enabledTransports: ["ws", "wss"],
     });
-    const wishlistChannel = wishlistPusher.subscribe('private-user-wishlist-channel.' + window.currentUserId);
-    wishlistChannel.bind('wishlist-updated', function(data) {
+    const wishlistChannel = wishlistPusher.subscribe(
+        "private-user-wishlist-channel." + window.currentUserId
+    );
+    wishlistChannel.bind("wishlist-updated", function (data) {
         // Cập nhật UI icon yêu thích ở đây
-        const favoriteBtn = document.querySelector('.favorite-btn');
+        const favoriteBtn = document.querySelector(".favorite-btn");
         if (favoriteBtn) {
-            const icon = favoriteBtn.querySelector('i');
+            const icon = favoriteBtn.querySelector("i");
             if (data.product_id == window.productId) {
-                if (data.action === 'added') {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas', 'text-red-500');
-                } else if (data.action === 'removed') {
-                    icon.classList.remove('fas', 'text-red-500');
-                    icon.classList.add('far');
+                if (data.action === "added") {
+                    icon.classList.remove("far");
+                    icon.classList.add("fas", "text-red-500");
+                } else if (data.action === "removed") {
+                    icon.classList.remove("fas", "text-red-500");
+                    icon.classList.add("far");
                 }
             }
         }
     });
-    console.log('Subscribed to wishlist channel: private-user-wishlist-channel.' + window.currentUserId);
+    console.log(
+        "Subscribed to wishlist channel: private-user-wishlist-channel." +
+            window.currentUserId
+    );
 }
 
-// === Realtime cập nhật report_count (báo cáo) ===
-const reviewReportPusher = new Pusher(window.pusherKey, {
-    cluster: window.pusherCluster,
-    encrypted: true,
-    enabledTransports: ['ws', 'wss']
-});
-const reviewReportChannel = reviewReportPusher.subscribe('review-reports');
-reviewReportChannel.bind('review-report-updated', function(data) {
-    // Tìm nút báo cáo đúng review
-    const reportBtn = document.querySelector(`.report-review-btn[data-review-id="${data.review_id}"]`);
-    if (reportBtn) {
-        let countSpan = reportBtn.querySelector('.report-count');
-        if (!countSpan) {
-            // Nếu chưa có, tạo mới
-            countSpan = document.createElement('span');
-            countSpan.className = 'ml-1 text-xs report-count';
-            reportBtn.appendChild(countSpan);
-        }
-        if (parseInt(data.report_count) > 0) {
-            countSpan.textContent = `(${data.report_count})`;
-            countSpan.style.display = '';
-        } else {
-            countSpan.textContent = '';
-            countSpan.style.display = 'none';
-        }
-    }
-});
-
-// === Drag-to-scroll for topping list ===
-document.addEventListener('DOMContentLoaded', function() {
-    const dragScroll = document.querySelector('.drag-scroll-topping');
-    if (dragScroll) {
-        let isDown = false;
-        let startX;
-        let scrollLeft;
-
-        dragScroll.addEventListener('mousedown', function(e) {
-            isDown = true;
-            dragScroll.classList.add('dragging');
-            startX = e.pageX - dragScroll.offsetLeft;
-            scrollLeft = dragScroll.scrollLeft;
-        });
-        dragScroll.addEventListener('mouseleave', function() {
-            isDown = false;
-            dragScroll.classList.remove('dragging');
-        });
-        dragScroll.addEventListener('mouseup', function() {
-            isDown = false;
-            dragScroll.classList.remove('dragging');
-        });
-        dragScroll.addEventListener('mousemove', function(e) {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - dragScroll.offsetLeft;
-            const walk = (x - startX) * 1.2; // scroll-fast
-            dragScroll.scrollLeft = scrollLeft - walk;
-        });
-        // Touch support
-        let touchStartX = 0;
-        let touchScrollLeft = 0;
-        dragScroll.addEventListener('touchstart', function(e) {
-            isDown = true;
-            touchStartX = e.touches[0].pageX;
-            touchScrollLeft = dragScroll.scrollLeft;
-        });
-        dragScroll.addEventListener('touchend', function() {
-            isDown = false;
-        });
-        dragScroll.addEventListener('touchmove', function(e) {
-            if (!isDown) return;
-            const x = e.touches[0].pageX;
-            const walk = (x - touchStartX) * 1.2;
-            dragScroll.scrollLeft = touchScrollLeft - walk;
-        });
-    }
-});
-
-// === Realtime review created (Pusher) ===
-if (window.productId) {
-    const reviewCreatedPusher = new Pusher(window.pusherKey, {
+// === Realtime review (Pusher) ===
+if (window.productId && window.pusherKey && window.pusherCluster) {
+    const productReviewsPusher = new Pusher(window.pusherKey, {
         cluster: window.pusherCluster,
         encrypted: true,
-        enabledTransports: ['ws', 'wss']
+        enabledTransports: ["ws", "wss"],
     });
-    const reviewCreatedChannel = reviewCreatedPusher.subscribe('product-reviews.' + window.productId);
-    reviewCreatedChannel.bind('review-created', function(data) {
-        if (!data || !data.review) return;
-        // Render the new review HTML (simplified, you may want to use a template)
+    const productReviewsChannel = productReviewsPusher.subscribe(
+        "product-reviews." + window.productId
+    );
+
+    productReviewsChannel.bind("review-created", function (data) {
+        // Kiểm tra nếu review đã có trên trang thì bỏ qua
+        if (document.querySelector(`[data-review-id="${data.review.id}"]`))
+            return;
+
+        // Tìm container danh sách review
+        const reviewsList = document.querySelector(
+            "#content-reviews .divide-y"
+        );
+        if (!reviewsList) return;
+
+        // Tạo HTML cho review mới (template đơn giản, có thể mở rộng thêm)
         const review = data.review;
-        const reviewList = document.querySelector('#content-reviews .divide-y');
-        if (!reviewList) return;
-        // Build review HTML (simplified, should match your Blade structure)
-        let html = `<div class="p-6 hover:bg-gray-50/50 transition-colors" data-review-id="${review.id}">
+        const user = review.user;
+        const branch = review.branch;
+        const purchasedVariants = review.purchased_variant_attributes || [];
+        let purchasedVariantsHtml = "";
+        if (purchasedVariants.length > 0) {
+            purchasedVariantsHtml = `<span class="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-1">
+                <i class="fas fa-box"></i>
+                <span class="hidden sm:inline">Đã mua:</span>
+                ${purchasedVariants
+                    .map((attr) => `<span>${attr.name}: ${attr.value}</span>`)
+                    .join(", ")}
+            </span>`;
+        }
+        // Bổ sung điều kiện render nút xóa
+        const canDelete =
+            window.currentUserId &&
+            (window.currentUserId == review.user_id || window.isAdmin === true);
+        const deleteBtnHtml = canDelete
+            ? `<button class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors delete-review-btn" data-review-id="${review.id}">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Xóa</span>
+               </button>`
+            : "";
+        const reviewHtml = `
+        <div class="p-6 hover:bg-gray-50/50 transition-colors" data-review-id="${review.id}">
             <div class="flex items-start gap-4 review-header">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 review-avatar">
-                    <span class="text-white font-semibold text-lg">${review.user.name ? review.user.name.charAt(0).toUpperCase() : '?'}</span>
+                    <span class="text-white font-semibold text-lg">
+                        ${user.name ? user.name.charAt(0).toUpperCase() : "?"}
+                    </span>
                 </div>
                 <div class="flex-1 min-w-0 review-main">
                     <div class="flex flex-wrap items-center gap-2 review-user-row">
-                        <span class="font-medium text-gray-900">${review.user.name}</span>
-                        ${review.is_verified_purchase ? `<span class=\"inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-check-circle\"></i>Đã mua hàng</span>` : ''}
-                        ${(Array.isArray(review.purchased_variant_attributes) && review.purchased_variant_attributes.length > 0) ?
-                            `<span class=\"inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-1\" ${review.purchased_variant_attributes.length > 2 ? `title=\"${review.purchased_variant_attributes.map(attr => attr.name + ': ' + attr.value).join(', ')}\"` : ''}>
-                                <span class=\"hidden sm:inline\">Đã mua:</span>
-                                ${review.purchased_variant_attributes.slice(0,2).map((attr, idx) => `${attr.name}: ${attr.value}${(idx < 1 && review.purchased_variant_attributes.length > 1) ? ', ' : ''}`).join('')}
-                                ${review.purchased_variant_attributes.length > 2 ? '<span>...</span>' : ''}
-                            </span>` : ''}
-                        ${review.is_featured ? `<span class=\"inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-award\"></i>Đánh giá nổi bật</span>` : ''}
+                        <span class="font-medium text-gray-900">${user.name || "Ẩn danh"}</span>
+                        ${review.is_verified_purchase ? `<span class=\"inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-check-circle\"></i>Đã mua hàng</span>` : ""}
+                        ${purchasedVariantsHtml}
+                        ${review.is_featured ? `<span class=\"inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full\"><i class=\"fas fa-award\"></i>Đánh giá nổi bật</span>` : ""}
                     </div>
                     <div class="text-sm text-gray-500 mt-1 space-x-2">
-                        <span>${review.review_date ? new Date(review.review_date).toLocaleString('vi-VN') : ''}</span>
-                        ${review.branch && review.branch.name ? `<span>•</span><span>${review.branch.name}</span>` : ''}
+                        <span>${formatDate(review.review_date)}</span>
+                        ${branch ? `<span>•</span><span>${branch.name}</span>` : ""}
                     </div>
-                    <span class="review-content block mt-1 text-base text-gray-800">${review.review}</span>
+                    ${review.review ? `<span class="review-content block mt-1 text-base text-gray-800">${review.review}</span>` : ""}
                 </div>
                 <div class="flex flex-col items-end gap-1">
                     <div class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded">
                         <span class="font-medium text-yellow-700">${review.rating}.0</span>
-                        <div class="flex items-center">`;
-        for (let i = 1; i <= 5; i++) {
-            html += `<i class=\"${i <= review.rating ? 'fas' : 'far'} fa-star text-yellow-400\"></i>`;
+                        <div class="flex items-center">
+                            ${[1, 2, 3, 4, 5].map((i) => i <= review.rating ? "<i class='fas fa-star text-yellow-400'></i>" : "<i class='far fa-star text-yellow-400'></i>").join("")}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 space-y-3">
+                ${review.review_image ? `<div class=\"mt-3\"><img src=\"${review.review_image}\" alt=\"Review image\" class=\"rounded-lg max-h-48 object-cover hover:opacity-95 transition-opacity cursor-pointer\"></div>` : ""}
+                <div class="flex items-center gap-6 pt-2">
+                    <button class="inline-flex items-center gap-2 text-sm helpful-btn" data-review-id="${review.id}" data-helpful="0">
+                        <i class="far fa-thumbs-up"></i>
+                        <span>Hữu ích (<span class="helpful-count">0</span>)</span>
+                    </button>
+                    <button class="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-600 transition-colors report-review-btn" data-review-id="${review.id}">
+                        <i class="fas fa-flag"></i>
+                        <span>Báo cáo</span>
+                        <span class="ml-1 text-xs report-count" style="display:none"></span>
+                    </button>
+                    <button class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn" data-review-id="${review.id}" data-user-name="${user.name || "Ẩn danh"}" data-route-reply="/reviews/${review.id}/reply">
+                        <i class="fas fa-reply"></i>
+                        <span>Phản hồi</span>
+                    </button>
+                    ${deleteBtnHtml}
+                </div>
+            </div>
+        </div>
+        `;
+        // Thêm review mới vào đầu danh sách
+        reviewsList.insertAdjacentHTML("afterbegin", reviewHtml);
+        // Gắn lại event cho các nút trong review mới
+        const newReviewElem = reviewsList.querySelector(
+            `[data-review-id="${review.id}"]`
+        );
+        if (newReviewElem) {
+            bindHelpfulButton(newReviewElem);
+            bindReportButton(newReviewElem);
+            bindReplyButton(newReviewElem);
+            bindDeleteReviewButton(newReviewElem);
         }
-        html += `</div></div></div></div>`;
-        if (review.review_image) {
-            html += `<div class=\"mt-3\"><img src=\"${review.review_image}\" alt=\"Review image\" class=\"rounded-lg max-h-48 object-cover hover:opacity-95 transition-opacity cursor-pointer\"></div>`;
-        }
-        html += `<div class=\"flex items-center gap-6 pt-2\">
-            <button class=\"inline-flex items-center gap-2 text-sm helpful-btn\" data-review-id=\"${review.id}\" data-helpful=\"0\">
-                <i class=\"far fa-thumbs-up\"></i>
-                <span>Hữu ích (<span class=\"helpful-count\">0</span>)</span>
-            </button>
-            <button class=\"inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-600 transition-colors report-review-btn\" data-review-id=\"${review.id}\"><i class=\"fas fa-flag\"></i><span>Báo cáo</span></button>
-            <button class=\"inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn\" data-review-id=\"${review.id}\" data-user-name=\"${review.user.name}\" data-route-reply=\"/reviews/${review.id}/reply\"><i class=\"fas fa-reply\"></i><span>Phản hồi</span></button>
-            ${(window.currentUserId == review.user.id || window.isAdmin === true) ? `
-                <button class=\"inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors delete-review-btn\" data-review-id=\"${review.id}\">\n                    <i class=\"fas fa-trash-alt\"></i>\n                    <span>Xóa</span>\n                </button>\n            ` : ''}
-        </div>`;
-        html += `</div>`;
-        // Prepend the new review
-        reviewList.insertAdjacentHTML('afterbegin', html);
     });
 }
 
-// === FETCH RIÊNG CHO NÚT MUA NGAY SẢN PHẨM ===
-document.addEventListener('DOMContentLoaded', function() {
-    const buyNowProductBtn = document.getElementById('buy-now-product-btn');
-    if (buyNowProductBtn) {
-        buyNowProductBtn.addEventListener('click', function() {
-            const productId = window.productId || this.getAttribute('data-product-id');
-            const quantity = parseInt(document.getElementById('quantity').textContent) || 1;
-            
-            // Tính variant_id từ selected variant values (giống Add to Cart)
-            const selectedVariantValueIds = [];
-            const variantGroups = document.querySelectorAll('#variants-container > div');
-            
-            variantGroups.forEach(group => {
-                const checkedInput = group.querySelector('input:checked');
-                if (checkedInput) {
-                    selectedVariantValueIds.push(parseInt(checkedInput.value));
-                }
-            });
-            
-            // Tìm variant_id từ combination
-            let variantId = null;
-            if (selectedVariantValueIds.length > 0) {
-                const combinationKey = selectedVariantValueIds.sort().join('_');
-                variantId = window.variantCombinations[combinationKey] || null;
-                
-                console.log('Buy Now variant calculation:', {
-                    selectedVariantValueIds,
-                    combinationKey,
-                    variantId,
-                    variantCombinations: window.variantCombinations
-                });
+// Các hàm bind event cho từng loại nút
+function bindHelpfulButton(container) {
+    container.querySelectorAll(".helpful-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
+            const countSpan = this.querySelector(".helpful-count");
+            const button = this;
+            const icon = button.querySelector("i");
+            const isHelpful = button.getAttribute("data-helpful") === "1";
+            if (!isHelpful) {
+                fetch(`/reviews/${reviewId}/helpful`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": window.csrfToken,
+                        Accept: "application/json",
+                    },
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            countSpan.textContent = data.helpful_count;
+                            button.classList.add(
+                                "helpful-active",
+                                "text-sky-600"
+                            );
+                            icon.classList.add("text-sky-600");
+                            icon.classList.remove("far");
+                            icon.classList.add("fas");
+                            button.setAttribute("data-helpful", "1");
+                        }
+                    });
+            } else {
+                fetch(`/reviews/${reviewId}/helpful`, {
+                    method: "DELETE",
+                    headers: {
+                        "X-CSRF-TOKEN": window.csrfToken,
+                        Accept: "application/json",
+                    },
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.success) {
+                            countSpan.textContent = data.helpful_count;
+                            button.classList.remove(
+                                "helpful-active",
+                                "text-sky-600"
+                            );
+                            icon.classList.remove("text-sky-600");
+                            icon.classList.remove("fas");
+                            icon.classList.add("far");
+                            button.setAttribute("data-helpful", "0");
+                        }
+                    });
             }
-            
-            let toppings = [];
-            document.querySelectorAll('.topping-input:checked').forEach(input => {
-                toppings.push(input.value);
-            });
-            
-            buyNowProductBtn.disabled = true;
-            fetch('/checkout/product-buy-now', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken
+        });
+    });
+}
+function bindReportButton(container) {
+    container.querySelectorAll(".report-review-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            // Lấy thông tin review để preview trong modal
+            const reviewId = this.getAttribute("data-review-id");
+            const reviewBlock = document.querySelector(
+                `[data-review-id="${reviewId}"]`
+            );
+            if (reviewBlock) {
+                document.getElementById("report-modal-avatar").textContent =
+                    reviewBlock.querySelector(".review-avatar span")
+                        ?.textContent || "?";
+                document.getElementById("report-modal-username").textContent =
+                    reviewBlock.querySelector(".review-user-row .font-medium")
+                        ?.textContent || "Ẩn danh";
+                document.getElementById("report-modal-time").textContent =
+                    reviewBlock.querySelector(".text-sm.text-gray-500 span")
+                        ?.textContent || "";
+                document.getElementById("report-modal-content").textContent =
+                    reviewBlock.querySelector(".review-content")?.textContent ||
+                    "";
+            }
+            document.getElementById("report_review_id").value = reviewId;
+            // Reset form
+            document
+                .querySelectorAll(".reason-radio")
+                .forEach((r) => (r.checked = false));
+            document.getElementById("report_reason_detail").value = "";
+            document.getElementById("submit-report-btn").disabled = true;
+            document
+                .getElementById("report-review-modal")
+                .classList.remove("hidden");
+            document.body.classList.add("overflow-hidden");
+        });
+    });
+}
+function bindReplyButton(container) {
+    container.querySelectorAll(".reply-review-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
+            const userName = this.getAttribute("data-user-name");
+            const routeReply = this.getAttribute("data-route-reply");
+            const reviewForm = document.getElementById("review-reply-form");
+            const replyReviewIdInput =
+                document.getElementById("reply_review_id");
+            const replyingToDiv = document.getElementById("replying-to");
+            const replyingToUser = document.getElementById("replying-to-user");
+            const reviewTextarea = document.getElementById("review-textarea");
+            const reviewSubmitBtn =
+                document.getElementById("review-submit-btn");
+            const formTitle = document.getElementById("form-title");
+            const ratingRow = document.getElementById("rating-row");
+            if (reviewForm) {
+                reviewForm.setAttribute("action", routeReply);
+                replyReviewIdInput.value = reviewId;
+                replyingToUser.textContent = userName;
+                replyingToDiv.classList.remove("hidden");
+                reviewTextarea.placeholder = `Phản hồi cho ${userName}...`;
+                reviewSubmitBtn.textContent = "Gửi phản hồi";
+                formTitle.textContent = "Gửi phản hồi";
+                reviewTextarea.focus();
+                if (ratingRow) ratingRow.style.display = "none";
+            }
+            reviewTextarea.setAttribute("name", "reply");
+        });
+    });
+}
+function bindDeleteReviewButton(container) {
+    container.querySelectorAll(".delete-review-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reviewId = this.getAttribute("data-review-id");
+            dtmodalCreateModal({
+                type: "warning",
+                title: "Xác nhận xóa",
+                message: "Bạn có chắc chắn muốn xóa bình luận này?",
+                confirmText: "Xóa",
+                cancelText: "Hủy",
+                onConfirm: function () {
+                    const csrfToken = document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content");
+                    fetch(`/reviews/${reviewId}`, {
+                        method: "DELETE",
+                        headers: {
+                            "X-CSRF-TOKEN": csrfToken,
+                            Accept: "application/json",
+                        },
+                    })
+                        .then(async (res) => {
+                            if (res.ok) {
+                                dtmodalShowToast("success", {
+                                    title: "Thành công",
+                                    message: "Đã xóa bình luận!",
+                                });
+                                const reviewDiv = btn.closest(".p-6");
+                                if (reviewDiv) reviewDiv.remove();
+                            } else {
+                                let msg = "Không thể xóa bình luận!";
+                                try {
+                                    const data = await res.json();
+                                    if (data && data.message)
+                                        msg = data.message;
+                                } catch {}
+                                dtmodalShowToast("error", {
+                                    title: "Lỗi",
+                                    message: msg,
+                                });
+                            }
+                        })
+                        .catch(() => {
+                            dtmodalShowToast("error", {
+                                title: "Lỗi",
+                                message: "Lỗi mạng hoặc server!",
+                            });
+                        });
                 },
-                body: JSON.stringify({ product_id: productId, variant_id: variantId, toppings: toppings, quantity: quantity })
-            })
-            .then(res => res.json())
-            .then(data => {
-                buyNowProductBtn.disabled = false;
-                if (data.success && data.redirect_url) {
-                    window.location.href = data.redirect_url;
-                } else if (data.success) {
-                    window.location.href = '/checkout';
-                } else {
-                    if (window.dtmodalShowToast) {
-                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Có lỗi xảy ra' });
-                    } else {
-                        alert(data.message || 'Có lỗi xảy ra');
-                    }
-                }
-            })
-            .catch(() => {
-                buyNowProductBtn.disabled = false;
-                if (window.dtmodalShowToast) {
-                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi khi mua sản phẩm' });
-                } else {
-                    alert('Có lỗi khi mua sản phẩm');
-                }
             });
         });
-    }
-});
+    });
+}

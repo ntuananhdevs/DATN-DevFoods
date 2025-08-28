@@ -389,6 +389,45 @@
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
     }
+    
+    /* Loading state styles */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+    }
+    
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #F97316;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Highlight animation for updated products */
+    .highlight-update {
+        animation: highlightPulse 1s ease-in-out;
+    }
+    
+    @keyframes highlightPulse {
+        0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0.3); }
+        100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+    }
     </style>
 
 @php
@@ -404,28 +443,21 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
     <div class="mb-8">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
             <div class="relative w-full md:w-auto">
-                <form action="{{ route('products.index') }}" method="GET" id="search-form" class="flex">
+                <div class="flex">
                     <input type="text" name="search" id="search-input" value="{{ request('search') }}" placeholder="Tìm kiếm món ăn..." class="w-full md:w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <input type="hidden" name="sort" value="{{ request('sort', 'popular') }}">
-                    <input type="hidden" name="category" value="{{ request('category') }}">
-                    <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                </form>
+                </div>
             </div>
 
             <div class="flex items-center gap-2 w-full md:w-auto">
                 <span class="text-gray-600">Sắp xếp theo:</span>
-                <form action="{{ route('products.index') }}" method="GET" id="sort-form" class="m-0">
-                    <input type="hidden" name="search" value="{{ request('search') }}">
-                    <input type="hidden" name="category" value="{{ request('category') }}">
-                    <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
-                    <select name="sort" onchange="this.form.submit()" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Phổ biến nhất</option>
-                        <option value="price-asc" {{ request('sort') == 'price-asc' ? 'selected' : '' }}>Giá: Thấp đến cao</option>
-                        <option value="price-desc" {{ request('sort') == 'price-desc' ? 'selected' : '' }}>Giá: Cao đến thấp</option>
-                        <option value="name-asc" {{ request('sort') == 'name-asc' ? 'selected' : '' }}>Tên: A-Z</option>
-                    </select>
-                </form>
+                <select name="sort" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Phổ biến nhất</option>
+                    <option value="price-asc" {{ request('sort') == 'price-asc' ? 'selected' : '' }}>Giá: Thấp đến cao</option>
+                    <option value="price-desc" {{ request('sort') == 'price-desc' ? 'selected' : '' }}>Giá: Cao đến thấp</option>
+                    <option value="name-asc" {{ request('sort') == 'name-asc' ? 'selected' : '' }}>Tên: A-Z</option>
+                    <option value="name-desc" {{ request('sort') == 'name-desc' ? 'selected' : '' }}>Tên: Z-A</option>
+                </select>
             </div>
         </div>
 
@@ -464,7 +496,7 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
                         <div class="skeleton-card"></div>
                     @endfor
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 product-cards-container">
                     @foreach($comboCategory->combos as $combo)
                         @include('customer.shop._combo_card', ['combo' => $combo])
                     @endforeach
@@ -483,7 +515,7 @@ $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersB
                         <div class="skeleton-card"></div>
                     @endfor
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 product-cards-container">
                     @foreach($category->products as $product)
                         @include('customer.shop._product_card', ['product' => $product])
                     @endforeach

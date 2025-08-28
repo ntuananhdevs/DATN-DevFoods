@@ -7,6 +7,37 @@
 @section('page-style-prd-edit')
     <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .ingredients-format {
+            transition: all 0.3s ease;
+        }
+        .ingredients-format.hidden {
+            display: none;
+        }
+        .ingredient-category {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        .ingredient-category:hover {
+            border-color: #d1d5db;
+        }
+        .category-name:focus,
+        .category-items:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .remove-category:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        #add-category:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+    </style>
 @endsection
 
 <main class="container">
@@ -87,42 +118,29 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
                             <span class="text-red-500">*</span>
                         </label>
-                    
-                        @if(!empty($product->ingredients))
-                            @php
-                                // Model accessor đã đảm bảo ingredients luôn là array
-                                $ingredients = $product->ingredients;
-                                
-                                // Chuyển tất cả nguyên liệu thành chuỗi để hiển thị trong một textarea
-                                $allIngredients = [];
-                                foreach ($ingredients as $category => $items) {
-                                    if (is_array($items)) {
-                                        $allIngredients[] = implode(', ', (array)$items);
-                                    } else {
-                                        $allIngredients[] = $items;
-                                    }
+                        
+                        @php
+                            $ingredientsText = '';
+                            if (!empty($product->ingredients)) {
+                                // Laravel's array cast will handle the JSON automatically
+                                if (is_array($product->ingredients)) {
+                                    $ingredientsText = implode("\n", $product->ingredients);
+                                } else {
+                                    // Fallback for any string data
+                                    $ingredientsText = $product->ingredients;
                                 }
-                                $ingredientsText = implode(', ', $allIngredients);
-                            @endphp
-                    
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6">{{ $ingredientsText }}</textarea>
-                            </div>
-                        @else
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
-                            </div>
-                        @endif
-                    
-                        {{-- Hidden input để giữ dữ liệu nguyên liệu gốc --}}
-        <input type="hidden" name="ingredients_raw" value="{{ is_array($product->ingredients) ? json_encode($product->ingredients) : $product->ingredients }}">
-                    
+                            }
+                        @endphp
+                        
+                        <textarea id="ingredients" name="ingredients" rows="5"
+                            placeholder="Nhập danh sách nguyên liệu, mỗi nguyên liệu một dòng&#10;Ví dụ:&#10;thịt bò&#10;rau xà lách&#10;ớt chuông&#10;cà chua"
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients', $ingredientsText) }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Mỗi dòng là một nguyên liệu riêng biệt</p>
+                        
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
                     </div>
-                    
-                    
 
                     <div>
                         <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn
@@ -329,6 +347,7 @@
                                         $attributesData[] = [
                                             'name' => $attrName,
                                             'values' => [[
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
                                                 'price_adjustment' => $attrPrice,
                                                 'price_type' => $attrPriceType
@@ -345,6 +364,7 @@
                                         }
                                         if (!$valueExists) {
                                             $attributesData[$attrIndex]['values'][] = [
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
                                                 'price_adjustment' => $attrPrice,
                                                 'price_type' => $attrPriceType
@@ -386,7 +406,11 @@
                                         @endphp
                                         
                                         @foreach ($values as $valueIndex => $value)
-                                            <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                            <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                                <!-- Hidden input for VariantValue ID -->
+                                                @if(isset($value['id']))
+                                                    <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value['id'] }}">
+                                                @endif
                                                 <div class="grid grid-cols-2 gap-2">
                                                     <div>
                                                         <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -415,9 +439,10 @@
                         </div>
                     @empty
                         <!-- Default attribute group when no attributes exist -->
-                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50">
+                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 attribute-group">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
+                                <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
@@ -435,7 +460,7 @@
                                     <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                                     <div id="attribute_values_container_0" class="space-y-2">
                                         <!-- Default attribute value -->
-                                        <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                        <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                              <div class="grid grid-cols-2 gap-2">
                                                  <div>
                                                      <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -453,6 +478,7 @@
                                                          <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                                      @enderror
                                                  </div>
+                                                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
                                              </div>
                                          </div>
                                     </div>
@@ -726,12 +752,17 @@
         </section>
 
         <!-- Save Buttons -->
-        <div class="p-4 flex justify-end gap-2 mt-6">
+        <div class="fixed bottom-4 right-4 flex gap-2 z-50">
+            <a href="{{ route('admin.products.index') }}"
+                class="rounded-md bg-gray-600 px-6 py-2 text-white hover:bg-gray-700 shadow-lg">
+                Quay lại
+            </a>
             <button type="submit" id="save-product-btn"
-                class="fixed bottom-4 right-4 rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg z-50">
+                class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg">
                 Cập nhật sản phẩm
             </button>
         </div>
+
     </form>
 </main>
 
@@ -882,7 +913,7 @@
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                            <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                 <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
@@ -903,43 +934,109 @@
                 </div>
             `;
             
-            // Add event listeners for the new attribute group
-            const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
-            removeAttributeBtn.addEventListener('click', () => {
-                group.remove();
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
-                    }
-                });
-            });
-
-            // Add event listener for adding attribute values
-            const addValueBtn = group.querySelector('.add-attribute-value-btn');
-            addValueBtn.addEventListener('click', () => {
-                addAttributeValue(index);
-            });
-
-            // Add event listeners for removing attribute values
-            const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
-            removeValueBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const valueContainer = e.target.closest('.grid');
-                    valueContainer.remove();
-                });
-            });
+            // Event listeners will be handled by event delegation in the main container
             
             return group;
         }
 
+        function reindexAttributeGroups() {
+            const attributeGroups = attributesContainer.querySelectorAll('.p-4.border.border-gray-200');
+            attributeGroups.forEach((group, index) => {
+                // Update group title
+                const title = group.querySelector('h3');
+                if (title) {
+                    title.textContent = `Thuộc tính ${index + 1}`;
+                }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const currentName = nameInput.getAttribute('name');
+                    const newName = currentName.replace(/attributes\[\d+\]/, `attributes[${index}]`);
+                    nameInput.setAttribute('name', newName);
+                    
+                    const currentId = nameInput.getAttribute('id');
+                    if (currentId) {
+                        const newId = currentId.replace(/attribute_name_\d+/, `attribute_name_${index}`);
+                        nameInput.setAttribute('id', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container_"]');
+                if (valuesContainer) {
+                    const newId = `attribute_values_container_${index}`;
+                    valuesContainer.setAttribute('id', newId);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', index);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, index);
+            });
+        }
+        
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
+        
         function addAttributeValue(attributeIndex) {
             const valuesContainer = document.getElementById(`attribute_values_container_${attributeIndex}`);
             const existingValues = valuesContainer.querySelectorAll('.grid');
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
                 <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -956,83 +1053,213 @@
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
             
-            // Add event listener for removing this value
-            const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
-            removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
-            });
-            
+            // Event listener will be handled by event delegation
+
             valuesContainer.appendChild(valueDiv);
+            updateDeleteButtonVisibility();
         }
 
-        // Event delegation for all dynamic elements
-        document.addEventListener('click', function(e) {
-            // Remove attribute group
-            if (e.target.classList.contains('remove-attribute-btn') || e.target.classList.contains('remove-attribute-group-btn')) {
-                e.target.closest('.attribute-group').remove();
-                // Update attribute group numbers
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
+        // Function to update delete button visibility
+        function updateDeleteButtonVisibility() {
+            const attributeGroups = document.querySelectorAll('#attributes-container > .p-4.border.border-gray-200');
+            
+            attributeGroups.forEach(group => {
+                const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
+                const attributeValues = group.querySelectorAll('.attribute-value-item');
+                
+                // Hide attribute delete button if only 1 attribute exists
+                if (removeAttributeBtn) {
+                    if (attributeGroups.length <= 1) {
+                        removeAttributeBtn.style.display = 'none';
+                    } else {
+                        removeAttributeBtn.style.display = 'inline-block';
                     }
-                });
-            }
-            
-            // Add attribute value
-            if (e.target.classList.contains('add-attribute-value-btn') || e.target.closest('.add-attribute-value-btn')) {
-                const btn = e.target.classList.contains('add-attribute-value-btn') ? e.target : e.target.closest('.add-attribute-value-btn');
-                const attributeIndex = btn.getAttribute('data-index');
-                if (attributeIndex !== null) {
-                    addAttributeValue(parseInt(attributeIndex));
                 }
-            }
-            
-            // Remove attribute value
-            if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
-                const valueRow = e.target.closest('.grid');
-                if (valueRow) {
-                    valueRow.remove();
-                }
-            }
-            
-            // Remove topping
-            if (e.target.classList.contains('remove-topping-btn')) {
-                e.target.closest('.topping-group').remove();
-            }
-        });
-        
-        // Add event listeners to existing attribute groups
-        document.querySelectorAll('.attribute-group .remove-attribute-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.attribute-group').remove();
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
+                
+                // Hide value delete buttons if only 1 value exists in this attribute
+                attributeValues.forEach(valueItem => {
+                    const removeValueBtn = valueItem.querySelector('.remove-attribute-value-btn');
+                    if (removeValueBtn) {
+                        if (attributeValues.length <= 1) {
+                            removeValueBtn.style.display = 'none';
+                        } else {
+                            removeValueBtn.style.display = 'inline-block';
+                        }
                     }
                 });
             });
-        });
-        
-        // Add event listeners to existing attribute value remove buttons
-        document.querySelectorAll('.remove-attribute-value-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.grid').remove();
-            });
-        });
+        }
 
-        // Add new attribute group
+        // Function to check if attribute can be deleted
+        async function checkAttributeDeletable(attributeName) {
+            try {
+                const response = await fetch('{{ route("admin.products.check-attribute-deletable") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        attribute_name: attributeName,
+                        product_id: {{ $product->id }}
+                    })
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking attribute deletable:', error);
+                return { can_delete: false, message: 'Lỗi khi kiểm tra trạng thái thuộc tính.' };
+            }
+        }
+
+        // Function to check if value can be deleted
+        async function checkValueDeletable(valueId) {
+            try {
+                const response = await fetch('{{ route("admin.products.check-value-deletable") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        value_id: valueId,
+                        product_id: {{ $product->id }}
+                    })
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error checking value deletable:', error);
+                return { can_delete: false, message: 'Lỗi khi kiểm tra trạng thái giá trị.' };
+            }
+        }
+
+        // Function to show warning modal
+        function showWarningModal(message) {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('deletion-warning-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'deletion-warning-modal';
+                modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+                modal.innerHTML = `
+                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3 text-center">
+                            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Không thể xóa</h3>
+                            <div class="mt-2 px-7 py-3">
+                                <p class="text-sm text-gray-500" id="warning-message"></p>
+                            </div>
+                            <div class="items-center px-4 py-3">
+                                <button id="close-warning-modal" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                                    Đóng
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Add close event listener
+                document.getElementById('close-warning-modal').addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+                
+                // Close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+            
+            document.getElementById('warning-message').textContent = message;
+            modal.style.display = 'block';
+        }
+
+        // Use event delegation for attribute-related buttons to avoid conflicts
+        if (attributesContainer) {
+            attributesContainer.addEventListener('click', async function(e) {
+                if (e.target.classList.contains('remove-attribute-btn')) {
+                    const attributeGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (attributeGroup) {
+                        // Get attribute name
+                        const attributeNameInput = attributeGroup.querySelector('input[name*="[name]"]');
+                        const attributeName = attributeNameInput ? attributeNameInput.value : '';
+                        
+                        if (attributeName) {
+                            // Check if attribute can be deleted
+                            const result = await checkAttributeDeletable(attributeName);
+                            if (!result.can_delete) {
+                                showWarningModal(result.message);
+                                return;
+                            }
+                        }
+                        
+                        attributeGroup.remove();
+                        reindexAttributeGroups();
+                        updateDeleteButtonVisibility();
+                    }
+                } else if (e.target.classList.contains('add-attribute-value-btn')) {
+                    const attributeIndex = e.target.getAttribute('data-index') || 0;
+                    addAttributeValue(parseInt(attributeIndex));
+                    updateDeleteButtonVisibility();
+                } else if (e.target.classList.contains('remove-attribute-value-btn')) {
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        // Get value ID from hidden input if exists
+                        const valueIdInput = valueContainer.querySelector('input[name*="[id]"]');
+                        const valueId = valueIdInput ? valueIdInput.value : null;
+                        
+                        if (valueId) {
+                            // Check if value can be deleted
+                            const result = await checkValueDeletable(valueId);
+                            if (!result.can_delete) {
+                                showWarningModal(result.message);
+                                return;
+                            }
+                        }
+                        
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                        updateDeleteButtonVisibility();
+                    }
+                }
+            });
+        }
+        
+        // Toppings Logic - Initialize container first
+        const toppingsContainer = document.getElementById('toppings-container');
+        
+        // Use event delegation for topping-related buttons to avoid conflicts
+        if (toppingsContainer) {
+            toppingsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-topping-btn')) {
+                    const toppingGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (toppingGroup) {
+                        toppingGroup.remove();
+                    }
+                }
+            });
+        }
+
+        // Add event listener for the main "Add Attribute" button
         if (addAttributeBtn) {
             addAttributeBtn.addEventListener('click', () => {
                 const attributeGroup = createAttributeGroup(attributeCount);
                 attributesContainer.appendChild(attributeGroup);
                 attributeCount++;
+                updateDeleteButtonVisibility();
             });
         }
-
-        // Toppings Logic
-        const toppingsContainer = document.getElementById('toppings-container');
+        
+        // Initial call to set delete button visibility on page load
+        updateDeleteButtonVisibility();
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
 
@@ -1162,40 +1389,118 @@
             }
         });
 
+        // Ingredients Format Toggle Logic
+        const formatRadios = document.querySelectorAll('input[name="ingredients_format"]');
+        const simpleFormat = document.getElementById('simple-ingredients');
+        const structuredFormat = document.getElementById('structured-ingredients');
+        const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
+        
+        // Toggle between simple and structured format
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'simple') {
+                    simpleFormat.classList.remove('hidden');
+                    structuredFormat.classList.add('hidden');
+                } else {
+                    simpleFormat.classList.add('hidden');
+                    structuredFormat.classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Add category functionality
+        document.getElementById('add-category').addEventListener('click', function() {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'ingredient-category';
+            categoryDiv.innerHTML = `
+                <div class="flex items-center space-x-2 mb-2">
+                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                </div>
+                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                          rows="3"></textarea>
+            `;
+            categoryContainer.appendChild(categoryDiv);
+        });
+        
+        // Remove category functionality (event delegation)
+        categoryContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-category')) {
+                e.target.closest('.ingredient-category').remove();
+            }
+        });
+
         // Form Submission Logic
         const editProductForm = document.getElementById('edit-product-form');
         editProductForm.addEventListener('submit', function(e) {
-            // Convert ingredients textarea to JSON array
-            const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            // Process ingredients based on selected format
+            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
+            let ingredientsData;
+            
+            if (selectedFormat === 'simple') {
+                // Simple format: convert comma-separated text to array
+                const ingredientsText = document.getElementById('ingredients').value;
+                ingredientsData = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            } else {
+                // Structured format: convert categories to object
+                ingredientsData = {};
+                const categories = document.querySelectorAll('.ingredient-category');
+                categories.forEach(category => {
+                    const categoryName = category.querySelector('.category-name').value.trim();
+                    const categoryItems = category.querySelector('.category-items').value
+                        .split('\n')
+                        .map(item => item.trim())
+                        .filter(item => item);
+                    
+                    if (categoryName && categoryItems.length > 0) {
+                        ingredientsData[categoryName] = categoryItems;
+                    }
+                });
+            }
+            
+            // Create hidden input for processed ingredients
             const ingredientsInput = document.createElement('input');
             ingredientsInput.type = 'hidden';
             ingredientsInput.name = 'ingredients_json';
-            ingredientsInput.value = JSON.stringify(ingredientsArray);
+            ingredientsInput.value = JSON.stringify(ingredientsData);
             editProductForm.appendChild(ingredientsInput);
 
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
             
-            // Collect variant stock data
+            // Collect and submit variant stock data
             const variantStockInputs = document.querySelectorAll('input[name^="variant_stocks["]');
             const variantStocks = {};
+            
+            // Remove any existing hidden variant stock inputs
+            const existingHiddenInputs = editProductForm.querySelectorAll('input[name^="variant_stocks["][type="hidden"]');
+            existingHiddenInputs.forEach(input => input.remove());
+            
             variantStockInputs.forEach(input => {
-                if (input.value && input.value.trim() !== '') {
-                    const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const variantId = matches[1];
-                        const branchId = matches[2];
-                        if (!variantStocks[variantId]) {
-                            variantStocks[variantId] = {};
-                        }
-                        variantStocks[variantId][branchId] = parseInt(input.value) || 0;
+                const value = input.value && input.value.trim() !== '' ? parseInt(input.value) || 0 : 0;
+                const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
+                if (matches) {
+                    const variantId = matches[1];
+                    const branchId = matches[2];
+                    
+                    // Create hidden input for each variant stock
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = `variant_stocks[${variantId}][${branchId}]`;
+                    hiddenInput.value = value;
+                    editProductForm.appendChild(hiddenInput);
+                    
+                    if (!variantStocks[variantId]) {
+                        variantStocks[variantId] = {};
                     }
+                    variantStocks[variantId][branchId] = value;
                 }
             });
             
-            console.log('Variant Stocks:', variantStocks);
+            console.log('Variant Stocks being submitted:', variantStocks);
         });
 
         // Handle status and release date visibility
@@ -1318,6 +1623,12 @@
              lucide.createIcons();
          }
 
+        // Initial call to set delete button visibility on page load
+        updateDeleteButtonVisibility();
+        
+        // Also call after a short delay to ensure all elements are rendered
+        setTimeout(updateDeleteButtonVisibility, 100);
+
         // Toggle inactive variants visibility
         let showInactive = false;
         window.toggleInactive = function() {
@@ -1377,6 +1688,10 @@
                 }
             }
         }, 300);
+        
+        // Ensure delete button visibility is updated after DOM is ready
+        updateDeleteButtonVisibility();
+        setTimeout(updateDeleteButtonVisibility, 500);
     });
 </script>
 

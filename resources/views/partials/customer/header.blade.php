@@ -9,6 +9,7 @@
                 </button>
 
                 <a href="/" class="flex items-center gap-2 ml-4 md:ml-0">
+                    <img src="{{ asset('/images/logo.png') }}" alt="Logo" class="w-12 h-12">
                     <span class="font-bold text-xl text-orange-500">PolyCrispyWings</span>
                 </a>
 
@@ -89,6 +90,10 @@
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 Cài đặt
                             </a>
+                            <a href="{{ route('customer.wallet.index') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Số dư
+                            </a>
                             <form action="{{ route('customer.logout') }}" method="POST">
                                 @csrf
                                 <button type="submit"
@@ -126,10 +131,10 @@
                     </button>
                     <!-- Popup notification -->
                     <div x-show="open" @click.away="open = false"
-                        class="absolute right-0 mt-2 w-80 rounded-md border bg-white text-black shadow-md overflow-hidden z-50"
-                        style="min-width: 280px; display: none;">
+                        class="absolute right-0 mt-2 w-100 rounded-md border bg-white text-black shadow-md overflow-hidden z-50"
+                        style="min-width: 400px; display: none;">
                         <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col"
-                            style="height:400px;">
+                            style="height:800px;">
                             <div class="px-2 py-1.5 mb-1">
                                 <h3 class="font-semibold text-sm">Thông báo</h3>
                                 <p class="text-xs text-muted-foreground">Bạn có <span
@@ -459,8 +464,8 @@
 
 <script>
     window.LaravelRoutes = {
-        productShow: "{{ route('products.show', ['slug' => 'REPLACE_SLUG']) }}",
-        comboShow: "{{ route('combos.show', ['slug' => 'REPLACE_SLUG']) }}"
+        productShow: "{{ route('products.show', ['slug' => 'slug']) }}",
+        comboShow: "{{ route('combos.show', ['slug' => 'slug']) }}"
     };
 </script>
 
@@ -560,62 +565,31 @@
 
             window.Echo.channel('customer.' + window.currentCustomerId + '.notifications')
                 .listen('.new-message', function(data) {
-                    fetchNotifications(); // Cập nhật badge và danh sách noti
+                    // Sử dụng hàm toàn cục nếu có, nếu không thì sử dụng hàm cục bộ
+                    if (typeof window.fetchNotifications === 'function') {
+                        window.fetchNotifications(); // Cập nhật badge và danh sách noti
+                    } else if (typeof fetchNotifications === 'function') {
+                        fetchNotifications(); // Fallback
+                    }
                 });
         }
     });
 
     let lastUnreadCount = parseInt(document.querySelector('.notification-unread-count')?.textContent || '0');
 
-    function triggerBellShake() {
+    // Định nghĩa hàm toàn cục để có thể gọi từ các file khác
+    window.triggerBellShake = function() {
         const bellBtn = document.querySelector('.notification-bell-btn ion-icon');
         if (bellBtn) {
             bellBtn.classList.add('bell-shake');
-            setTimeout(() => bellBtn.classList.remove('bell-shake'), 700);
+            setTimeout(() => bellBtn.classList.remove('bell-shake'), 1000);
         }
+    };
+    
+    // Giữ lại hàm cục bộ để tương thích ngược
+    function triggerBellShake() {
+        window.triggerBellShake();
     }
-
-    function fetchNotifications() {
-        fetch("{{ route('notifications.index') }}?ajax=1", {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-
-                document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
-                });
-                let container = document.getElementById('customer-notification-list');
-                if (container && data.html) {
-                    let tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = data.html;
-                    let newNotis = tempDiv.querySelectorAll('[id^="notification-item-"]');
-                    let newIds = new Set();
-                    newNotis.forEach(newNoti => {
-                        let id = newNoti.id;
-                        newIds.add(id);
-                        let oldNoti = document.getElementById(id);
-                        if (oldNoti) {
-                            oldNoti.outerHTML = newNoti.outerHTML;
-                        } else {
-                            container.prepend(newNoti);
-                        }
-                    });
-                    // Xóa notification cũ không còn trong danh sách mới
-                    container.querySelectorAll('[id^="notification-item-"]').forEach(oldNoti => {
-                        if (!newIds.has(oldNoti.id)) {
-                            oldNoti.remove();
-                        }
-                    });
-                }
-                // Gọi hiệu ứng rung chuông khi badge tăng
-                if (data.unreadCount > lastUnreadCount) {
-                    triggerBellShake();
-                }
-                lastUnreadCount = data.unreadCount;
-            });
     }
 
 
@@ -642,7 +616,11 @@
                     if (count > 0) el.textContent = count - 1;
                 });
                 // Gọi lại fetchNotifications để đồng bộ dữ liệu
-                fetchNotifications();
+                if (typeof window.fetchNotifications === 'function') {
+                    window.fetchNotifications();
+                } else if (typeof fetchNotifications === 'function') {
+                    fetchNotifications();
+                }
                 // Chuyển hướng nếu có
                 if (redirectUrl) {
                     window.location.href = redirectUrl;

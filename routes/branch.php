@@ -12,8 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Branch\DriverAssignmentController;
+// use App\Http\Controllers\Branch\DriverAssignmentController;
 use App\Http\Controllers\Branch\NotificationController;
+use App\Http\Controllers\Branch\ReviewController;
 
 // Branch Authentication Routes
 Route::prefix('branch')->name('branch.')->group(function () {
@@ -37,17 +38,24 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
+        
+        // Driver map API routes
+        Route::get('/{id}/available-drivers', [BranchOrderController::class, 'getAvailableDrivers'])->name('available-drivers');
+        Route::get('/{id}/assigned-driver/{driverId}', [BranchOrderController::class, 'getAssignedDriver'])->name('assigned-driver');
 
         // Driver assignment routes
-        Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
-        Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
-        Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
+        // Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
+    
+    // Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
+
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
+    Route::get('/products/{slug}', [BranchProductController::class, 'show'])->name('products.show');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
     Route::get('/staff', [BranchStaffController::class, 'index'])->name('staff');
 
     Route::get('/combos', [BranchProductController::class, 'indexCombo'])->name('combos');
+    Route::get('/combos/{slug}', [BranchProductController::class, 'showCombo'])->name('combos.show');
     Route::get('/toppings', [BranchProductController::class, 'indexTopping'])->name('toppings');
 
     // Branch Chat Routes
@@ -89,4 +97,15 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('branch.notifications.read');
+
+    // Branch Review Management Routes
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [ReviewController::class, 'index'])->name('index');
+        Route::get('/{id}', [ReviewController::class, 'show'])->name('show');
+        Route::post('/{id}/reply', [ReviewController::class, 'reply'])->name('reply');
+        Route::delete('/{reviewId}/delete', [ReviewController::class, 'deleteReview'])->name('delete');
+        Route::delete('/reply/{replyId}', [ReviewController::class, 'deleteReply'])->name('reply.delete');
+        Route::get('/reports/list', [ReviewController::class, 'reports'])->name('reports');
+        Route::get('/reports/{id}', [ReviewController::class, 'showReport'])->name('report.show');
+    });
 });
