@@ -33,6 +33,26 @@
         background-color: #fff7ed;
         border-color: #f97316;
     }
+    
+    .transaction-message {
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .transaction-message:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
 </style>
 
 <div class="container mx-auto px-4 py-8">
@@ -278,9 +298,45 @@
                                 </span>
                                 
                                 @if($transaction->type == 'withdraw' && $transaction->status == 'pending')
-                                    <div class="text-xs text-yellow-600 mt-1">
+                                    <div class="transaction-message text-xs text-yellow-600 mt-1 bg-yellow-50 px-2 py-1 rounded-md border border-yellow-200 transition-all duration-300">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        Đang chờ admin xử lý
+                                        <span class="font-medium">Hãy bình tĩnh chờ admin xử lý nhé</span>
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->type == 'withdraw' && $transaction->status == 'completed')
+                                    <div class="transaction-message text-xs text-green-600 mt-1 bg-green-50 px-2 py-1 rounded-md border border-green-200 transition-all duration-300">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        <span class="font-medium">Vui lòng check số dư tài khoản ngân hàng</span>
+                                        @if(isset($transaction->metadata['admin_notes']) && $transaction->metadata['admin_notes'])
+                                            <div class="mt-1 text-green-500 font-normal">
+                                                <i class="fas fa-sticky-note mr-1"></i>
+                                                Ghi chú: {{ $transaction->metadata['admin_notes'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->type == 'withdraw' && $transaction->status == 'failed')
+                                    <div class="transaction-message text-sm text-red-600 mt-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200 transition-all duration-300">
+                                        @if(isset($transaction->metadata['reject_reason']) && $transaction->metadata['reject_reason'])
+                                            <div class="text-red-600 font-semibold">
+                                                <i class="fas fa-info-circle mr-2 text-base"></i>
+                                                <span class="text-sm">Lý do:</span> <span class="text-base">{{ $transaction->metadata['reject_reason'] }}</span>
+                                            </div>
+                                        @else
+                                            <div class="text-red-600 font-semibold">
+                                                <i class="fas fa-times-circle mr-2 text-base"></i>
+                                                <span class="text-base">Giao dịch bị từ chối</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->type == 'withdraw' && $transaction->status == 'cancelled')
+                                    <div class="text-xs text-gray-600 mt-1">
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Giao dịch đã được hủy
                                     </div>
                                 @endif
                                 
@@ -288,6 +344,20 @@
                                     <div class="text-xs text-gray-600 mt-1">
                                         <i class="fas fa-exclamation-triangle mr-1"></i>
                                         Đã hết hạn thanh toán
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->type == 'deposit' && $transaction->status == 'completed')
+                                    <div class="text-xs text-green-600 mt-1">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        Nạp tiền thành công
+                                    </div>
+                                @endif
+                                
+                                @if($transaction->type == 'deposit' && $transaction->status == 'pending')
+                                    <div class="text-xs text-yellow-600 mt-1">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Đang xử lý thanh toán
                                     </div>
                                 @endif
                             </div>
