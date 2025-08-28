@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 // use App\Http\Controllers\Branch\DriverAssignmentController;
 use App\Http\Controllers\Branch\NotificationController;
 use App\Http\Controllers\Branch\ReviewController;
+use App\Http\Controllers\Branch\RefundController as BranchRefundController;
 
 // Branch Authentication Routes
 Route::prefix('branch')->name('branch.')->group(function () {
@@ -107,5 +108,15 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::delete('/reply/{replyId}', [ReviewController::class, 'deleteReply'])->name('reply.delete');
         Route::get('/reports/list', [ReviewController::class, 'reports'])->name('reports');
         Route::get('/reports/{id}', [ReviewController::class, 'showReport'])->name('report.show');
+    });
+
+    // Branch Refund Management Routes
+    Route::prefix('refunds')->name('refunds.')->group(function () {
+        Route::get('/', [BranchRefundController::class, 'index'])->name('index');
+        Route::get('/{id}', [BranchRefundController::class, 'show'])->name('show');
+        Route::post('/{id}/update-status', [BranchRefundController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{id}/approve', [BranchRefundController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [BranchRefundController::class, 'reject'])->name('reject');
+        Route::get('/statistics', [BranchRefundController::class, 'statistics'])->name('statistics');
     });
 });

@@ -145,6 +145,14 @@ class Order extends Model
         return $this->hasOne(DriverRating::class);
     }
 
+    /**
+     * Get the refund requests for the order.
+     */
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+
 
     /**
      * The accessors to append to the model's array form.

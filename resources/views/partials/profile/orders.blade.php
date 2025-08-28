@@ -322,15 +322,42 @@
                                         $reviewUrl = route('combos.show', $firstItem->combo->slug) . '#review-reply-form-container';
                                     }
                                 }
+                                
+                                // Kiểm tra xem đã có yêu cầu hoàn tiền chưa
+                                $hasRefundRequest = $order->refundRequests()->whereNotIn('status', ['cancelled', 'rejected'])->exists();
                             @endphp
-                            <a href="{{ $reviewUrl }}"
-                                class="inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
-                                    </path>
-                                </svg> Đánh giá
-                            </a>
+                            <div class="flex gap-2">
+                                <a href="{{ $reviewUrl }}"
+                                    class="inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-yellow-500 hover:bg-yellow-600">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
+                                        </path>
+                                    </svg> Đánh giá
+                                </a>
+                                
+                                @if (!$hasRefundRequest)
+                                    <button type="button" 
+                                        class="request-refund-btn inline-flex items-center justify-center rounded-md text-sm font-medium text-white px-4 py-2 bg-red-500 hover:bg-red-600"
+                                        data-order-id="{{ $order->id }}"
+                                        data-order-code="{{ $order->order_code }}"
+                                        data-total-amount="{{ $order->total_amount }}">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z">
+                                            </path>
+                                        </svg> Yêu cầu hoàn tiền
+                                    </button>
+                                @elseif ($hasRefundRequest)
+                                    <span class="inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 bg-gray-100 text-gray-600 border border-gray-300">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z">
+                                            </path>
+                                        </svg> Đã yêu cầu hoàn tiền
+                                    </span>
+                                @endif
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -342,6 +369,118 @@
 </section>
 
 @include('partials.profile.action-confirmation-modal')
+
+{{-- Modal yêu cầu hoàn tiền --}}
+<div id="refundRequestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            {{-- Header --}}
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-bold text-gray-900">Yêu cầu hoàn tiền</h3>
+                <button type="button" id="closeRefundModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Form --}}
+            <form id="refundRequestForm" class="mt-4" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" id="refundOrderId" name="order_id">
+                
+                {{-- Thông tin đơn hàng --}}
+                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-gray-700 mb-2">Thông tin đơn hàng</h4>
+                    <div class="text-sm text-gray-600">
+                        <p><span class="font-medium">Mã đơn hàng:</span> <span id="refundOrderCode"></span></p>
+                        <p><span class="font-medium">Tổng tiền:</span> <span id="refundTotalAmount"></span></p>
+                    </div>
+                </div>
+
+                {{-- Số tiền hoàn --}}
+                <div class="mb-4">
+                    <label for="refundAmount" class="block text-sm font-medium text-gray-700 mb-2">Số tiền yêu cầu hoàn *</label>
+                    <div class="relative">
+                        <input type="number" id="refundAmount" name="refund_amount" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            placeholder="Nhập số tiền muốn hoàn" min="1000" required>
+                        <span class="absolute right-3 top-2 text-gray-500">VNĐ</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Số tiền tối thiểu: 1,000 VNĐ</p>
+                </div>
+
+                {{-- Loại hoàn tiền --}}
+                <div class="mb-4">
+                    <label for="refundType" class="block text-sm font-medium text-gray-700 mb-2">Loại hoàn tiền *</label>
+                    <select id="refundType" name="refund_type" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" required>
+                        <option value="">Chọn loại hoàn tiền</option>
+                        <option value="full">Hoàn toàn bộ</option>
+                        <option value="partial">Hoàn một phần</option>
+                    </select>
+                </div>
+
+                {{-- Lý do hoàn tiền --}}
+                <div class="mb-4">
+                    <label for="refundReason" class="block text-sm font-medium text-gray-700 mb-2">Lý do hoàn tiền *</label>
+                    <select id="refundReason" name="reason" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent" required>
+                        <option value="">Chọn lý do</option>
+                        <option value="product_defective">Sản phẩm bị lỗi/hỏng</option>
+                        <option value="wrong_product">Giao sai sản phẩm</option>
+                        <option value="late_delivery">Giao hàng quá muộn</option>
+                        <option value="poor_quality">Chất lượng không như mong đợi</option>
+                        <option value="change_mind">Thay đổi ý định</option>
+                        <option value="other">Lý do khác</option>
+                    </select>
+                </div>
+
+                {{-- Mô tả chi tiết --}}
+                <div class="mb-4">
+                    <label for="customerMessage" class="block text-sm font-medium text-gray-700 mb-2">Mô tả chi tiết *</label>
+                    <textarea id="customerMessage" name="customer_message" rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        placeholder="Vui lòng mô tả chi tiết vấn đề bạn gặp phải..." required></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Tối thiểu 10 ký tự</p>
+                </div>
+
+                {{-- Upload hình ảnh --}}
+                <div class="mb-6">
+                    <label for="attachments" class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh minh chứng</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-400 transition-colors">
+                        <input type="file" id="attachments" name="attachments[]" multiple accept="image/*" class="hidden">
+                        <div id="uploadArea" class="cursor-pointer">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <p class="mt-2 text-sm text-gray-600">
+                                <span class="font-medium text-orange-600">Nhấp để chọn ảnh</span> hoặc kéo thả vào đây
+                            </p>
+                            <p class="text-xs text-gray-500">PNG, JPG, GIF tối đa 5MB mỗi ảnh (tối đa 5 ảnh)</p>
+                        </div>
+                    </div>
+                    
+                    {{-- Preview ảnh --}}
+                    <div id="imagePreview" class="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3 hidden"></div>
+                </div>
+
+                {{-- Buttons --}}
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <button type="button" id="cancelRefundBtn" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        Hủy
+                    </button>
+                    <button type="submit" id="submitRefundBtn" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <span class="submit-text">Gửi yêu cầu</span>
+                        <span class="loading-text hidden">Đang gửi...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -912,6 +1051,241 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             showToast('Có lỗi xảy ra khi hủy đơn hàng', false);
+        });
+    });
+
+    // Xử lý modal yêu cầu hoàn tiền
+    const refundModal = document.getElementById('refundRequestModal');
+    const refundForm = document.getElementById('refundRequestForm');
+    const closeRefundModalBtn = document.getElementById('closeRefundModal');
+    const cancelRefundBtn = document.getElementById('cancelRefundBtn');
+    const submitRefundBtn = document.getElementById('submitRefundBtn');
+    const attachmentsInput = document.getElementById('attachments');
+    const uploadArea = document.getElementById('uploadArea');
+    const imagePreview = document.getElementById('imagePreview');
+    const refundAmountInput = document.getElementById('refundAmount');
+    const refundTypeSelect = document.getElementById('refundType');
+    
+    let selectedFiles = [];
+    let maxTotalAmount = 0;
+
+    // Mở modal khi click nút yêu cầu hoàn tiền
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.request-refund-btn')) {
+            const btn = e.target.closest('.request-refund-btn');
+            const orderId = btn.dataset.orderId;
+            const orderCode = btn.dataset.orderCode;
+            const totalAmount = parseInt(btn.dataset.totalAmount);
+            
+            // Cập nhật thông tin đơn hàng trong modal
+            document.getElementById('refundOrderId').value = orderId;
+            document.getElementById('refundOrderCode').textContent = orderCode;
+            document.getElementById('refundTotalAmount').textContent = new Intl.NumberFormat('vi-VN').format(totalAmount) + ' VNĐ';
+            
+            // Set max amount và default value
+            maxTotalAmount = totalAmount;
+            refundAmountInput.max = totalAmount;
+            refundAmountInput.value = totalAmount;
+            
+            // Reset form
+            refundForm.reset();
+            document.getElementById('refundOrderId').value = orderId;
+            refundAmountInput.value = totalAmount;
+            selectedFiles = [];
+            updateImagePreview();
+            
+            // Hiển thị modal
+            refundModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    });
+
+    // Đóng modal
+    function closeRefundModal() {
+        refundModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        refundForm.reset();
+        selectedFiles = [];
+        updateImagePreview();
+    }
+
+    closeRefundModalBtn.addEventListener('click', closeRefundModal);
+    cancelRefundBtn.addEventListener('click', closeRefundModal);
+
+    // Đóng modal khi click outside
+    refundModal.addEventListener('click', function(e) {
+        if (e.target === refundModal) {
+            closeRefundModal();
+        }
+    });
+
+    // Xử lý thay đổi loại hoàn tiền
+    refundTypeSelect.addEventListener('change', function() {
+        if (this.value === 'full') {
+            refundAmountInput.value = maxTotalAmount;
+            refundAmountInput.readOnly = true;
+        } else {
+            refundAmountInput.readOnly = false;
+            if (this.value === 'partial') {
+                refundAmountInput.value = '';
+            }
+        }
+    });
+
+    // Xử lý upload file
+    uploadArea.addEventListener('click', () => attachmentsInput.click());
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('border-orange-400');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-orange-400');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('border-orange-400');
+        const files = Array.from(e.dataTransfer.files);
+        handleFileSelection(files);
+    });
+
+    attachmentsInput.addEventListener('change', function(e) {
+        const files = Array.from(e.target.files);
+        handleFileSelection(files);
+    });
+
+    function handleFileSelection(files) {
+        const validFiles = files.filter(file => {
+            // Kiểm tra loại file
+            if (!file.type.startsWith('image/')) {
+                showToast('Chỉ được chọn file hình ảnh', false);
+                return false;
+            }
+            // Kiểm tra kích thước file (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast(`File ${file.name} quá lớn (tối đa 5MB)`, false);
+                return false;
+            }
+            return true;
+        });
+
+        // Kiểm tra tổng số file (tối đa 5)
+        if (selectedFiles.length + validFiles.length > 5) {
+            showToast('Chỉ được chọn tối đa 5 hình ảnh', false);
+            return;
+        }
+
+        selectedFiles = selectedFiles.concat(validFiles);
+        updateImagePreview();
+    }
+
+    function updateImagePreview() {
+        if (selectedFiles.length === 0) {
+            imagePreview.classList.add('hidden');
+            return;
+        }
+
+        imagePreview.classList.remove('hidden');
+        imagePreview.innerHTML = '';
+
+        selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'relative group';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" class="w-full h-24 object-cover rounded-lg border">
+                    <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity" onclick="removeImage(${index})">
+                        ×
+                    </button>
+                    <div class="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                        ${(file.size / 1024 / 1024).toFixed(1)}MB
+                    </div>
+                `;
+                imagePreview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Xóa hình ảnh
+    window.removeImage = function(index) {
+        selectedFiles.splice(index, 1);
+        updateImagePreview();
+    };
+
+    // Xử lý submit form
+    refundForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validation
+        const refundAmount = parseInt(refundAmountInput.value);
+        const customerMessage = document.getElementById('customerMessage').value.trim();
+        
+        if (refundAmount < 1000) {
+            showToast('Số tiền hoàn tối thiểu là 1,000 VNĐ', false);
+            return;
+        }
+        
+        if (refundAmount > maxTotalAmount) {
+            showToast('Số tiền hoàn không được vượt quá tổng đơn hàng', false);
+            return;
+        }
+        
+        if (customerMessage.length < 10) {
+            showToast('Mô tả chi tiết phải có ít nhất 10 ký tự', false);
+            return;
+        }
+
+        // Hiển thị loading
+        const submitText = submitRefundBtn.querySelector('.submit-text');
+        const loadingText = submitRefundBtn.querySelector('.loading-text');
+        submitText.classList.add('hidden');
+        loadingText.classList.remove('hidden');
+        submitRefundBtn.disabled = true;
+
+        // Tạo FormData
+        const formData = new FormData(refundForm);
+        
+        // Thêm files vào FormData
+        selectedFiles.forEach((file, index) => {
+            formData.append(`attachments[${index}]`, file);
+        });
+
+        // Gửi request
+        fetch('{{ route("customer.refunds.store") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Yêu cầu hoàn tiền đã được gửi thành công', true);
+                closeRefundModal();
+                // Reload trang để cập nhật trạng thái
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra khi gửi yêu cầu', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Có lỗi xảy ra khi gửi yêu cầu hoàn tiền', false);
+        })
+        .finally(() => {
+            // Ẩn loading
+            submitText.classList.remove('hidden');
+            loadingText.classList.add('hidden');
+            submitRefundBtn.disabled = false;
         });
     });
 });
