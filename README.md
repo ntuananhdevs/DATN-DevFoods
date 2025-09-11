@@ -63,12 +63,6 @@ Với sự kết hợp mạnh mẽ giữa Laravel Blade và Tailwind CSS, hệ t
 - 🖼️ Upload ảnh với preview & cropping
 - 📊 Analytics món ăn theo thời gian thực
 
-### 🪑 Quản Lý Bàn & Đặt Chỗ
-- 🎯 Sơ đồ bàn tương tác realtime
-- 📅 Hệ thống đặt bàn thông minh
-- 🔄 Cập nhật trạng thái không reload
-- 📱 Push notification cho nhân viên
-
 ### 🛒 Quản Lý Đơn Hàng
 - ⚡ Xử lý đơn hàng realtime
 - 📨 Email notification tự động
