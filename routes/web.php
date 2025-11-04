@@ -17,6 +17,11 @@ use Illuminate\Http\Request;
 |
 */
 
+Route::get('/up', function () {
+    return response('OK', 200);
+});
+
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_middleware')
