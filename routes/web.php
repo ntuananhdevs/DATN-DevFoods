@@ -27,6 +27,16 @@ Route::get('/up', function () {
     }
 });
 
+// Test route - simple test without Laravel complexity
+Route::get('/test', function () {
+    return response()->json([
+        'status' => 'ok',
+        'app' => config('app.name', 'Laravel'),
+        'env' => config('app.env', 'unknown'),
+        'time' => now()->toDateTimeString()
+    ]);
+});
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_middleware')

@@ -21,6 +21,9 @@ define('LARAVEL_START', microtime(true));
 |
 */
 
+// Load error handler first
+require_once __DIR__.'/error_handler.php';
+
 require __DIR__.'/../vendor/autoload.php';
 
 /*
