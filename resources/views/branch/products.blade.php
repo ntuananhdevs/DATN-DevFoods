@@ -1,4 +1,5 @@
 @extends('layouts.branch.contentLayoutMaster')
+@use('Illuminate\Support\Facades\Storage')
 
 @section('title', 'Danh sách sản phẩm')
 @section('description', 'Quản lý danh sách sản phẩm của bạn')
@@ -62,7 +63,7 @@
                             <td class="py-3 px-4"><input type="checkbox"></td>
                             <td class="py-3 px-4">{{ $product->sku }}</td>
                             <td class="py-3 px-4">
-                                <img src="{{ $product->primaryImage->image_path ?? asset('images/no-image.png') }}"
+                                <img src="{{ $product->primaryImage ? $product->primaryImage->url : asset('images/no-image.png') }}"
                                     alt="{{ $product->name }}" class="w-12 h-12 object-cover rounded">
                             </td>
                             <td class="py-3 px-4">{{ $product->name }}</td>
@@ -78,7 +79,7 @@
                             </td>
                             <td class="p-4">
                                 <div class="flex items-center gap-2">
-                                    <a class="btn btn-outline btn-sm" title="Xem chi tiết">
+                                    <a href="{{ route('branch.products.show', $product->slug) }}" class="btn btn-outline btn-sm" title="Xem chi tiết">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                             stroke-linecap="round" stroke-linejoin="round">

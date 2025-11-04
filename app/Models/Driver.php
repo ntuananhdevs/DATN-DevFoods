@@ -30,6 +30,7 @@ class Driver extends Model implements Authenticatable
         'auto_deposit_earnings',
         'otp',
         'expires_at',
+        'last_active_at',
         'admin_notes',
         'password_reset_at',
         'password_changed_at',
@@ -58,6 +59,7 @@ class Driver extends Model implements Authenticatable
         'locked_until' => 'datetime',
         'unlocked_at' => 'datetime',
         'status_changed_at' => 'datetime',
+        'last_active_at' => 'datetime',
         'is_available' => 'boolean',
         'auto_deposit_earnings' => 'boolean',
         'must_change_password' => 'boolean',
@@ -70,6 +72,23 @@ class Driver extends Model implements Authenticatable
     // {
     //     $this->attributes['password'] = bcrypt($value);
     // }
+    
+    // Accessor để lấy trạng thái chi tiết của tài xế
+    public function getDriverStatusAttribute()
+    {
+        // Kiểm tra xem tài xế có đơn hàng đang giao không
+        // Chỉ xem là đang giao khi tài xế đã lấy hàng (driver_picked_up) hoặc đang giao (in_transit)
+        $hasActiveDelivery = $this->orders()
+            ->whereIn('status', ['driver_picked_up', 'in_transit'])
+            ->exists();
+            
+        if ($hasActiveDelivery) {
+            return 'delivering';
+        }
+        
+        // Nếu không có đơn hàng đang giao, dựa vào trạng thái is_available
+        return $this->is_available ? 'available' : 'offline';
+    }
 
     // Relationships
     public function user()
@@ -125,6 +144,11 @@ class Driver extends Model implements Authenticatable
     public function location()
     {
         return $this->hasOne(\App\Models\DriverLocation::class)->latestOfMany();
+    }
+    
+    public function ratings()
+    {
+        return $this->hasMany(DriverRating::class);
     }
 
     // Scopes
@@ -183,5 +207,23 @@ class Driver extends Model implements Authenticatable
             'locked' => 'Bị khóa',
             default => 'Không xác định'
         };
+    }
+    
+    // Các phương thức getIsOnlineAttribute() và getDriverStatusAttribute() đã được định nghĩa ở trên
+    
+    /**
+     * Cập nhật thống kê đánh giá của tài xế
+     * Tính toán lại điểm đánh giá trung bình dựa trên tất cả các đánh giá
+     */
+    public function updateRatingStatistics()
+    {
+        $ratings = $this->ratings()->pluck('rating');
+        
+        if ($ratings->count() > 0) {
+            $this->rating = $ratings->avg();
+            $this->save();
+        }
+        
+        return $this->rating;
     }
 }

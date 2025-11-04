@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Customer\RefundController;
 use App\Services\ShippingService;
 
 /*
@@ -23,7 +24,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Order API endpoints
-Route::post('/orders', [OrderController::class, 'store']);
+// Route::post('/orders', [OrderController::class, 'store']);
 
 // Shipping fee calculation
 Route::get('/shipping-fee', function () {
@@ -144,4 +145,75 @@ Route::get('/locations/districts/{code}/wards', function ($code) {
     ]);
 });
 
-// API routes will be added here when needed
+// Refund Request API endpoints
+Route::middleware('auth:sanctum')->prefix('refunds')->name('api.refunds.')->group(function () {
+    // Customer refund routes
+    Route::get('/', [RefundController::class, 'index'])->name('index');
+    Route::post('/', [RefundController::class, 'store'])->name('store');
+    Route::get('/{id}', [RefundController::class, 'show'])->name('show');
+    Route::patch('/{id}/cancel', [RefundController::class, 'cancel'])->name('cancel');
+    Route::get('/history/statistics', [RefundController::class, 'statistics'])->name('statistics');
+});
+
+// Driver API endpoints
+
+// Driver location API endpoint
+Route::get('/drivers/locations', function () {
+    $driverLocations = \App\Models\DriverLocation::with(['driver', 'driver.documents'])
+        ->whereHas('driver', function($query) {
+            $query->where('status', 'active');
+        })
+        ->get()
+        ->map(function ($location) {
+            $driver = $location->driver;
+            $documents = $driver->documents->first(); // Lấy thông tin giấy tờ
+            
+            return [
+                'id' => $driver->id,
+                'name' => $driver->full_name,
+                'phone' => $driver->phone_number,
+                'lat' => (float) $location->latitude,
+                'lng' => (float) $location->longitude,
+                'status' => $driver->driver_status, // Sử dụng accessor đã cập nhật
+                'rating' => $driver->rating,
+                'totalOrders' => $driver->orders()->count(),
+                'updated_at' => $location->updated_at ? $location->updated_at->diffForHumans() : null,
+                // Thêm thông tin từ bảng driver_document
+                'documents' => $documents ? [
+                    'license_number' => $documents->license_number,
+                    'license_class' => $documents->license_class,
+                    'license_expiry' => $documents->license_expiry,
+                    'vehicle_type' => $documents->vehicle_type,
+                    'vehicle_color' => $documents->vehicle_color,
+                    'license_plate' => $documents->license_plate,
+                    'vehicle_registration' => $documents->vehicle_registration
+                ] : null
+            ];
+        });
+    
+    return response()->json($driverLocations);
+});
+
+// Driver detail API endpoint
+Route::get('/drivers/{id}', function ($id) {
+    $driver = \App\Models\Driver::with('documents')->findOrFail($id);
+    $documents = $driver->documents->first();
+    
+    return response()->json([
+        'id' => $driver->id,
+        'name' => $driver->full_name,
+        'phone' => $driver->phone_number,
+        'status' => $driver->driver_status,
+        'rating' => $driver->rating,
+        'totalOrders' => $driver->orders()->count(),
+        'documents' => $documents ? [
+            'license_number' => $documents->license_number,
+            'license_class' => $documents->license_class,
+            'license_expiry' => $documents->license_expiry,
+            'vehicle_type' => $documents->vehicle_type,
+            'vehicle_color' => $documents->vehicle_color,
+            'license_plate' => $documents->license_plate,
+            'vehicle_registration' => $documents->vehicle_registration
+        ] : null
+    ]);
+});

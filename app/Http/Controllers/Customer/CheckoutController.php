@@ -14,12 +14,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Cart;
 use App\Models\Branch;
 use App\Models\Address;
+use App\Models\DiscountCode;
 use App\Services\BranchService;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Log;
 use App\Mail\EmailFactory;
 use App\Services\OrderSnapshotService;
 use App\Models\GeneralSetting;
+use Carbon\Carbon;
 
 class CheckoutController extends Controller
 {
@@ -41,13 +43,209 @@ class CheckoutController extends Controller
             session()->forget('buy_now_checkout');
         }
         $buyNow = session('buy_now_checkout');
+        
+        // Lấy danh sách mã giảm giá có thể áp dụng
+        $now = \Carbon\Carbon::now();
+        $currentTime = $now->format('H:i:s');
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $branchId = $currentBranch ? $currentBranch->id : null;
+        
+        // Query mã giảm giá đang hoạt động
+        $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereDoesntHave('branches')
+                          ->orWhereHas('branches', function($q) use ($branchId) {
+                              $q->where('branches.id', $branchId);
+                          });
+                }
+            });
+
+        // Lọc theo loại mã giảm giá (công khai hoặc cá nhân)
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                       ->whereHas('users', function($uq){
+                           $uq->where('user_id', \Illuminate\Support\Facades\Auth::id());
+                       });
+                });
+            }
+        });
+        
+
+        // Lấy danh sách mã giảm giá và lọc theo thời gian hợp lệ
+        $availableDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($q){
+            $q->with(['product', 'category']);
+        }])->get()->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to   = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                } else {
+                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                }
+            }
+            return true;
+        });
+        
+        // Lấy thông tin giỏ hàng để kiểm tra sản phẩm
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+        $cartQuery = Cart::query()->where('status', 'active');
+        if ($userId) {
+            $cartQuery->where('user_id', $userId);
+        } else {
+            $cartQuery->where('session_id', $sessionId);
+        }
+        $cart = $cartQuery->with('items.variant.product')->first();
+        
+        // Lọc mã giảm giá dựa trên sản phẩm trong giỏ hàng
+        if ($cart && $cart->items->count() > 0) {
+            // Lấy danh sách sản phẩm và danh mục trong giỏ hàng
+            $cartProductIds = $cart->items->whereNotNull('variant.product_id')
+                ->pluck('variant.product_id')->unique()->toArray();
+            
+            // Đảm bảo lấy đúng danh mục của sản phẩm
+            $cartCategoryIds = [];
+            foreach ($cart->items as $item) {
+                if ($item->variant && $item->variant->product && $item->variant->product->category_id) {
+                    $cartCategoryIds[] = $item->variant->product->category_id;
+                }
+            }
+            $cartCategoryIds = array_unique($cartCategoryIds);
+            
+            // Lọc mã giảm giá
+            $availableDiscountCodes = $availableDiscountCodes->filter(function($discountCode) use ($cartProductIds, $cartCategoryIds) {
+                // Nếu có từ 2 sản phẩm khác nhau trở lên
+                $distinctProductCount = count($cartProductIds);
+                if ($distinctProductCount >= 2) {
+                    // Nếu có từ 2 sản phẩm khác nhau trở lên, chỉ hiển thị mã giảm giá theo giá trị đơn hàng
+                    return $discountCode->min_requirement_type === 'order_amount' || !$discountCode->min_requirement_type;
+                }
+                // Nếu chỉ có 1 sản phẩm, hiển thị tất cả các loại mã giảm giá áp dụng được (bao gồm mã giảm giá cho danh mục cụ thể)
+                
+                // Nếu mã giảm giá áp dụng cho tất cả sản phẩm
+                if ($discountCode->applicable_items === 'all_items') {
+                    return true;
+                }
+                
+                // Nếu mã giảm giá áp dụng cho sản phẩm cụ thể
+                if ($discountCode->applicable_items === 'specific_products') {
+                    $specificProductIds = $discountCode->products->whereNotNull('product_id')
+                        ->pluck('product_id')->toArray();
+                    
+                    // Kiểm tra xem có sản phẩm nào trong giỏ hàng thuộc danh sách sản phẩm được áp dụng không
+                    foreach ($cartProductIds as $productId) {
+                        if (in_array($productId, $specificProductIds)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                
+                // Nếu mã giảm giá áp dụng cho danh mục cụ thể
+                if ($discountCode->applicable_items === 'specific_categories') {
+                    // Sử dụng specificCategories() để lấy danh mục cụ thể
+                    $specificCategoryIds = $discountCode->specificCategories()->pluck('category_id')->toArray();
+                    
+                    // Debug: Ghi log để kiểm tra
+                    \Illuminate\Support\Facades\Log::info('Cart Category IDs: ' . json_encode($cartCategoryIds));
+                    \Illuminate\Support\Facades\Log::info('Specific Category IDs: ' . json_encode($specificCategoryIds));
+                    
+                    // Kiểm tra xem có sản phẩm nào trong giỏ hàng thuộc danh mục được áp dụng không
+                    foreach ($cartCategoryIds as $categoryId) {
+                        if (in_array($categoryId, $specificCategoryIds)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                
+                return true;
+            });
+        }
         if ($buyNow) {
+            // Lọc mã giảm giá cho trường hợp mua ngay
+            if ($buyNow['type'] === 'product' && !empty($buyNow['variant_id'])) {
+                $variant = \App\Models\ProductVariant::with([
+                    'product.images',
+                    'product.category',
+                    'variantValues.attribute'
+                ])->find($buyNow['variant_id']);
+                
+                if ($variant && $variant->product) {
+                    // Lọc mã giảm giá dựa trên sản phẩm đang mua ngay
+                    $productId = $variant->product->id;
+                    $categoryId = $variant->product->category_id;
+                    
+                    // Debug: Ghi log để kiểm tra
+                    \Illuminate\Support\Facades\Log::info('Buy Now Product ID: ' . $productId);
+                    \Illuminate\Support\Facades\Log::info('Buy Now Category ID: ' . $categoryId);
+                    
+                    $availableDiscountCodes = $availableDiscountCodes->filter(function($discountCode) use ($productId, $categoryId) {
+                        // Nếu mã giảm giá áp dụng cho tất cả sản phẩm
+                        if ($discountCode->applicable_items === 'all_items') {
+                            return true;
+                        }
+                        
+                        // Nếu mã giảm giá áp dụng cho sản phẩm cụ thể
+                        if ($discountCode->applicable_items === 'specific_products') {
+                            $specificProductIds = $discountCode->products->whereNotNull('product_id')
+                                ->pluck('product_id')->toArray();
+                            return in_array($productId, $specificProductIds);
+                        }
+                        
+                        // Nếu mã giảm giá áp dụng cho danh mục cụ thể
+                        if ($discountCode->applicable_items === 'specific_categories' && $categoryId) {
+                            // Sử dụng specificCategories() để lấy danh mục cụ thể
+                            $specificCategoryIds = $discountCode->specificCategories()->pluck('category_id')->toArray();
+                            
+                            // Debug: Ghi log để kiểm tra
+                            \Illuminate\Support\Facades\Log::info('Buy Now Specific Category IDs: ' . json_encode($specificCategoryIds));
+                            \Illuminate\Support\Facades\Log::info('Buy Now Category ID Check: ' . $categoryId . ' in ' . json_encode($specificCategoryIds) . ' = ' . (in_array($categoryId, $specificCategoryIds) ? 'true' : 'false'));
+                            
+                            return in_array($categoryId, $specificCategoryIds);
+                        }
+                        
+                        return true;
+                    });
+                }
+            } elseif ($buyNow['type'] === 'combo' && !empty($buyNow['combo_id'])) {
+                $combo = \App\Models\Combo::find($buyNow['combo_id']);
+                if ($combo) {
+                    // Lọc mã giảm giá dựa trên combo đang mua ngay
+                    $comboId = $combo->id;
+                    
+                    $availableDiscountCodes = $availableDiscountCodes->filter(function($discountCode) use ($comboId) {
+                        // Nếu mã giảm giá áp dụng cho tất cả sản phẩm
+                        if ($discountCode->applicable_items === 'all_items') {
+                            return true;
+                        }
+                        
+                        // Nếu mã giảm giá áp dụng cho combo cụ thể
+                        if ($discountCode->applicable_items === 'specific_combos') {
+                            $specificComboIds = $discountCode->products->whereNotNull('combo_id')
+                                ->pluck('combo_id')->toArray();
+                            return in_array($comboId, $specificComboIds);
+                        }
+                        
+                        return false;
+                    });
+                }
+            }
+            
             $cartItems = collect();
             if ($buyNow['type'] === 'product') {
                 $variant = null;
                 if (!empty($buyNow['variant_id'])) {
                     $variant = \App\Models\ProductVariant::with([
-                        'product',
+                        'product.images',
+                        'product.category',
                         'variantValues.attribute'
                     ])->find($buyNow['variant_id']);
                 }
@@ -74,6 +272,14 @@ class CheckoutController extends Controller
                         $item->toppings = \App\Models\Topping::whereIn('id', $buyNow['toppings'])->get();
                     }
                     $item->combo = null;
+                    
+                    // Set primary image for buy now product
+                    if ($item->variant && $item->variant->product) {
+                        $item->variant->product->primary_image = $item->variant->product->images
+                            ->where('is_primary', true)
+                            ->first() ?? $item->variant->product->images->first();
+                    }
+                    
                     $cartItems->push($item);
                 }
             } elseif ($buyNow['type'] === 'combo') {
@@ -105,7 +311,14 @@ class CheckoutController extends Controller
             }
             $currentBranch = $this->branchService->getCurrentBranch();
             
-            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+            // Get delivery time configuration
+            $deliveryConfig = [
+                'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+                'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+                'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+            ];
+            
+            return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig', 'availableDiscountCodes'));
         }
 
         $cartItems = [];
@@ -160,6 +373,11 @@ class CheckoutController extends Controller
                     $item->variant->product->primary_image = $item->variant->product->images
                         ->where('is_primary', true)
                         ->first() ?? $item->variant->product->images->first();
+                    
+                    // Thêm S3 URL cho primary image
+                    if ($item->variant->product->primary_image && $item->variant->product->primary_image->img) {
+                        $item->variant->product->primary_image->s3_url = \Storage::disk('s3')->url($item->variant->product->primary_image->img);
+                    }
                 }
                 // Xử lý cho combo (nếu cần)
                 elseif ($item->combo) {
@@ -185,8 +403,15 @@ class CheckoutController extends Controller
 
         // Get current selected branch for distance calculation
         $currentBranch = $this->branchService->getCurrentBranch();
+        
+        // Get delivery time configuration
+        $deliveryConfig = [
+            'defaultPreparationTime' => GeneralSetting::getDefaultPreparationTime(),
+            'averageSpeedKmh' => GeneralSetting::getAverageSpeedKmh(),
+            'bufferTime' => GeneralSetting::getBufferTimeMinutes()
+        ];
 
-        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
+        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch', 'deliveryConfig', 'availableDiscountCodes'));
     }
     
     /**
@@ -296,6 +521,7 @@ class CheckoutController extends Controller
             $buyNow = session('buy_now_checkout');
             $cartItems = collect();
             $cart = null;
+            $selectedIds = null; // Khởi tạo biến selectedIds
             
             if ($buyNow) {
                 // Xử lý "buy now" - tạo cart items từ session
@@ -351,9 +577,14 @@ class CheckoutController extends Controller
                     throw new \Exception('Không tìm thấy giỏ hàng.');
                 }
                 
-                $cartItems = CartItem::with(['variant', 'combo', 'toppings.topping'])
-                    ->where('cart_id', $cart->id)
-                    ->get();
+                // Lấy danh sách id sản phẩm được chọn từ request
+                $selectedIds = $request->cart_item_ids;
+                $cartItemsQuery = CartItem::with(['variant', 'combo', 'toppings.topping'])
+                    ->where('cart_id', $cart->id);
+                if ($selectedIds && is_array($selectedIds)) {
+                    $cartItemsQuery->whereIn('id', $selectedIds);
+                }
+                $cartItems = $cartItemsQuery->get();
                 
                 if ($cartItems->isEmpty()) {
                     throw new \Exception('Giỏ hàng của bạn đang trống.');
@@ -419,6 +650,18 @@ class CheckoutController extends Controller
             
             // Apply discount if available
             $discount = session('coupon_discount_amount', 0);
+            
+            // Kiểm tra nếu có mã giảm giá free_shipping
+            $isFreeShipping = false;
+            if (session()->has('coupon_code')) {
+                $couponCode = session('coupon_code');
+                $discountCode = \App\Models\DiscountCode::where('code', $couponCode)->first();
+                if ($discountCode && $discountCode->discount_type === 'free_shipping') {
+                    $isFreeShipping = true;
+                    $discount = $shipping; // Đặt giá trị giảm giá bằng phí vận chuyển
+                    $shipping = 0; // Đặt phí vận chuyển bằng 0
+                }
+            }
             
             // Calculate total
             $total = $subtotal + $shipping - $discount;
@@ -493,6 +736,15 @@ class CheckoutController extends Controller
                 $order->guest_district = $request->district;
                 $order->guest_ward = $request->ward;
                 $order->guest_city = $request->city;
+                $order->guest_latitude = $request->latitude;
+                $order->guest_longitude = $request->longitude;
+                
+                // Log để debug
+                \Illuminate\Support\Facades\Log::info('Setting guest coordinates for order', [
+                    'order_code' => $order->order_code,
+                    'guest_latitude' => $request->latitude,
+                    'guest_longitude' => $request->longitude
+                ]);
             }
             
             $order->branch_id = $branchId;
@@ -505,6 +757,16 @@ class CheckoutController extends Controller
             $order->estimated_delivery_time = $estimatedDeliveryTime;
             $order->delivery_fee = $shipping;
             $order->discount_amount = $discount;
+            
+            // Lưu discount_code_id nếu có mã giảm giá được áp dụng
+            if (session()->has('coupon_code')) {
+                $couponCode = session('coupon_code');
+                $discountCode = \App\Models\DiscountCode::where('code', $couponCode)->first();
+                if ($discountCode) {
+                    $order->discount_code_id = $discountCode->id;
+                }
+            }
+            
             $order->subtotal = $subtotal;
             $order->total_amount = $total;
             $order->notes = $request->notes;
@@ -513,40 +775,9 @@ class CheckoutController extends Controller
             // Cập nhật lại txn_ref của payment để dùng chung order_code cho dễ tra cứu
             $payment->txn_ref = $order->order_code;
             
-            // Xử lý theo phương thức thanh toán
-            if ($request->payment_method === 'vnpay') {
-                $order->status = 'pending_payment'; 
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-
-                // Logic tạo URL VNPAY sẽ ở đây
-                $vnp_Url = $this->createVnpayUrl($order, $request); // createVnpayUrl vẫn dùng order
-
-                DB::commit();
-
-                // Redirect to VNPAY
-                return redirect()->away($vnp_Url);
-
-            } else if ($request->payment_method === 'balance') {
-                // Xử lý thanh toán bằng số dư
-                $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-                
-                // Trừ tiền từ tài khoản user
-                $user = Auth::user();
-                $user->balance -= $total;
-                $user->save();
-                
-            } else { // COD
-                $order->status = 'awaiting_confirmation';
-                $order->save();
-                $payment->save(); // Lưu lại txn_ref mới
-            }
-
-            if ($order->status === 'awaiting_confirmation') {
-                NewOrderReceived::dispatch($order);
-            }
+            // Lưu order trước để có ID cho orderItems
+            $order->save();
+            $payment->save();
             
             // Create order items - Hỗ trợ cả buy now và giỏ hàng thông thường
             foreach ($cartItems as $cartItem) {
@@ -646,26 +877,76 @@ class CheckoutController extends Controller
             // Snapshot dữ liệu đơn hàng để đảm bảo tính bất biến
             OrderSnapshotService::snapshotOrder($order);
             
+            // Xử lý theo phương thức thanh toán
+            if ($request->payment_method === 'vnpay') {
+                $order->status = 'pending_payment'; // Sử dụng trạng thái pending_payment cho đơn hàng chưa thanh toán
+                $order->save();
+
+                // Logic tạo URL VNPAY sẽ ở đây
+                $vnp_Url = $this->createVnpayUrl($order, $request); // createVnpayUrl vẫn dùng order
+
+                DB::commit();
+
+                // Redirect to VNPAY
+                return redirect()->away($vnp_Url);
+
+            } else if ($request->payment_method === 'balance') {
+                // Xử lý thanh toán bằng số dư
+                $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
+                $order->save();
+                
+                // Trừ tiền từ tài khoản user
+                $user = Auth::user();
+                $user->balance -= $total;
+                $user->save();
+                
+                // Deduct stock for products and toppings after successful balance payment
+                $this->deductOrderStock($order);
+                
+            } else { // COD
+                $order->status = 'awaiting_confirmation';
+                $order->save();
+                
+                // Deduct stock for products and toppings for COD orders
+                $this->deductOrderStock($order);
+            }
+
+            if ($order->status === 'awaiting_confirmation') {
+                NewOrderReceived::dispatch($order);
+                
+                // Send confirmation email asynchronously only for confirmed orders
+                dispatch(function() use ($order) {
+                    EmailFactory::sendOrderConfirmation($order);
+                });
+            }
+            
             // Clear cart or buy now session after order is placed
             if ($buyNow) {
                 // Clear buy now session
                 session()->forget('buy_now_checkout');
             } else {
-                // Clear regular cart
-                if ($cart) {
-                    $cart->status = 'completed';
-                    $cart->save();
+                // Chỉ xóa cart items khi đơn hàng đã được xác nhận (không phải pending_payment)
+                if ($order->status === 'awaiting_confirmation' && $cart && isset($selectedIds) && is_array($selectedIds)) {
+                    // Xóa các CartItem đã được thanh toán
+                    \App\Models\CartItem::where('cart_id', $cart->id)
+                        ->whereIn('id', $selectedIds)
+                        ->delete();
+                    // Cập nhật lại cart_count trong session ngay lập tức
+                    $cartCount = $cart->items()->count();
+                    session(['cart_count' => $cartCount]);
+                    // Nếu giỏ hàng không còn sản phẩm nào thì mới chuyển trạng thái completed
+                    if ($cart->items()->count() == 0) {
+                        $cart->status = 'completed';
+                        $cart->save();
+                        session()->forget(['coupon_discount_amount', 'coupon_code', 'discount']);
+                    }
                 }
             }
             
             // Clear discount after order is placed
-            session()->forget('coupon_discount_amount');
-            session()->forget('cart_count');
+            session()->forget(['coupon_discount_amount', 'coupon_code']);
             
             DB::commit();
-            
-            // Send confirmation email
-            EmailFactory::sendOrderConfirmation($order);
             
             // Redirect to success page
             return redirect()->route('checkout.success', ['order_code' => $order->order_code])
@@ -782,20 +1063,67 @@ class CheckoutController extends Controller
                         OrderSnapshotService::snapshotOrder($order);
                     }
                     
+                    // Deduct stock for products and toppings after successful payment
+                    $this->deductOrderStock($order);
+                    
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
 
-                    // Send confirmation email
-                    EmailFactory::sendOrderConfirmation($order);
+                    // Send confirmation email asynchronously
+                    dispatch(function() use ($order) {
+                        EmailFactory::sendOrderConfirmation($order);
+                    });
 
-                    // Clear cart
-                    $cart = Cart::where('user_id', $order->customer_id)
-                                ->orWhere('session_id', session()->getId())
-                                ->where('status', 'active')->first();
+                    // Clear cart items that were ordered
+                    if ($order->customer_id) {
+                        // For authenticated users
+                        $cart = Cart::where('user_id', $order->customer_id)
+                                    ->where('status', 'active')->first();
+                    } else {
+                        // For guest users (though VNPAY typically requires authentication)
+                        $cart = Cart::where('session_id', session()->getId())
+                                    ->where('status', 'active')->first();
+                    }
+                    
                     if ($cart) {
-                        $cart->status = 'completed';
-                        $cart->save();
-                        session()->forget(['coupon_discount_amount', 'cart_count', 'discount']);
+                        // Get cart item IDs from order snapshot data to know which items to remove
+                        $orderItems = $order->orderItems;
+                        $cartItemIdsToDelete = [];
+                        
+                        foreach ($orderItems as $orderItem) {
+                            // Try to find matching cart items based on variant/combo and remove them
+                            if ($orderItem->product_variant_id) {
+                                $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                    ->where('product_variant_id', $orderItem->product_variant_id)
+                                    ->get();
+                                foreach ($cartItems as $cartItem) {
+                                    $cartItemIdsToDelete[] = $cartItem->id;
+                                }
+                            } elseif ($orderItem->combo_id) {
+                                $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                    ->where('combo_id', $orderItem->combo_id)
+                                    ->get();
+                                foreach ($cartItems as $cartItem) {
+                                    $cartItemIdsToDelete[] = $cartItem->id;
+                                }
+                            }
+                        }
+                        
+                        // Remove the cart items
+                        if (!empty($cartItemIdsToDelete)) {
+                            \App\Models\CartItem::whereIn('id', array_unique($cartItemIdsToDelete))->delete();
+                        }
+                        
+                        // Update cart count in session
+                        $cartCount = $cart->items()->count();
+                        session(['cart_count' => $cartCount]);
+                        
+                        // If cart is empty, mark as completed
+                        if ($cart->items()->count() == 0) {
+                            $cart->status = 'completed';
+                            $cart->save();
+                            session()->forget(['coupon_discount_amount', 'coupon_code', 'discount']);
+                        }
                     }
                 }
                 
@@ -855,6 +1183,56 @@ class CheckoutController extends Controller
                             if ($inputData['vnp_ResponseCode'] == '00' && $inputData['vnp_TransactionStatus'] == '00') {
                                 $order->status = 'awaiting_confirmation'; // hoặc 'processing' tùy vào logic của bạn
                                 $order->payment->payment_status = 'completed';
+                                
+                                // Deduct stock for products and toppings after successful payment confirmation
+                                $this->deductOrderStock($order);
+                                
+                                // Clear cart items that were ordered
+                                if ($order->customer_id) {
+                                    // For authenticated users
+                                    $cart = \App\Models\Cart::where('user_id', $order->customer_id)
+                                                ->where('status', 'active')->first();
+                                } else {
+                                    // For guest users (though VNPAY typically requires authentication)
+                                    $cart = \App\Models\Cart::where('session_id', session()->getId())
+                                                ->where('status', 'active')->first();
+                                }
+                                
+                                if ($cart) {
+                                    // Get cart item IDs from order snapshot data to know which items to remove
+                                    $orderItems = $order->orderItems;
+                                    $cartItemIdsToDelete = [];
+                                    
+                                    foreach ($orderItems as $orderItem) {
+                                        // Try to find matching cart items based on variant/combo and remove them
+                                        if ($orderItem->product_variant_id) {
+                                            $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                                ->where('product_variant_id', $orderItem->product_variant_id)
+                                                ->get();
+                                            foreach ($cartItems as $cartItem) {
+                                                $cartItemIdsToDelete[] = $cartItem->id;
+                                            }
+                                        } elseif ($orderItem->combo_id) {
+                                            $cartItems = \App\Models\CartItem::where('cart_id', $cart->id)
+                                                ->where('combo_id', $orderItem->combo_id)
+                                                ->get();
+                                            foreach ($cartItems as $cartItem) {
+                                                $cartItemIdsToDelete[] = $cartItem->id;
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Remove the cart items
+                                    if (!empty($cartItemIdsToDelete)) {
+                                        \App\Models\CartItem::whereIn('id', array_unique($cartItemIdsToDelete))->delete();
+                                    }
+                                    
+                                    // If cart is empty, mark as completed
+                                    if ($cart->items()->count() == 0) {
+                                        $cart->status = 'completed';
+                                        $cart->save();
+                                    }
+                                }
                             } else {
                                 $order->status = 'payment_failed';
                                 $order->payment->payment_status = 'failed';
@@ -1250,16 +1628,12 @@ class CheckoutController extends Controller
                 $originPrice = $item->combo->price;
 
                 $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
-                    // Scope ALL
-                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    // Chỉ áp dụng mã giảm giá cho combo khi mã giảm giá áp dụng cho tất cả sản phẩm
+                    if ($discountCode->applicable_items === 'all_items') {
                         return true;
                     }
-                    // Scope specific products/categories - combo có thể áp dụng discount cho category
-                    $applies = $discountCode->products->contains(function($dp) use ($item){
-                        if ($dp->category_id === $item->combo->category_id) return true;
-                        return false;
-                    });
-                    return $applies;
+                    // Không áp dụng mã giảm giá cho combo trong các trường hợp khác
+                    return false;
                 });
 
                 // Get best discount value
@@ -1285,33 +1659,304 @@ class CheckoutController extends Controller
 
     /**
      * Calculate subtotal for Buy Now items
-     * Apply discount only to products, not combos
+     * Apply discount to products and combos based on discount code rules
      */
     private function calculateBuyNowSubtotal($cartItems)
     {
         $subtotal = 0;
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $branchId = $currentBranch ? $currentBranch->id : null;
         
-        foreach ($cartItems as $item) {
-            if ($item->variant) {
-                // For products: apply discount
-                $currentBranch = $this->branchService->getCurrentBranch();
-                $branchId = $currentBranch ? $currentBranch->id : null;
-                
-                // Create a temporary collection with just this product item
-                $tempItems = collect([$item]);
-                $discountedSubtotal = $this->applyDiscountsToCartItems($tempItems, $branchId);
-                $subtotal += $discountedSubtotal;
-                
-            } elseif ($item->combo) {
-                // For combos: no discount, use original price
-                $comboPrice = $item->combo->price * $item->quantity;
-                $subtotal += $comboPrice;
-                
-                // Set final_price for consistency (used in order creation)
-                $item->final_price = $item->combo->price;
-            }
-        }
+        // Áp dụng giảm giá cho tất cả các mặt hàng (sản phẩm và combo)
+        // Phương thức applyDiscountsToCartItems đã được cập nhật để chỉ áp dụng
+        // mã giảm giá cho combo khi mã giảm giá áp dụng cho tất cả sản phẩm
+        $discountedSubtotal = $this->applyDiscountsToCartItems($cartItems, $branchId);
+        $subtotal = $discountedSubtotal;
         
         return $subtotal;
+    }
+
+    /**
+     * Tiếp tục thanh toán cho đơn hàng chưa thanh toán
+     */
+    public function continuePayment(Order $order)
+    {
+        // Kiểm tra quyền truy cập
+        if (Auth::check()) {
+            if ($order->customer_id !== Auth::id()) {
+                abort(403, 'Bạn không có quyền truy cập đơn hàng này.');
+            }
+        } else {
+            // Nếu là guest, kiểm tra session hoặc redirect về trang đăng nhập
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập để tiếp tục thanh toán.');
+        }
+
+        // Kiểm tra trạng thái đơn hàng
+        if ($order->status !== 'pending_payment') {
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Đơn hàng này không thể tiếp tục thanh toán.');
+        }
+
+        // Kiểm tra payment method
+        if (!$order->payment || $order->payment->payment_method !== 'vnpay') {
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Đơn hàng này không sử dụng phương thức thanh toán VNPay.');
+        }
+
+        try {
+            // Log thông tin debug
+            \Illuminate\Support\Facades\Log::info('Creating VNPay URL for existing order', [
+                'order_id' => $order->id,
+                'order_code' => $order->order_code,
+                'total_amount' => $order->total_amount,
+                'vnpay_config' => [
+                    'tmn_code' => config('vnpay.tmn_code'),
+                    'url' => config('vnpay.url'),
+                    'hash_secret_exists' => !empty(config('vnpay.hash_secret'))
+                ]
+            ]);
+            
+            // Tạo lại URL VNPay cho đơn hàng
+            $vnp_Url = $this->createVnpayUrlForExistingOrder($order);
+            
+            \Illuminate\Support\Facades\Log::info('VNPay URL created successfully', [
+                'order_id' => $order->id,
+                'vnp_url_length' => strlen($vnp_Url)
+            ]);
+            
+            return redirect()->away($vnp_Url);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating VNPay URL for existing order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('customer.orders.show', $order)
+                ->with('error', 'Có lỗi xảy ra khi tạo liên kết thanh toán. Vui lòng thử lại.');
+        }
+    }
+
+    /**
+     * Tạo URL VNPay cho đơn hàng đã tồn tại
+     */
+    private function createVnpayUrlForExistingOrder(Order $order)
+    {
+        $vnp_TmnCode = config('vnpay.tmn_code');
+        $vnp_HashSecret = config('vnpay.hash_secret');
+        $vnp_Url = config('vnpay.url');
+        $vnp_ReturnUrl = route('checkout.vnpay_return');
+        
+        // Validate config values
+        if (empty($vnp_TmnCode)) {
+            throw new \Exception('VNPAY TMN Code is not configured');
+        }
+        if (empty($vnp_HashSecret)) {
+            throw new \Exception('VNPAY Hash Secret is not configured');
+        }
+        if (empty($vnp_Url)) {
+            throw new \Exception('VNPAY URL is not configured');
+        }
+
+        $vnp_TxnRef = $order->order_code; // Sử dụng order_code làm txn_ref
+        $vnp_OrderInfo = 'Thanh toán đơn hàng ' . $order->order_code;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = $order->total_amount * 100; // VNPay yêu cầu số tiền tính bằng đồng
+        $vnp_Locale = 'vn';
+        $vnp_BankCode = '';
+        $vnp_IpAddr = request()->ip() ?: '127.0.0.1'; // Fallback to localhost if IP not available
+        
+        // Validate required fields
+        if (empty($vnp_TxnRef)) {
+            throw new \Exception('Order code is required');
+        }
+        if ($vnp_Amount <= 0) {
+            throw new \Exception('Order amount must be greater than 0');
+        }
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_ReturnUrl,
+            "vnp_TxnRef" => $vnp_TxnRef,
+        );
+
+        if (isset($vnp_BankCode) && $vnp_BankCode != "") {
+            $inputData['vnp_BankCode'] = $vnp_BankCode;
+        }
+
+        ksort($inputData);
+        
+        \Illuminate\Support\Facades\Log::info('VNPay input data', [
+            'input_data' => $inputData
+        ]);
+        
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
+        }
+
+        \Illuminate\Support\Facades\Log::info('VNPay hash data', [
+            'hashdata' => $hashdata,
+            'query' => $query
+        ]);
+
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+            
+            \Illuminate\Support\Facades\Log::info('VNPay secure hash created', [
+                'secure_hash' => $vnpSecureHash,
+                'final_url_length' => strlen($vnp_Url)
+            ]);
+        }
+
+        return $vnp_Url;
+    }
+
+    /**
+     * Deduct stock for product variants after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductProductStock(Order $order)
+    {
+        try {
+            \DB::transaction(function () use ($order) {
+                foreach ($order->orderItems as $orderItem) {
+                    if ($orderItem->product_variant_id) {
+                        // Find the branch stock for this product variant
+                        $branchStock = \App\Models\BranchStock::where('branch_id', $order->branch_id)
+                            ->where('product_variant_id', $orderItem->product_variant_id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($branchStock) {
+                            // Check if there's enough stock
+                            if ($branchStock->stock_quantity >= $orderItem->quantity) {
+                                // Deduct the stock
+                                $branchStock->decrement('stock_quantity', $orderItem->quantity);
+                                
+                                \Illuminate\Support\Facades\Log::info('Product stock deducted', [
+                                    'order_code' => $order->order_code,
+                                    'product_variant_id' => $orderItem->product_variant_id,
+                                    'quantity_deducted' => $orderItem->quantity,
+                                    'remaining_stock' => $branchStock->fresh()->stock_quantity
+                                ]);
+                            } else {
+                                \Illuminate\Support\Facades\Log::warning('Insufficient stock for product', [
+                                    'order_code' => $order->order_code,
+                                    'product_variant_id' => $orderItem->product_variant_id,
+                                    'requested_quantity' => $orderItem->quantity,
+                                    'available_stock' => $branchStock->stock_quantity
+                                ]);
+                            }
+                        } else {
+                            \Illuminate\Support\Facades\Log::warning('Branch stock not found for product', [
+                                'order_code' => $order->order_code,
+                                'branch_id' => $order->branch_id,
+                                'product_variant_id' => $orderItem->product_variant_id
+                            ]);
+                        }
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deducting product stock', [
+                'order_code' => $order->order_code,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Deduct stock for toppings after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductToppingStock(Order $order)
+    {
+        try {
+            \DB::transaction(function () use ($order) {
+                foreach ($order->orderItems as $orderItem) {
+                    // Check if this order item has toppings
+                    if ($orderItem->toppings && $orderItem->toppings->count() > 0) {
+                        foreach ($orderItem->toppings as $orderItemTopping) {
+                            // Find the topping stock for this topping
+                            $toppingStock = \App\Models\ToppingStock::where('branch_id', $order->branch_id)
+                                ->where('topping_id', $orderItemTopping->topping_id)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($toppingStock) {
+                                $totalToppingQuantity = $orderItemTopping->quantity * $orderItem->quantity;
+                                
+                                // Check if there's enough stock
+                                if ($toppingStock->stock_quantity >= $totalToppingQuantity) {
+                                    // Deduct the stock
+                                    $toppingStock->decrement('stock_quantity', $totalToppingQuantity);
+                                    
+                                    \Illuminate\Support\Facades\Log::info('Topping stock deducted', [
+                                        'order_code' => $order->order_code,
+                                        'topping_id' => $orderItemTopping->topping_id,
+                                        'quantity_deducted' => $totalToppingQuantity,
+                                        'remaining_stock' => $toppingStock->fresh()->stock_quantity
+                                    ]);
+                                } else {
+                                    \Illuminate\Support\Facades\Log::warning('Insufficient stock for topping', [
+                                        'order_code' => $order->order_code,
+                                        'topping_id' => $orderItemTopping->topping_id,
+                                        'requested_quantity' => $totalToppingQuantity,
+                                        'available_stock' => $toppingStock->stock_quantity
+                                    ]);
+                                }
+                            } else {
+                                \Illuminate\Support\Facades\Log::warning('Topping stock not found', [
+                                    'order_code' => $order->order_code,
+                                    'branch_id' => $order->branch_id,
+                                    'topping_id' => $orderItemTopping->topping_id
+                                ]);
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deducting topping stock', [
+                'order_code' => $order->order_code,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Deduct stock for both products and toppings after successful order
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function deductOrderStock(Order $order)
+    {
+        $this->deductProductStock($order);
+        $this->deductToppingStock($order);
     }
 }

@@ -156,6 +156,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(DiscountUsageHistory::class);
     }
+    
+    /**
+     * Lấy các đánh giá tài xế mà người dùng đã thực hiện
+     */
+    public function driverRatings()
+    {
+        return $this->hasMany(DriverRating::class);
+    }
 
     /**
      * Check if user is authenticated via Google
@@ -213,5 +221,13 @@ class User extends Authenticatable
     public function branch()
     {
         return $this->hasOne(Branch::class, 'manager_user_id', 'id');
+    }
+
+    /**
+     * Get the wallet transactions for the user
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
     }
 }

@@ -115,4 +115,4 @@ class ShippingService
 
         return (int) ceil($totalMinutes);
     }
-} 
+}

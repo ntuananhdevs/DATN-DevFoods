@@ -30,7 +30,7 @@ class ReviewReplyController extends Controller
         if ($review->product_id) {
             $itemType = 'sản phẩm';
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received']) // Thêm 'item_received'
                 ->whereHas('orderItems.productVariant', function($q) use ($review) {
                     $q->where('product_id', $review->product_id);
                 })
@@ -38,7 +38,7 @@ class ReviewReplyController extends Controller
         } elseif ($review->combo_id) {
             $itemType = 'combo';
             $order = \App\Models\Order::where('customer_id', $user->id)
-                ->where('status', 'delivered')
+                ->whereIn('status', ['delivered', 'item_received']) // Thêm 'item_received'
                 ->whereHas('orderItems', function($q) use ($review) {
                     $q->where('combo_id', $review->combo_id);
                 })
@@ -84,6 +84,7 @@ class ReviewReplyController extends Controller
             return response()->json(['message' => 'Bạn không có quyền xóa phản hồi này!'], 403);
         }
         $reply->delete();
+        // ĐÃ DÙNG OBSERVER để broadcast event realtime, KHÔNG cần gọi event ở đây nữa
         \Log::info('XOÁ REPLY THÀNH CÔNG', ['reply_id' => $id, 'user_id' => $user->id]);
         return response()->json(['message' => 'Xóa phản hồi thành công!']);
     }

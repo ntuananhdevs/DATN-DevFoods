@@ -20,6 +20,7 @@ use App\Models\Category;
 use App\Models\Combo;
 use App\Models\User;
 use App\Models\ProductVariant;
+use App\Models\Order;
 use App\Events\DiscountUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,8 +37,40 @@ use Illuminate\Support\Facades\Log;
 
 class DiscountCodeController extends Controller
 {
+    /**
+     * Cập nhật trạng thái của mã giảm giá dựa trên trạng thái của chương trình giảm giá
+     */
+    private function updateDiscountCodesStatusBasedOnPromotions()
+    {
+        // Lấy tất cả mã giảm giá có liên kết với chương trình giảm giá
+        $discountCodesWithPrograms = DiscountCode::whereHas('promotionPrograms', function($query) {
+            // Lọc các chương trình giảm giá không hoạt động hoặc đã hết hạn
+            $query->where(function($q) {
+                $q->where('is_active', false)
+                  ->orWhere('end_date', '<', now())
+                  ->orWhere('start_date', '>', now());
+            });
+        })->get();
+        
+        // Cập nhật trạng thái của các mã giảm giá
+        foreach ($discountCodesWithPrograms as $discountCode) {
+            if ($discountCode->is_active && !$discountCode->hasActivePromotionProgram()) {
+                // Nếu mã giảm giá đang hoạt động nhưng không có chương trình giảm giá nào hoạt động
+                // thì cập nhật trạng thái của mã giảm giá thành không hoạt động
+                $discountCode->is_active = false;
+                $discountCode->save();
+                
+                // Broadcast sự kiện cập nhật mã giảm giá
+                event(new DiscountUpdated($discountCode));
+            }
+        }
+    }
+    
     public function index(Request $request)
     {
+        // Cập nhật trạng thái của các mã giảm giá dựa trên trạng thái của chương trình giảm giá
+        $this->updateDiscountCodesStatusBasedOnPromotions();
+        
         $request->validate([
             'search' => 'nullable|string|max:255',
             'status' => 'nullable|string',
@@ -53,7 +86,7 @@ class DiscountCodeController extends Controller
         $discountType = $request->input('discount_type');
         
         $now = now();
-        $query = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo'])
+        $query = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo', 'promotionPrograms'])
                 ->orderBy('display_order', 'asc')
                 ->orderBy('start_date', 'desc');
 
@@ -890,7 +923,8 @@ class DiscountCodeController extends Controller
             'users.user'
         ])->findOrFail($id);
         
-        $usageCount = DiscountUsageHistory::where('discount_code_id', $id)->count();
+        // Đếm số lần sử dụng từ bảng order thay vì DiscountUsageHistory
+        $usageCount = Order::where('discount_code_id', $id)->count();
         $discountCode->current_usage_count = $usageCount;
         
         // Get available branches for this discount code
@@ -930,7 +964,30 @@ class DiscountCodeController extends Controller
     public function toggleStatus(Request $request, $id)
     {
         try {
-            $discountCode = DiscountCode::findOrFail($id);
+            $discountCode = DiscountCode::with('promotionPrograms')->findOrFail($id);
+            
+            // Nếu đang cố gắng kích hoạt mã giảm giá
+            if (!$discountCode->is_active) {
+                // Kiểm tra xem mã giảm giá có thuộc chương trình giảm giá không
+                if ($discountCode->promotionPrograms()->exists()) {
+                    // Kiểm tra xem có chương trình giảm giá nào đang hoạt động không
+                    if (!$discountCode->hasActivePromotionProgram()) {
+                        if ($request->ajax()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Không thể kích hoạt mã giảm giá '{$discountCode->code}' vì không có chương trình giảm giá nào đang hoạt động."
+                            ], 400);
+                        }
+                        
+                        return redirect()->route('admin.discount_codes.index')->with('toast', [
+                            'type' => 'error',
+                            'title' => 'Lỗi!',
+                            'message' => "Không thể kích hoạt mã giảm giá '{$discountCode->code}' vì không có chương trình giảm giá nào đang hoạt động."
+                        ]);
+                    }
+                }
+            }
+            
             $discountCode->update(['is_active' => !$discountCode->is_active]);
             
             // Broadcast event for real-time updates
@@ -975,6 +1032,56 @@ class DiscountCodeController extends Controller
             $count = count($request->ids);
             $action = $isActive ? 'kích hoạt' : 'vô hiệu hóa';
             
+            // Nếu đang cố gắng kích hoạt mã giảm giá, kiểm tra trạng thái của chương trình giảm giá
+            if ($isActive) {
+                // Lấy danh sách mã giảm giá cần kích hoạt
+                $discountCodesToActivate = DiscountCode::with('promotionPrograms')
+                    ->whereIn('id', $request->ids)
+                    ->get();
+                
+                // Lọc ra các mã giảm giá không thể kích hoạt do không có chương trình giảm giá hoạt động
+                $invalidCodes = [];
+                $validIds = [];
+                
+                foreach ($discountCodesToActivate as $discountCode) {
+                    if ($discountCode->promotionPrograms()->exists() && !$discountCode->hasActivePromotionProgram()) {
+                        $invalidCodes[] = $discountCode->code;
+                    } else {
+                        $validIds[] = $discountCode->id;
+                    }
+                }
+                
+                // Nếu có mã giảm giá không thể kích hoạt
+                if (count($invalidCodes) > 0) {
+                    $invalidCodesStr = implode(', ', $invalidCodes);
+                    $message = "Không thể kích hoạt các mã giảm giá sau vì không có chương trình giảm giá nào đang hoạt động: {$invalidCodesStr}";
+                    
+                    // Nếu tất cả đều không hợp lệ, trả về lỗi
+                    if (count($validIds) === 0) {
+                        if ($request->ajax()) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => $message
+                            ], 400);
+                        }
+                        
+                        return redirect()->route('admin.discount_codes.index')->with('toast', [
+                            'type' => 'error',
+                            'title' => 'Lỗi!',
+                            'message' => $message
+                        ]);
+                    }
+                    
+                    // Nếu chỉ một số không hợp lệ, tiếp tục với các mã hợp lệ và hiển thị cảnh báo
+                    $request->ids = $validIds;
+                    $count = count($validIds);
+                    
+                    // Lưu thông báo cảnh báo vào session
+                    session()->flash('warning', $message);
+                }
+            }
+            
+            // Cập nhật trạng thái cho các mã giảm giá hợp lệ
             DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $isActive]);
             
             // Broadcast events for each updated discount code

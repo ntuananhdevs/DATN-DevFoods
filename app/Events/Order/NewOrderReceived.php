@@ -13,6 +13,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Notifications\NewOrderNotification;
 use App\Notifications\AdminNewOrderNotification;
+use App\Notifications\CustomerOrderSuccessNotification;
 use App\Models\Branch;
 use App\Models\User;
 
@@ -31,19 +32,27 @@ class NewOrderReceived implements ShouldBroadcastNow
         $this->order = $order;
         $this->branchId = $order->branch_id;
         
-        // Gửi notification cho branch
-        $branch = Branch::find($this->branchId);
-        if ($branch) {
-            $branch->notify(new NewOrderNotification($order));
+        // Chỉ gửi notification cho branch và admin khi đơn hàng không ở trạng thái pending_payment
+        if ($order->status !== 'pending_payment') {
+            // Gửi notification cho branch
+            $branch = Branch::find($this->branchId);
+            if ($branch) {
+                $branch->notify(new NewOrderNotification($order));
+            }
+            
+            // Gửi notification cho tất cả admin
+            $admins = User::whereHas('roles', function($query) {
+                $query->where('name', 'admin');
+            })->get();
+            
+            foreach ($admins as $admin) {
+                $admin->notify(new AdminNewOrderNotification($order));
+            }
         }
         
-        // Gửi notification cho tất cả admin
-        $admins = User::whereHas('roles', function($query) {
-            $query->where('name', 'admin');
-        })->get();
-        
-        foreach ($admins as $admin) {
-            $admin->notify(new AdminNewOrderNotification($order));
+        // Gửi notification cho khách hàng
+        if ($order->customer) {
+            $order->customer->notify(new CustomerOrderSuccessNotification($order));
         }
         
         Log::info('NewOrderReceived event constructed', [
@@ -118,7 +127,8 @@ class NewOrderReceived implements ShouldBroadcastNow
                 'customer_name' => $this->order->customerName,
                 'customer_phone' => $this->order->customerPhone,
                 'total_amount' => $this->order->total_amount,
-                'order_date' => $this->order->order_date,
+                'order_date' => $this->order->order_date?->toISOString(),
+                'created_at' => $this->order->created_at?->toISOString(),
                 'estimated_delivery_time' => $this->order->estimated_delivery_time,
                 'points_earned' => $this->order->points_earned,
                 'notes' => $this->order->notes,
@@ -176,4 +186,4 @@ class NewOrderReceived implements ShouldBroadcastNow
 
         return $earthRadius * $c;
     }
-} 
+}

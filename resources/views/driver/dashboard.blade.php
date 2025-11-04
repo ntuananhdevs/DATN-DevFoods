@@ -78,12 +78,13 @@
                     {{ number_format($totalEarnedToday, 0, ',', '.') }} đ</div>
                 <div class="text-sm text-gray-500">{{ $deliveredOrdersCountToday }} đơn đã giao</div>
                 <div class="text-xs text-gray-400 mt-1">
-                    Trung bình: {{ $deliveredOrdersCountToday > 0 ? number_format($totalEarnedToday / $deliveredOrdersCountToday, 0, ',', '.') : '0' }} đ/đơn
+                    Trung bình:
+                    {{ $deliveredOrdersCountToday > 0 ? number_format($totalEarnedToday / $deliveredOrdersCountToday, 0, ',', '.') : '0' }}
+                    đ/đơn
                 </div>
             </div>
         </div>
 
-        {{-- Card Đơn hàng đang xử lý --}}
         {{-- Card Đơn hàng đang xử lý --}}
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
@@ -92,24 +93,40 @@
             </div>
             <div class="space-y-3">
                 @forelse($processingOrders as $order)
-                    <a href="{{ route('driver.orders.show', $order->id) }}"
-                        class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                            style="background-color: {{ $order->status_color }};">
-                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                            style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                            <i class="{{ $order->status_icon }}"></i>
                         </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
-                            <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ $order->displayFullDeliveryAddress }}</div>
+                            {{-- Hiển thị thông tin ghép đơn nếu có --}}
+                            @if(isset($batchableOrdersInfo[$order->id]))
+                                <div class="text-xs text-orange-600 mt-1">
+                                    <i class="fas fa-layer-group"></i> Có {{ $batchableOrdersInfo[$order->id]['batchable_count'] }} đơn có thể ghép
+                                </div>
+                            @endif
                         </div>
-                        {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0"
-                            style="background-color: {{ $order->status_color }}; color: white;"> {{-- Màu chữ trắng để tương phản với màu nền trạng thái --}}
-                            {{ $order->status_text }}
-                        </span>
-                    </a>
+                        <div class="flex flex-col space-y-2">
+                            {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
+                            <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80"
+                                style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                                {{ $order->status_text }}
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="{{ route('driver.orders.show', $order->id) }}"
+                                    class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700 flex-shrink-0">Xem đơn</a>
+                                {{-- Hiển thị nút "Xem đơn ghép" nếu có đơn có thể ghép --}}
+                                @if(isset($batchableOrdersInfo[$order->id]))
+                                    <a href="{{ route('driver.orders.batchable', ['current_order_id' => $order->id]) }}"
+                                        class="bg-orange-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-orange-700 flex-shrink-0">Xem đơn ghép</a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 @empty
                     <p class="text-center text-sm text-gray-500 py-3">Không có đơn hàng nào đang xử lý.</p>
                 @endforelse
@@ -126,14 +143,14 @@
                     {{-- Thêm data-order-id để dễ dàng quản lý bằng JS --}}
                     <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" data-order-id="{{ $order->id }}">
                         {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                            style="background-color: {{ $order->status_color }};">
-                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        <div id="order-status-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+                            style="background-color: {{ $order->status_color ?? '#f0f0f0' }}; color: {{ $order->status_text_color ?? '#ffffff' }};">
+                            <i class="{{ $order->status_icon }}"></i>
                         </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
-                            <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
+                            <div class="text-sm text-gray-500 truncate">{{ $order->displayFullDeliveryAddress }}</div>
                         </div>
                         <a href="{{ route('driver.orders.show', $order->id) }}"
                             class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem
@@ -172,19 +189,18 @@
         }
     </style>
 
-    <script src="https://js.pusher.com/8.0/pusher.min.js"></script> {{-- Đảm bảo đã include Pusher JS --}}
+    <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             // --- Logic cho bật/tắt trạng thái ---
             const statusToggle = document.getElementById('statusToggle');
-            const driverStatusTextElements = document.querySelectorAll(
-                '.driver-status-text'); // Lấy tất cả các element có class này
+            const driverStatusTextElements = document.querySelectorAll('.driver-status-text');
 
             if (statusToggle && driverStatusTextElements.length > 0) {
                 statusToggle.addEventListener('change', function() {
-                    const isChecked = this.checked; // Lấy trạng thái hiện tại của toggle
+                    const isChecked = this.checked;
                     fetch("{{ route('driver.status.setAvailability') }}", {
                             method: 'POST',
                             headers: {
@@ -200,148 +216,141 @@
                         .then(data => {
                             if (data.success) {
                                 driverStatusTextElements.forEach(el => {
-                                    el.textContent = data.is_available ? 'Bạn đang Online' :
-                                        'Bạn đang Offline';
+                                    el.textContent = data.is_available ? 'Bạn đang Online' : 'Bạn đang Offline';
                                 });
                                 showToast(data.message, 'success');
                             } else {
-                                // Nếu cập nhật thất bại, khôi phục trạng thái của toggle
                                 statusToggle.checked = !isChecked;
                                 showToast(data.message, 'error');
                             }
                         })
                         .catch(error => {
                             console.error('Status Toggle Error:', error);
-                            // Khôi phục trạng thái toggle nếu có lỗi mạng/server
                             statusToggle.checked = !isChecked;
                             showToast('Có lỗi xảy ra khi cập nhật trạng thái.', 'error');
                         });
                 });
             }
 
-            // --- Logic cho Pusher ---
+            // --- Logic cho Pusher Real-time ---
             const availableOrdersList = document.getElementById('available-orders-list');
-
-            // Khởi tạo Pusher nếu chưa có Echo hoặc Pusher
-            if (typeof Pusher === 'undefined' && typeof window.Echo === 'undefined') {
-                console.error('Pusher hoặc Laravel Echo chưa được tải. Tính năng real-time sẽ không hoạt động.');
+            const driverId = {{ auth('driver')->id() }};
+            
+            // Kiểm tra Pusher có sẵn không
+            if (typeof Pusher === 'undefined') {
+                console.error('❌ Pusher chưa được tải. Tính năng real-time sẽ không hoạt động.');
                 return;
             }
 
-            // Kiểm tra và cấu hình Pusher nếu Echo chưa tự động cấu hình
-            if (!window.Echo) {
-                // Đây là fallback nếu Laravel Echo không được setup chuẩn
-                // Trong môi trường Laravel, Laravel Echo thường đã cấu hình Pusher sẵn
-                const pusherAppKey = "{{ config('broadcasting.connections.pusher.key') }}";
-                const pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+            // Lấy cấu hình Pusher
+            const pusherAppKey = "{{ config('broadcasting.connections.pusher.key') }}";
+            const pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
 
-                if (pusherAppKey && pusherCluster) {
-                    window.Pusher = new Pusher(pusherAppKey, {
-                        cluster: pusherCluster,
-                        encrypted: true,
-                        // Auth cho kênh private, nếu bạn dùng auth riêng của Pusher
-                        // (thường Laravel Echo đã xử lý phần này qua /broadcasting/auth)
-                        authorizer: function(channel, options) {
-                            return {
-                                authorize: function(socketId, callback) {
-                                    fetch('/driver/broadcasting/auth', { // Đảm bảo route này có middleware 'auth:driver'
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': csrfToken
-                                            },
-                                            body: JSON.stringify({
-                                                socket_id: socketId,
-                                                channel_name: channel.name
-                                            })
-                                        })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            callback(null, data);
-                                        })
-                                        .catch(error => {
-                                            console.error('Pusher authorization error:', error);
-                                            callback(new Error('Pusher authorization failed'),
-                                                null);
-                                        });
-                                }
-                            };
-                        }
-                    });
-                    // Gán kênh cho window.Echo nếu nó tồn tại để tương thích
-                    window.Echo = new(class {
-                        private(channelName) {
-                            return window.Pusher.subscribe(`private-${channelName}`);
-                        }
-                    })();
-                } else {
-                    console.warn('Pusher credentials not set. Real-time features might be limited.');
-                    return; // Thoát nếu không có thông tin Pusher
+            if (!pusherAppKey || !pusherCluster) {
+                console.error('❌ Pusher credentials không được cấu hình.');
+                return;
+            }
+
+            console.log('🔧 Khởi tạo Pusher cho Driver ID:', driverId);
+            
+            // Khởi tạo Pusher
+            const pusher = new Pusher(pusherAppKey, {
+                cluster: pusherCluster,
+                encrypted: true,
+                authEndpoint: '/driver/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    }
                 }
-            }
+            });
 
-            // Đảm bảo bạn có biến driverId chứa ID tài xế đang đăng nhập
-            window.driverId = {{ auth('driver')->id() }};
-            if (typeof driverId === 'undefined') {
-                console.error('driverId chưa được khai báo!');
-            } else if (availableOrdersList) {
-                window.Echo.private(`driver.${driverId}`)
-                    .listen('.DriverAssigned', (eventData) => {
-                        console.log('Bạn vừa được gán đơn hàng:', eventData.order);
+            // Debug connection
+            pusher.connection.bind('connected', function() {
+                console.log('✅ Pusher kết nối thành công');
+            });
 
-                        const order = eventData.order;
+            pusher.connection.bind('error', function(err) {
+                console.error('❌ Lỗi kết nối Pusher:', err);
+            });
 
-                        // Xóa thông báo "Không có đơn hàng"
-                        const noOrderMsg = availableOrdersList.querySelector('.no-order-message');
-                        if (noOrderMsg) {
-                            noOrderMsg.remove();
-                        }
+            // Subscribe to driver's private channel
+            const channelName = `private-driver.${driverId}`;
+            console.log('📡 Đăng ký kênh:', channelName);
+            
+            const channel = pusher.subscribe(channelName);
 
-                        // Tạo link tới trang xem chi tiết đơn hàng
-                        const orderShowUrl = `/driver/orders/${order.id}/show`;
+            channel.bind('pusher:subscription_succeeded', function() {
+                console.log('✅ Đăng ký kênh thành công:', channelName);
+            });
 
-                        const newOrderHtml = `
-                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-pulse-fade-in" data-order-id="${order.id}">
-                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-box text-white text-lg"></i>
+            channel.bind('pusher:subscription_error', function(error) {
+                console.error('❌ Lỗi đăng ký kênh:', channelName, error);
+            });
+
+            // Listen for DriverAssigned event
+            channel.bind('DriverAssigned', function(eventData) {
+                console.log('🎯 Nhận event DriverAssigned:', eventData);
+                
+                if (!eventData.order) {
+                    console.error('❌ Dữ liệu đơn hàng không hợp lệ:', eventData);
+                    return;
+                }
+
+                const order = eventData.order;
+                
+                if (!availableOrdersList) {
+                    console.warn('⚠️ Không tìm thấy danh sách đơn hàng');
+                    showToast('Bạn vừa được gán một đơn hàng mới!', 'info');
+                    return;
+                }
+
+                // Xóa thông báo "Không có đơn hàng"
+                const noOrderMsg = availableOrdersList.querySelector('.no-order-message');
+                if (noOrderMsg) {
+                    noOrderMsg.remove();
+                }
+
+                // Tạo HTML cho đơn hàng mới
+                const orderShowUrl = `/driver/orders/${order.id}/show`;
+                const newOrderHtml = `
+                    <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-pulse-fade-in" data-order-id="${order.id}">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl" style="background-color: #fcd5ce; color: #7c2d12;">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-gray-800">Đơn #${order.order_code}</div>
+                            <div class="text-sm text-gray-500 truncate">${order.delivery_address || 'Địa chỉ giao hàng'}</div>
+                        </div>
+                        <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem đơn</a>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium text-gray-800">Đơn #${order.order_code}</div>
-                        <div class="text-sm text-gray-500 truncate">${order.delivery_address}</div>
-                    </div>
-                    <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem đơn</a>
-                </div>
-            `;
+                `;
 
-                        availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
-                        showToast('Bạn vừa được gán một đơn hàng mới!', 'info');
-                    })
-                    .listen('.order-cancelled-event', (eventData) => {
-                        console.log('Đơn hàng đã bị hủy:', eventData.order_id);
+                availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
+                showToast('🎉 Bạn vừa được gán một đơn hàng mới!', 'success');
+            });
 
-                        const cancelledOrderId = eventData.order_id;
-                        const orderElementToRemove = availableOrdersList.querySelector(
-                            `[data-order-id="${cancelledOrderId}"]`
-                        );
+            // Listen for order cancelled event
+            channel.bind('order-cancelled-event', function(eventData) {
+                console.log('🚫 Đơn hàng bị hủy:', eventData);
+                
+                const cancelledOrderId = eventData.order_id;
+                if (!availableOrdersList) return;
+                
+                const orderElementToRemove = availableOrdersList.querySelector(`[data-order-id="${cancelledOrderId}"]`);
 
-                        if (orderElementToRemove) {
-                            orderElementToRemove.remove();
-                            showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
+                if (orderElementToRemove) {
+                    orderElementToRemove.remove();
+                    showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
 
-                            // Nếu không còn đơn hàng nào, hiển thị lại thông báo
-                            if (availableOrdersList.children.length === 0) {
-                                availableOrdersList.innerHTML = `
-                        <p class="text-center text-sm text-gray-500 py-3 no-order-message">Hiện không có đơn hàng mới.</p>
-                    `;
-                            }
-                        } else {
-                            // Nếu đơn hàng không nằm trong danh sách (ví dụ tài xế đang xem chi tiết)
-                            showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
-                        }
-                    });
-            } else {
-                console.warn('Phần tử #available-orders-list không tồn tại, không thể lắng nghe đơn hàng.');
-            }
+                    // Nếu không còn đơn hàng nào, hiển thị lại thông báo
+                    if (availableOrdersList.children.length === 0) {
+                        availableOrdersList.innerHTML = '<p class="text-center text-sm text-gray-500 py-3 no-order-message">Hiện không có đơn hàng mới.</p>';
+                    }
+                } else {
+                    showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
+                }
+            });
 
 
             // --- Helper for Toast Notifications ---

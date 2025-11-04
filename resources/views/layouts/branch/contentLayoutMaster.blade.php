@@ -68,12 +68,22 @@
 
     <!-- Pusher for realtime -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    
+
 
     <!-- Order notifications for all branch pages -->
     <script>
         // Pusher configuration
-        window.PUSHER_KEY = '{{ config('broadcasting.connections.pusher.key') }}';
-        window.PUSHER_CLUSTER = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+        window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+        window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+        window.branchId = {{ auth()->check() && auth()->user()->branch_id ? auth()->user()->branch_id : 1 }};
+        
+        // Debug log
+        console.log('Pusher Config:', {
+            key: window.pusherKey,
+            cluster: window.pusherCluster,
+            branchId: window.branchId
+        });
     </script>
     <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script>
 

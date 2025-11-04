@@ -28,6 +28,8 @@ class ChatMessage extends Model
         'sent_at',
         'attachment',
         'attachment_type',
+        'is_system_message',
+        'related_order_id',
     ];
 
     /**
@@ -74,6 +76,22 @@ class ChatMessage extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the related order if this message is about an order.
+     */
+    public function relatedOrder(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'related_order_id');
+    }
+
+    /**
+     * Get refund requests related to this message's order.
+     */
+    public function refundRequests()
+    {
+        return RefundRequest::where('order_id', $this->related_order_id)->get();
     }
 
     /**

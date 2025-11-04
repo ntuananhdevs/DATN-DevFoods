@@ -2,6 +2,62 @@
 
 @section('title', 'Chi tiết đơn hàng #' . ($order->order_code ?? $order->id))
 
+@push('styles')
+<style>
+    /* CSS để giảm thiểu hiệu ứng nháy màn hình */
+    .status-bar, .driver-info-container, .action-buttons-container {
+        transition: opacity 0.3s ease-in-out;
+        will-change: opacity;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+    
+    /* Hiệu ứng mượt mà cho các phần tử được cập nhật */
+    .smooth-update {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+    
+    .smooth-update.updating {
+        opacity: 0.7;
+        transform: translateY(-2px);
+    }
+    
+    /* Tối ưu hóa hiệu suất rendering */
+    .gpu-accelerated {
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        will-change: transform, opacity;
+    }
+    
+    /* Ngăn chặn layout shift */
+    .order-content {
+        min-height: 100vh;
+    }
+    
+    /* Hiệu ứng loading mượt mà */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        z-index: 10;
+    }
+    
+    .loading-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+</style>
+@endpush
+
 @section('content')
     @php
         // Logic xử lý thanh trạng thái
@@ -15,7 +71,11 @@
         $statusMapToStep = [
             'awaiting_confirmation' => 'confirmed',
             'confirmed' => 'confirmed',
+            'waiting_for_driver' => 'driver_picked_up',
+            'finding_driver' => 'driver_picked_up',
             'awaiting_driver' => 'driver_picked_up',
+            'driver_confirmed' => 'driver_picked_up',
+            'waiting_driver_pick_up' => 'driver_picked_up',
             'driver_picked_up' => 'driver_picked_up',
             'in_transit' => 'in_transit',
             'delivered' => 'item_received',
@@ -37,9 +97,9 @@
         <div class="container-ft mx-auto px-4 relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center">
-                    <a href="{{ route('customer.orders.index') }}" class="text-white hover:text-gray-200 mr-4">
+                    <button onclick="history.back()" class="text-white hover:text-gray-200 mr-4">
                         <i class="fas fa-arrow-left text-lg"></i>
-                    </a>
+                    </button>
                     <div>
                         <h1 class="text-2xl font-bold text-white">Chi tiết đơn hàng #{{ $order->order_code ?? $order->id }}
                         </h1>
@@ -138,6 +198,8 @@
 
                                     @if (in_array($order->status, [
                                             'confirmed',
+                                            'waiting_for_driver',
+                                            'finding_driver',
                                             'awaiting_driver',
                                             'driver_confirmed',
                                             'waiting_driver_pick_up',
@@ -295,6 +357,74 @@
                                                             </span>
                                                         </div>
                                                     </div>
+                                                    
+                                                    <!-- Đánh giá của bạn về tài xế -->
+                                                    @php
+                                                        $userRating = \App\Models\DriverRating::where('order_id', $order->id)
+                                                            ->where('user_id', Auth::id())
+                                                            ->first();
+                                                    @endphp
+                                                    
+                                                    @if ($userRating)
+                                                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                                        <h4 class="text-sm font-medium text-gray-800 mb-2">Đánh giá của bạn về tài xế</h4>
+                                                        <div class="flex items-center mb-2">
+                                                            <div class="flex">
+                                                                @for ($i = 1; $i <= 5; $i++)
+                                                                    @if ($i <= $userRating->rating)
+                                                                        <svg class="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                                                        </svg>
+                                                                    @else
+                                                                        <svg class="w-4 h-4 text-gray-300" viewBox="0 0 20 20">
+                                                                            <path fill="currentColor" d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                                                        </svg>
+                                                                    @endif
+                                                                @endfor
+                                                            </div>
+                                                            <span class="ml-2 text-sm text-gray-600">
+                                                                @if ($userRating->rating == 1)
+                                                                    Rất không hài lòng
+                                                                @elseif ($userRating->rating == 2)
+                                                                    Không hài lòng
+                                                                @elseif ($userRating->rating == 3)
+                                                                    Bình thường
+                                                                @elseif ($userRating->rating == 4)
+                                                                    Hài lòng
+                                                                @elseif ($userRating->rating == 5)
+                                                                    Rất hài lòng
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                        @if ($userRating->comment)
+                                                            <p class="text-sm text-gray-700 italic">"{{ $userRating->comment }}"</p>
+                                                        @endif
+                                                        <div class="text-xs text-gray-500 mt-1">Đánh giá vào {{ $userRating->rated_at->format('d/m/Y H:i') }}</div>
+                                                    </div>
+                                                    @endif
+                                                    
+                                                    <!-- Nút đánh giá tài xế (chỉ hiển thị khi đơn hàng đã nhận và chưa đánh giá) -->
+                                                    @if ($order->status == 'item_received' && !$userRating)
+                                                        <div class="mt-3">
+                                                            <button type="button" id="rate-driver-btn"
+                                                                class="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                                Đánh giá tài xế
+                                                            </button>
+                                                        </div>
+                                                    @elseif ($order->status == 'item_received' && $userRating)
+                                                        <div class="mt-3">
+                                                            <button type="button" id="rate-driver-btn"
+                                                                class="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                                Chỉnh sửa đánh giá
+                                                            </button>
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             @else
                                                 <!-- Trường hợp chưa có tài xế -->
@@ -397,12 +527,12 @@
                                     <div class="flex items-start gap-3 flex-1">
                                         {{-- Hình ảnh sản phẩm --}}
                                         <div class="w-11 h-11 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->images->count() > 0)
-                                                <img src="{{ asset('images/products/' . $item->productVariant->product->images->first()->image_url) }}"
+                                            @if ($item->productVariant && $item->productVariant->product && $item->productVariant->product->primaryImage)
+                                                <img src="{{ $item->productVariant->product->primaryImage->url }}"
                                                     alt="{{ $item->product_name_snapshot ?? $item->productVariant->product->name }}"
                                                     class="w-full h-full object-cover">
-                                            @elseif ($item->combo && $item->combo->image)
-                                                <img src="{{ asset('images/combos/' . $item->combo->image) }}"
+                                            @elseif ($item->combo && $item->combo->url)
+                                                <img src="{{ $item->combo->url }}"
                                                     alt="{{ $item->combo_name_snapshot ?? $item->combo->name }}"
                                                     class="w-full h-full object-cover">
                                             @else
@@ -459,6 +589,23 @@
                                                 (Đã bao gồm topping)
                                             </p>
                                         @endif
+                                        
+                                        {{-- Nút đánh giá cho từng sản phẩm --}}
+                                        @if ($order->status === 'item_received')
+                                            <div class="mt-2">
+                                                @if ($item->productVariant && $item->productVariant->product)
+                                                    <a href="{{ route('products.show', $item->productVariant->product->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @elseif ($item->combo)
+                                                    <a href="{{ route('combos.show', $item->combo->slug) }}#review-reply-form-container"
+                                                        class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium text-xs">
+                                                        <i class="fas fa-star mr-1"></i>Đánh giá
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -484,6 +631,8 @@
                                         </div>
                                     </div>
                                 @endif
+
+
                             </div>
                         @endforeach
                     </div>
@@ -606,11 +755,6 @@
                                     <i class="fas fa-check mr-2"></i>Xác nhận đã nhận hàng
                                 </button>
                             </form>
-                        @elseif($order->status == 'item_received')
-                            <a href="#"
-                                class="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium inline-block">
-                                <i class="fas fa-star mr-2"></i>Đánh giá đơn hàng
-                            </a>
                         @endif
 
                         @if (in_array($order->status, ['item_received', 'cancelled']))
@@ -636,22 +780,58 @@
     <div id="action-confirmation-modal"
         class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="relative mx-auto p-5 border w-96 bg-white rounded-lg shadow-xl">
-            <div class="mt-3 text-center">
-                <div id="modal-icon-container"
-                    class="mx-auto flex items-center justify-center h-12 w-12 bg-red-100 rounded-full">
-                    <i id="modal-icon" class="fas fa-times text-red-600 text-xl"></i>
+            <!-- Close button -->
+            <button type="button" id="action-close-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center">
+                <h3 id="action-modal-title" class="text-xl font-medium text-gray-900">Hủy đơn hàng</h3>
+                <p id="action-modal-message" class="text-sm text-gray-500 mt-2">Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.</p>
+                
+                <!-- Phần chọn lý do hủy đơn -->
+                <div id="cancel-reason-section" class="mt-4 text-left">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Lý do hủy đơn hàng</p>
+                    <div class="space-y-2">
+                        <div>
+                            <input type="radio" id="reason-changed-mind" name="cancel_reason" value="Tôi đã thay đổi ý định" class="mr-2">
+                            <label for="reason-changed-mind" class="text-sm text-gray-600">Tôi đã thay đổi ý định</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-better-price" name="cancel_reason" value="Tìm thấy giá tốt hơn ở nơi khác" class="mr-2">
+                            <label for="reason-better-price" class="text-sm text-gray-600">Tìm thấy giá tốt hơn ở nơi khác</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-delivery-time" name="cancel_reason" value="Thời gian giao hàng quá lâu" class="mr-2">
+                            <label for="reason-delivery-time" class="text-sm text-gray-600">Thời gian giao hàng quá lâu</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-wrong-product" name="cancel_reason" value="Đặt nhầm sản phẩm" class="mr-2">
+                            <label for="reason-wrong-product" class="text-sm text-gray-600">Đặt nhầm sản phẩm</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-financial" name="cancel_reason" value="Vấn đề tài chính" class="mr-2">
+                            <label for="reason-financial" class="text-sm text-gray-600">Vấn đề tài chính</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-duplicate" name="cancel_reason" value="Đặt trùng đơn hàng" class="mr-2">
+                            <label for="reason-duplicate" class="text-sm text-gray-600">Đặt trùng đơn hàng</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="reason-other" name="cancel_reason" value="Khác" class="mr-2">
+                            <label for="reason-other" class="text-sm text-gray-600">Khác</label>
+                        </div>
+                        <div id="other-reason-container" class="mt-2">
+                            <textarea id="other-reason-text" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Nhập lý do cụ thể..."></textarea>
+                        </div>
+                    </div>
                 </div>
-                <h3 id="action-modal-title" class="text-lg font-medium text-gray-900 mt-4">Xác nhận hành động</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p id="action-modal-message" class="text-sm text-gray-500">Bạn có chắc chắn thực hiện thao tác này
-                        không?</p>
-                </div>
-                <div class="items-center px-4 py-3 flex gap-3">
+                
+                <div class="mt-6 flex justify-between gap-3">
                     <button id="action-abort-btn"
-                        class="w-full px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg transition-colors">Không</button>
+                        class="px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 rounded-lg transition-colors">Quay lại</button>
                     <button id="action-confirm-btn"
-                        class="w-full px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors">Đồng
-                        ý</button>
+                        class="px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors">Xác nhận hủy</button>
                 </div>
             </div>
         </div>
@@ -661,166 +841,657 @@
     <div id="toast-message"
         class="fixed top-20 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden transition-all duration-300">
     </div>
+
+    <!-- Modal đánh giá tài xế -->
+    <div id="rate-driver-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="relative mx-auto p-5 border w-96 bg-white rounded-lg shadow-xl">
+            <!-- Close button -->
+            <button type="button" id="rate-driver-close-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="text-center">
+                <h3 class="text-xl font-medium text-gray-900">Đánh giá tài xế</h3>
+                <p class="text-sm text-gray-500 mt-2">Hãy đánh giá trải nghiệm giao hàng của bạn với tài xế</p>
+                
+                <div class="mt-6">
+                    <form id="driver-rating-form" method="POST" action="{{ route('driver.rating.submit', $order->id) }}">
+                        @csrf
+                        <input type="hidden" name="order_id" value="{{ $order->id }}">
+                        <input type="hidden" name="driver_id" value="{{ $order->driver_id }}">
+                        
+                        <!-- Star Rating -->
+                        <div class="mb-6">
+                            <div class="flex justify-center space-x-2">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    <label for="star-{{ $i }}" class="cursor-pointer">
+                                        <input type="radio" id="star-{{ $i }}" name="rating" value="{{ $i }}" class="hidden">
+                                        <svg class="w-10 h-10 star-rating" data-rating="{{ $i }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                        </svg>
+                                    </label>
+                                @endfor
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2" id="rating-text">Chọn số sao để đánh giá</div>
+                        </div>
+                        
+                        <!-- Comment -->
+                        <div class="mb-4">
+                            <label for="comment" class="block text-sm font-medium text-gray-700 mb-1 text-left">Nhận xét (không bắt buộc)</label>
+                            <textarea id="comment" name="comment" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-500" placeholder="Chia sẻ trải nghiệm của bạn với tài xế..."></textarea>
+                        </div>
+                        
+                        <!-- Anonymous Rating -->
+                        <div class="mb-6 flex items-center">
+                            <input type="checkbox" id="is_anonymous" name="is_anonymous" class="h-4 w-4 text-orange-500 focus:ring-orange-400 border-gray-300 rounded">
+                            <label for="is_anonymous" class="ml-2 block text-sm text-gray-700">Đánh giá ẩn danh</label>
+                        </div>
+                        
+                        <div class="flex justify-between gap-3">
+                            <button type="button" id="rate-driver-cancel-btn" class="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                Hủy
+                            </button>
+                            <button type="submit" id="rate-driver-submit-btn" class="flex-1 py-2 px-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors" disabled>
+                                Gửi đánh giá
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
     {{-- Script xử lý modal và real-time giữ nguyên --}}
     <script>
-        // Định nghĩa hàm showToast để hiển thị thông báo
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast-message');
-            toast.textContent = message;
-            toast.classList.remove('bg-green-600', 'bg-red-600', 'hidden');
-            if (type === 'success') {
-                toast.classList.add('bg-green-600');
-            } else if (type === 'error') {
-                toast.classList.add('bg-red-600');
-            }
-            toast.classList.add('animate-slideIn'); // Thêm animation nếu có
-            toast.classList.remove('hidden');
-
-            setTimeout(() => {
-                toast.classList.add('hidden');
-                toast.classList.remove('animate-slideIn');
-            }, 3000); // Ẩn sau 3 giây
-        }
-
-        // Định nghĩa hàm openActionModal
-        function openActionModal(form, actionType) {
-            const modal = document.getElementById('action-confirmation-modal');
-            const title = document.getElementById('action-modal-title');
-            const message = document.getElementById('action-modal-message');
-            const confirmBtn = document.getElementById('action-confirm-btn');
-            const abortBtn = document.getElementById('action-abort-btn');
-            const modalIconContainer = document.getElementById('modal-icon-container');
-            const modalIcon = document.getElementById('modal-icon');
-
-            // Reset icon và màu nền của icon
-            modalIcon.className = ''; // Xóa tất cả các class
-            modalIconContainer.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full';
-
-            if (actionType === 'receive') {
-                title.textContent = 'Xác nhận đã nhận hàng';
-                message.textContent =
-                    'Bạn có chắc chắn muốn xác nhận đã nhận đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Xác nhận';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-green-100');
-                modalIcon.classList.add('fas', 'fa-check-circle', 'text-green-600', 'text-xl');
-            } else if (actionType === 'cancel') {
-                title.textContent = 'Xác nhận hủy đơn hàng';
-                message.textContent = 'Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.';
-                confirmBtn.textContent = 'Hủy đơn';
-                confirmBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-                confirmBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                modalIconContainer.classList.add('bg-red-100');
-                modalIcon.classList.add('fas', 'fa-times-circle', 'text-red-600', 'text-xl');
-            } else {
-                title.textContent = 'Xác nhận hành động';
-                message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
-                confirmBtn.textContent = 'Đồng ý';
-                confirmBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                confirmBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                modalIconContainer.classList.add('bg-gray-100');
-                modalIcon.classList.add('fas', 'fa-question-circle', 'text-gray-600', 'text-xl');
-            }
-
-            modal.classList.remove('hidden'); // Hiển thị modal
-
-            // Xử lý khi nhấn nút "Đồng ý"
-            confirmBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal ngay lập tức
-
-                // Lấy dữ liệu form
-                const formData = new FormData(form);
-
-                // Gửi yêu cầu AJAX
-                fetch(form.action, {
-                        method: form.method,
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest', // Để backend biết đây là AJAX request
-                            'Accept': 'application/json' // Yêu cầu phản hồi JSON
-                        }
-                    })
-                    .then(response => response.json()) // Chuyển phản hồi sang JSON
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message, 'success');
-                            // Cập nhật UI của trạng thái đơn hàng
-                            const statusElement = document.getElementById(
-                                'order-status-display'); // Thêm ID này vào span hiển thị trạng thái
-                            if (statusElement && data.order) {
-                                statusElement.textContent = data.order.status_text;
-                                statusElement.style.backgroundColor = data.order.status_color;
-                                statusElement.style.color = data.order.status_text_color;
-                                const statusIcon = statusElement.querySelector('i');
-                                if (statusIcon) {
-                                    statusIcon.className = ''; // Xóa class cũ
-                                    statusIcon.classList.add(...data.order.status_icon.split(
-                                        ' ')); // Thêm class mới
-                                }
-
-                                // Vô hiệu hóa hoặc ẩn form "Đã nhận hàng" hoặc "Hủy đơn hàng"
-                                if (actionType === 'receive') {
-                                    form.remove(); // Xóa form "Đã nhận hàng" sau khi xác nhận
-                                    // Hoặc: form.style.display = 'none';
-                                } else if (actionType === 'cancel') {
-                                    form.remove(); // Xóa form "Hủy đơn hàng"
-                                }
-
-                                // Nếu có timeline trạng thái, bạn có thể cân nhắc cập nhật nó qua AJAX cũng
-                                // Tuy nhiên, việc này phức tạp hơn và có thể yêu cầu partial reload hoặc logic render lại phức tạp.
-                                // Tạm thời, chúng ta chỉ cập nhật phần trạng thái chính.
-                            }
-                        } else {
-                            showToast(data.message, 'error');
-                        }
-                    })
-                    .then(() => {
-                        // Tự động tải lại trang sau khi hoàn thành
-                        location.reload(); // Nếu bạn muốn tải lại toàn bộ trang
-                    })
-                    .catch(error => {
-                        console.error('Lỗi khi gửi yêu cầu:', error);
-                        showToast('Đã xảy ra lỗi khi thực hiện thao tác.', 'error');
-                    });
-            };
-
-            // Xử lý khi nhấn nút "Không" hoặc click bên ngoài modal
-            abortBtn.onclick = function() {
-                modal.classList.add('hidden'); // Ẩn modal
-            };
-
-            // Ẩn modal khi nhấn phím Esc
-            document.onkeydown = function(event) {
-                if (event.key === 'Escape') {
-                    modal.classList.add('hidden');
+            // Định nghĩa hàm showToast để hiển thị thông báo
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast-message');
+                toast.textContent = message;
+                toast.classList.remove('bg-green-600', 'bg-red-600', 'hidden');
+                if (type === 'success') {
+                    toast.classList.add('bg-green-600');
+                } else if (type === 'error') {
+                    toast.classList.add('bg-red-600');
                 }
-            };
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý nút "Đã nhận hàng"
-            const receiveOrderButton = document.querySelector('.receive-order-form button[type="submit"]');
-            if (receiveOrderButton) {
-                receiveOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'receive');
+                toast.classList.add('animate-slideIn'); // Thêm animation nếu có
+                toast.classList.remove('hidden');
+            
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('animate-slideIn');
+                }, 3000); // Ẩn sau 3 giây
+            }
+        
+            // Biến toàn cục để lưu form và loại hành động
+            let formToSubmit = null;
+            let modalAction = null;
+            let selectedRating = 0; // Biến lưu số sao đã chọn
+            
+            // Hàm cập nhật trạng thái đơn hàng bằng AJAX với hiệu ứng mượt mà
+            function updateOrderStatusDisplay() {
+                console.log('🔄 Updating order status via AJAX...');
+                const orderId = {{ $order->id }};
+                
+                // Thêm loading indicator nhẹ
+                const statusElements = document.querySelectorAll('.status-bar, .driver-info-container, .action-buttons-container');
+                statusElements.forEach(el => {
+                    if (el) {
+                        el.classList.add('smooth-update', 'gpu-accelerated');
+                        el.classList.add('updating');
+                    }
+                });
+                
+                fetch(`/customer/orders/${orderId}/partial`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Tạo một DOM parser để parse HTML response
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Hàm helper để cập nhật element với hiệu ứng mượt mà
+                    function updateElementSmoothly(selector, newElement) {
+                        const currentElement = document.querySelector(selector);
+                        if (!currentElement || !newElement) return;
+                        
+                        // Kiểm tra xem nội dung có thay đổi không
+                        if (currentElement.innerHTML === newElement.innerHTML) {
+                            // Vẫn cần remove updating class
+                            currentElement.classList.remove('updating');
+                            return; // Không cập nhật nếu nội dung giống nhau
+                        }
+                        
+                        // Sử dụng requestAnimationFrame để tối ưu hóa rendering
+                        requestAnimationFrame(() => {
+                            // Cập nhật nội dung
+                            currentElement.innerHTML = newElement.innerHTML;
+                            
+                            // Remove updating class để trigger transition
+                            currentElement.classList.remove('updating');
+                            
+                            // Cleanup sau khi animation hoàn thành
+                            setTimeout(() => {
+                                currentElement.classList.remove('gpu-accelerated');
+                            }, 300);
+                        });
+                    }
+                    
+                    // Cập nhật thanh trạng thái với hiệu ứng mượt mà
+                    const newStatusBar = doc.querySelector('.status-bar');
+                    updateElementSmoothly('.status-bar', newStatusBar);
+                    
+                    // Cập nhật thông tin tài xế với hiệu ứng mượt mà
+                    const newDriverInfo = doc.querySelector('.driver-info-container');
+                    updateElementSmoothly('.driver-info-container', newDriverInfo);
+                    
+                    // Cập nhật các nút hành động với hiệu ứng mượt mà
+                    const newActionButtons = doc.querySelector('.action-buttons-container');
+                    const currentActionButtons = document.querySelector('.action-buttons-container');
+                    if (newActionButtons && currentActionButtons) {
+                        // Kiểm tra xem nội dung có thay đổi không
+                        if (currentActionButtons.innerHTML !== newActionButtons.innerHTML) {
+                            requestAnimationFrame(() => {
+                                currentActionButtons.innerHTML = newActionButtons.innerHTML;
+                                currentActionButtons.classList.remove('updating');
+                                
+                                // Gắn lại các sự kiện cho các nút mới
+                                rebindActionButtons();
+                                
+                                setTimeout(() => {
+                                    currentActionButtons.classList.remove('gpu-accelerated');
+                                }, 300);
+                            });
+                        } else {
+                            currentActionButtons.classList.remove('updating');
+                        }
+                    }
+                    
+                    console.log('✅ Order status updated successfully via AJAX');
+                })
+                .catch(error => {
+                    console.error('❌ Error updating order status:', error);
+                    
+                    // Remove updating classes on error
+                    statusElements.forEach(el => {
+                        if (el) {
+                            el.classList.remove('updating', 'gpu-accelerated');
+                        }
+                    });
+                    
+                    // Fallback to page reload if AJAX fails
+                    console.log('🔄 Falling back to page reload...');
+                    window.location.reload();
                 });
             }
-
-            // Xử lý nút "Hủy đơn hàng" (nếu có)
-            const cancelOrderButton = document.querySelector('.cancel-order-form button[type="submit"]');
-            if (cancelOrderButton) {
-                cancelOrderButton.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    const form = this.closest('form');
-                    openActionModal(form, 'cancel');
-                });
+            
+            // Hàm gắn lại sự kiện cho các nút hành động
+            function rebindActionButtons() {
+                // Gắn lại sự kiện cho nút hủy đơn hàng
+                const cancelBtn = document.getElementById('cancelOrderButton');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function() {
+                        document.getElementById('cancelOrderModal').classList.remove('hidden');
+                    });
+                }
+                
+                // Gắn lại sự kiện cho nút xác nhận đã nhận hàng
+                const receiveBtn = document.getElementById('receiveOrderButton');
+                if (receiveBtn) {
+                    receiveBtn.addEventListener('click', function() {
+                        document.getElementById('receiveOrderModal').classList.remove('hidden');
+                    });
+                }
+                
+                // Gắn lại sự kiện cho nút đánh giá tài xế
+                const rateBtn = document.getElementById('rateDriverButton');
+                if (rateBtn) {
+                    rateBtn.addEventListener('click', function() {
+                        document.getElementById('rateDriverModal').classList.remove('hidden');
+                    });
+                }
             }
-        });
-    </script>
+        
+            // Định nghĩa hàm openActionModal
+            function openActionModal(form, actionType) {
+                const modal = document.getElementById('action-confirmation-modal');
+                const title = document.getElementById('action-modal-title');
+                const message = document.getElementById('action-modal-message');
+                const confirmBtn = document.getElementById('action-confirm-btn');
+                const abortBtn = document.getElementById('action-abort-btn');
+                const cancelReasonSection = document.getElementById('cancel-reason-section');
+                const otherReasonContainer = document.getElementById('other-reason-container');
+                const otherReasonText = document.getElementById('other-reason-text');
+                
+                formToSubmit = form;
+                modalAction = actionType;
+            
+                if (actionType === 'receive') {
+                    title.textContent = 'Xác nhận đã nhận hàng';
+                    message.textContent = 'Bạn xác nhận đã nhận được hàng? Vui lòng kiểm tra kỹ trước khi xác nhận.';
+                    confirmBtn.textContent = 'Đã nhận';
+                    confirmBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors';
+                    cancelReasonSection.classList.add('hidden');
+                } else if (actionType === 'cancel') {
+                    title.textContent = 'Hủy đơn hàng';
+                    message.textContent = 'Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này.';
+                    confirmBtn.textContent = 'Xác nhận hủy';
+                    confirmBtn.className = 'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors';
+                    abortBtn.textContent = 'Quay lại';
+                    cancelReasonSection.classList.remove('hidden');
+                    
+                    // Reset radio buttons và textarea
+                    document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                        radio.checked = false;
+                    });
+                    // Xóa nội dung textarea
+                    otherReasonText.value = '';
+                    // Ẩn container lý do khác
+                    otherReasonContainer.classList.add('hidden');
+                } else {
+                    title.textContent = 'Xác nhận hành động';
+                    message.textContent = 'Bạn có chắc chắn thực hiện thao tác này không?';
+                    confirmBtn.textContent = 'Đồng ý';
+                    confirmBtn.className = 'px-4 py-2 bg-orange-600 text-white hover:bg-orange-700 rounded-lg transition-colors';
+                    cancelReasonSection.classList.add('hidden');
+                }
+            
+            modal.classList.remove('hidden'); // Hiển thị modal
+            }
+        
+            document.addEventListener('DOMContentLoaded', function() {
+                // Xử lý hiển thị textarea khi chọn lý do "Khác"
+                document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const otherReasonContainer = document.getElementById('other-reason-container');
+                        const otherReasonText = document.getElementById('other-reason-text');
+                        if (this.value === 'Khác') {
+                            otherReasonContainer.classList.remove('hidden');
+                            otherReasonText.focus();
+                        } else {
+                            otherReasonContainer.classList.add('hidden');
+                            otherReasonText.value = '';
+                        }
+                    });
+                });
+        
+                const modal = document.getElementById('action-confirmation-modal');
+                const confirmBtn = document.getElementById('action-confirm-btn');
+                const abortBtn = document.getElementById('action-abort-btn');
+                const closeBtn = document.getElementById('action-close-btn');
+                const otherReasonContainer = document.getElementById('other-reason-container');
+                const otherReasonText = document.getElementById('other-reason-text');
+                
+                // Xử lý nút đóng modal
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        modal.classList.add('hidden');
+                        // Reset radio buttons
+                        document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                            radio.checked = false;
+                        });
+                        otherReasonContainer.classList.add('hidden');
+                        otherReasonText.value = '';
+                    });
+                }
+        
+                // Xử lý khi nhấn nút "Đồng ý"
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', function() {
+                        if (formToSubmit) {
+                            const form = formToSubmit;
+                            
+                            // Xử lý khi hủy đơn hàng
+                            if (modalAction === 'cancel') {
+                                const selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+                                if (!selectedReason) {
+                                    showToast('Vui lòng chọn lý do hủy đơn hàng', 'error');
+                                    return;
+                                }
+                                
+                                let reason = selectedReason.value;
+                                if (reason === 'Khác') {
+                                    const otherReasonValue = otherReasonText.value.trim();
+                                    if (!otherReasonValue) {
+                                        showToast('Vui lòng nhập lý do hủy đơn hàng', 'error');
+                                        return;
+                                    }
+                                    reason = otherReasonValue;
+                                }
+                                
+                                // Thêm lý do vào form data
+                                const formData = new FormData(form);
+                                formData.append('reason', reason);
+                                
+                                // Gửi yêu cầu AJAX
+                                fetch(form.action, {
+                                        method: form.method,
+                                        body: formData,
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        modal.classList.add('hidden'); // Ẩn modal
+                                        if (data.success) {
+                                            showToast(data.message || 'Hủy đơn hàng thành công!', 'success');
+                                            // Cập nhật UI bằng AJAX thay vì reload trang
+                                            setTimeout(() => {
+                                                updateOrderStatusDisplay();
+                                            }, 1300);
+                                        } else {
+                                            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        modal.classList.add('hidden');
+                                        showToast('Có lỗi khi kết nối!', 'error');
+                                        console.error('Lỗi khi gửi yêu cầu:', error);
+                                    });
+                            } else {
+                                // Xử lý các action khác (như receive)
+                                const formData = new FormData(form);
+                                
+                                fetch(form.action, {
+                                        method: form.method,
+                                        body: formData,
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        modal.classList.add('hidden');
+                                        if (data.success) {
+                                            showToast(data.message || 'Đã nhận hàng thành công!', 'success');
+                                            setTimeout(() => {
+                                                updateOrderStatusDisplay();
+                                            }, 1300);
+                                        } else {
+                                            showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        modal.classList.add('hidden');
+                                        showToast('Có lỗi khi kết nối!', 'error');
+                                        console.error('Lỗi khi gửi yêu cầu:', error);
+                                    });
+                            }
+                        }
+                    });
+                }
+        
+                // Xử lý khi nhấn nút "Không" hoặc click bên ngoài modal
+                if (abortBtn) {
+                    abortBtn.addEventListener('click', function() {
+                        modal.classList.add('hidden');
+                        // Reset radio buttons
+                        document.querySelectorAll('input[name="cancel_reason"]').forEach(radio => {
+                            radio.checked = false;
+                        });
+                        otherReasonContainer.classList.add('hidden');
+                        otherReasonText.value = '';
+                    });
+                }
+        
+                // Xử lý nút "Đã nhận hàng"
+                const receiveOrderButton = document.querySelector('.receive-order-form button[type="submit"]');
+                if (receiveOrderButton) {
+                    receiveOrderButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'receive');
+                    });
+                }
+        
+                // Xử lý nút "Hủy đơn hàng" (nếu có)
+                const cancelOrderButton = document.querySelector('.cancel-order-form button[type="submit"]');
+                if (cancelOrderButton) {
+                    cancelOrderButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const form = this.closest('form');
+                        openActionModal(form, 'cancel');
+                    });
+                }
+                
+                // Xử lý modal đánh giá tài xế
+                const rateDriverBtn = document.getElementById('rate-driver-btn');
+                const rateDriverModal = document.getElementById('rate-driver-modal');
+                const rateDriverCloseBtn = document.getElementById('rate-driver-close-btn');
+                const rateDriverCancelBtn = document.getElementById('rate-driver-cancel-btn');
+                const rateDriverSubmitBtn = document.getElementById('rate-driver-submit-btn');
+                const ratingForm = document.getElementById('driver-rating-form');
+                const starRatings = document.querySelectorAll('.star-rating');
+                const ratingText = document.getElementById('rating-text');
+                
+                // Mở modal đánh giá tài xế
+                if (rateDriverBtn) {
+                    rateDriverBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.remove('hidden');
+                    });
+                }
+                
+                // Đóng modal đánh giá tài xế
+                if (rateDriverCloseBtn) {
+                    rateDriverCloseBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.add('hidden');
+                        resetRatingForm();
+                    });
+                }
+                
+                if (rateDriverCancelBtn) {
+                    rateDriverCancelBtn.addEventListener('click', function() {
+                        rateDriverModal.classList.add('hidden');
+                        resetRatingForm();
+                    });
+                }
+                
+                // Xử lý chọn số sao
+                if (starRatings.length > 0) {
+                    starRatings.forEach(star => {
+                        star.addEventListener('click', function() {
+                            const rating = parseInt(this.dataset.rating);
+                            selectedRating = rating;
+                            updateStarDisplay(rating);
+                            rateDriverSubmitBtn.disabled = false;
+                        });
+                        
+                        // Hiệu ứng hover
+                        star.addEventListener('mouseenter', function() {
+                            const rating = parseInt(this.dataset.rating);
+                            highlightStars(rating);
+                        });
+                        
+                        star.addEventListener('mouseleave', function() {
+                            resetStarHighlight();
+                            if (selectedRating > 0) {
+                                updateStarDisplay(selectedRating);
+                            }
+                        });
+                    });
+                }
+                
+                // Xử lý gửi form đánh giá
+                if (ratingForm) {
+                    ratingForm.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        
+                        if (selectedRating === 0) {
+                            showToast('Vui lòng chọn số sao đánh giá', 'error');
+                            return;
+                        }
+                        
+                        const formData = new FormData(this);
+                        
+                        fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            rateDriverModal.classList.add('hidden');
+                            if (data.success) {
+                                showToast(data.message || 'Đánh giá tài xế thành công!', 'success');
+                                // Cập nhật UI bằng AJAX thay vì reload trang
+                                setTimeout(() => {
+                                    updateOrderStatusDisplay();
+                                }, 1300);
+                            } else {
+                                showToast(data.message || 'Có lỗi xảy ra!', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            rateDriverModal.classList.add('hidden');
+                            showToast('Có lỗi khi gửi đánh giá!', 'error');
+                            console.error('Lỗi khi gửi đánh giá:', error);
+                        });
+                    });
+                }
+                
+                // Hàm cập nhật hiển thị sao
+                function updateStarDisplay(rating) {
+                    starRatings.forEach(star => {
+                        const starRating = parseInt(star.dataset.rating);
+                        if (starRating <= rating) {
+                            star.classList.add('text-yellow-400');
+                            star.classList.add('fill-current');
+                        } else {
+                            star.classList.remove('text-yellow-400');
+                            star.classList.remove('fill-current');
+                        }
+                    });
+                    
+                    // Cập nhật text hiển thị
+                    const ratingTexts = {
+                        1: 'Rất không hài lòng',
+                        2: 'Không hài lòng',
+                        3: 'Bình thường',
+                        4: 'Hài lòng',
+                        5: 'Rất hài lòng'
+                    };
+                    
+                    ratingText.textContent = ratingTexts[rating] || 'Chọn số sao để đánh giá';
+                }
+                
+                // Hàm highlight sao khi hover
+                function highlightStars(rating) {
+                    starRatings.forEach(star => {
+                        const starRating = parseInt(star.dataset.rating);
+                        if (starRating <= rating) {
+                            star.classList.add('text-yellow-400');
+                        } else {
+                            star.classList.remove('text-yellow-400');
+                        }
+                    });
+                }
+                
+                // Hàm reset highlight sao
+                function resetStarHighlight() {
+                    starRatings.forEach(star => {
+                        star.classList.remove('text-yellow-400');
+                        star.classList.remove('fill-current');
+                    });
+                }
+                
+                // Hàm reset form đánh giá
+                function resetRatingForm() {
+                    if (ratingForm) {
+                        ratingForm.reset();
+                    }
+                    selectedRating = 0;
+                    resetStarHighlight();
+                    ratingText.textContent = 'Chọn số sao để đánh giá';
+                    rateDriverSubmitBtn.disabled = true;
+                }
+            });
+        </script>
+        
+        <!-- Pusher Real-time Order Status Updates -->
+        <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+        <script>
+            Pusher.logToConsole = true;
+            var pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                encrypted: true,
+                authEndpoint: '/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                }
+            });
+            
+            // Add Pusher debugging
+            pusher.connection.bind('connected', function() {
+                console.log('✅ Pusher connected successfully');
+            });
+
+            pusher.connection.bind('error', function(err) {
+                console.error('❌ Pusher connection error:', err);
+            });
+
+            pusher.connection.bind('disconnected', function() {
+                console.log('⚠️ Pusher disconnected');
+            });
+            
+            // Subscribe to order-specific channel
+            var orderId = {{ $order->id }};
+            var channel = pusher.subscribe('private-order.' + orderId);
+            
+            channel.bind('pusher:subscription_succeeded', function() {
+                console.log('✅ Subscribed to order channel:', 'private-order.' + orderId);
+            });
+            
+            channel.bind('pusher:subscription_error', function(error) {
+                console.error('❌ Failed to subscribe to order channel:', 'private-order.' + orderId, error);
+            });
+            
+
+            // Biến để debounce các cập nhật liên tiếp
+            let updateTimeout = null;
+            
+            channel.bind('order-status-updated', function(data) {
+                console.log('🔄 Pusher event order-status-updated received for order', orderId, data);
+                
+                // Show notification
+                if (typeof showToast === 'function') {
+                    showToast('🔄 Đơn hàng của bạn vừa được cập nhật trạng thái!', 'success');
+                }
+                
+                // Debounce để tránh cập nhật quá nhiều lần liên tiếp
+                if (updateTimeout) {
+                    clearTimeout(updateTimeout);
+                }
+                
+                updateTimeout = setTimeout(() => {
+                    // Cập nhật trạng thái bằng AJAX thay vì reload trang
+                    updateOrderStatusDisplay();
+                }, 500); // Đợi 500ms trước khi cập nhật
+            });
+        </script>
 @endpush

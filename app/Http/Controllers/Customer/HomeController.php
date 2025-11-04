@@ -188,7 +188,7 @@ class HomeController extends Controller
             });
         }
 
-        $featuredCombos = $featuredCombos->take(4)->get();
+        $featuredCombos = $featuredCombos->take(6)->get();
 
         // Transform combos để thêm thông tin cần thiết
         $featuredCombos->transform(function ($combo) use ($selectedBranchId) {
@@ -216,10 +216,27 @@ class HomeController extends Controller
         });
 
         $categories = Category::withCount('products')->where('status', 1)->get();
-        $banners = Banner::where('is_active', 1)->get();
+        $banners = Banner::where('is_active', 1)
+                        ->where('position', 'homepage')
+                        ->orderBy('order', 'ASC')
+                        ->orderBy('id', 'ASC')
+                        ->get();
+        
+        // Debug banner data
+        if (config('app.debug')) {
+            \Log::info('Banner data loaded:', $banners->toArray());
+        }
 
         // Pass all necessary data to the view
-        return view('customer.home', compact('products', 'featuredProducts', 'topRatedProducts', 'featuredCombos', 'categories', 'banners'));
+        return view('customer.home', [
+            'products' => $products,
+            'featuredProducts' => $featuredProducts,
+            'topRatedProducts' => $topRatedProducts,
+            'featuredCombos' => $featuredCombos,
+            'categories' => $categories,
+            'banners' => $banners,
+            'selectedBranch' => $currentBranch, // Thêm dòng này
+        ]);
     }
 
     public function search(Request $request)

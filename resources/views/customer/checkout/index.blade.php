@@ -102,6 +102,9 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
+            @foreach(request('cart_item_ids', []) as $cartItemId)
+                <input type="hidden" name="cart_item_ids[]" value="{{ $cartItemId }}">
+            @endforeach
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                 <!-- ========= CỘT BÊN TRÁI ========= -->
@@ -216,96 +219,153 @@
                 @endauth
             @endif
             @if(!$userAddresses || $userAddresses->count() === 0)
-                @php
-                    $user = Auth::user();
-                @endphp
-                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                            <input type="text" id="full_name" name="full_name" 
-                                class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror"
-                                value="{{ old('full_name', $user ? $user->full_name : '') }}"
-                                placeholder="Nhập họ và tên">
-                            @error('full_name')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                @auth
+                    <!-- Beautiful notification for users without addresses -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-200">
+                        <div class="text-center py-8">
+                            <!-- Icon -->
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 mb-4">
+                                <svg class="h-8 w-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Title -->
+                            <h2 class="text-xl font-bold text-gray-900 mb-2">Bạn chưa có địa chỉ giao hàng</h2>
+                            
+                            <!-- Description -->
+                            <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                                Để tiếp tục đặt hàng, vui lòng thêm địa chỉ giao hàng của bạn. 
+                                Địa chỉ sẽ được lưu để sử dụng cho các đơn hàng tiếp theo.
+                            </p>
+                            
+                            <!-- Add Address Button -->
+                            <button type="button" id="add-address-btn" 
+                                class="inline-flex items-center px-6 py-3 bg-orange-600 border border-transparent text-base font-medium rounded-lg text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors duration-200">
+                                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Thêm địa chỉ giao hàng
+                            </button>
                         </div>
-                        <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" 
-                                class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror"
-                                value="{{ old('phone', $user ? $user->phone : '') }}"
-                                placeholder="Nhập số điện thoại">
-                            @error('phone')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" id="email" name="email" 
-                                class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror"
-                                value="{{ old('email', $user ? $user->email : '') }}"
-                                placeholder="Nhập email">
-                            @error('email')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
-                            <select id="city" name="city" class="w-full px-3 py-2 border rounded-lg @error('city') border-red-500 @enderror">
-                                <option value="Hà Nội" selected>Hà Nội</option>
-                            </select>
-                            @error('city')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="district" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
-                            <select id="district" name="district" class="w-full px-3 py-2 border rounded-lg @error('district') border-red-500 @enderror">
-                                <option value="">-- Chọn Quận/Huyện --</option>
-                            </select>
-                            @error('district')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-1">
-                            <label for="ward" class="block text-sm font-medium text-gray-700 mb-1">Xã/Phường</label>
-                            <select id="ward" name="ward" class="w-full px-3 py-2 border rounded-lg @error('ward') border-red-500 @enderror">
-                                <option value="">-- Chọn Xã/Phường --</option>
-                            </select>
-                            @error('ward')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="md:col-span-1 relative">
-                            <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, đường</label>
-                            <input type="text" id="address" name="address" 
-                                class="w-full px-3 py-2 border rounded-lg @error('address') border-red-500 @enderror"
-                                value="{{ old('address') }}" autocomplete="off"
-                                placeholder="Nhập số nhà, tên đường">
-                            <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
-                            @error('address')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <!-- MAP PICKER -->
-                        <div class="md:col-span-2 relative mt-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Chọn vị trí trên bản đồ <span class="text-xs text-gray-500">(bắt buộc để giao hàng)</span></label>
-                            <div id="checkout-map" style="height: 300px; border-radius: 8px; margin-bottom: 8px; z-index: 1000; position: relative;"></div>
-                            <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
-                            <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
-                            <div class="text-xs text-gray-500">Nhấn vào bản đồ để chọn vị trí giao hàng chính xác.</div>
-                            @error('latitude')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                            @error('longitude')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                        
+                        <!-- Error messages if any -->
+                        @if($errors->any())
+                            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-red-800">Có lỗi xảy ra khi xử lý thông tin địa chỉ:</h3>
+                                        <div class="mt-2 text-sm text-red-700">
+                                            <ul class="list-disc list-inside space-y-1">
+                                                @foreach($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    @php
+                        $user = Auth::user();
+                    @endphp
+                    <!-- Keep the original form for guest users -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                                <input type="text" id="full_name" name="full_name" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror"
+                                    value="{{ old('full_name', $user ? $user->full_name : '') }}"
+                                    placeholder="Nhập họ và tên">
+                                @error('full_name')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                                <input type="tel" id="phone" name="phone" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror"
+                                    value="{{ old('phone', $user ? $user->phone : '') }}"
+                                    placeholder="Nhập số điện thoại">
+                                @error('phone')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" id="email" name="email" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror"
+                                    value="{{ old('email', $user ? $user->email : '') }}"
+                                    placeholder="Nhập email">
+                                @error('email')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
+                                <select id="city" name="city" class="w-full px-3 py-2 border rounded-lg @error('city') border-red-500 @enderror">
+                                    <option value="Hà Nội" selected>Hà Nội</option>
+                                </select>
+                                @error('city')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="district" class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
+                                <select id="district" name="district" class="w-full px-3 py-2 border rounded-lg @error('district') border-red-500 @enderror">
+                                    <option value="">-- Chọn Quận/Huyện --</option>
+                                </select>
+                                @error('district')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-1">
+                                <label for="ward" class="block text-sm font-medium text-gray-700 mb-1">Xã/Phường</label>
+                                <select id="ward" name="ward" class="w-full px-3 py-2 border rounded-lg @error('ward') border-red-500 @enderror">
+                                    <option value="">-- Chọn Xã/Phường --</option>
+                                </select>
+                                @error('ward')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-1 relative">
+                                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Số nhà, đường</label>
+                                <input type="text" id="address" name="address" 
+                                    class="w-full px-3 py-2 border rounded-lg @error('address') border-red-500 @enderror"
+                                    value="{{ old('address') }}" autocomplete="off"
+                                    placeholder="Nhập số nhà, tên đường">
+                                <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
+                                @error('address')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <!-- MAP PICKER -->
+                            <div class="md:col-span-2 relative mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Chọn vị trí trên bản đồ <span class="text-xs text-gray-500">(bắt buộc để giao hàng)</span></label>
+                                <div id="checkout-map" style="height: 300px; border-radius: 8px; margin-bottom: 8px; z-index: 1000; position: relative;"></div>
+                                <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                                <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
+                                <div class="text-xs text-gray-500">Nhấn vào bản đồ để chọn vị trí giao hàng chính xác.</div>
+                                @error('latitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                                @error('longitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endauth
             @endif
 
                     <!-- Order Notes -->
@@ -359,16 +419,76 @@
                 <div class="lg:col-span-1">
                     <div class="bg-white rounded-lg shadow-sm p-6 sticky top-4">
                         
-                        <!-- NEW: Voucher Form -->
+                        <!-- Discount Codes Selection -->
                         <div class="mb-6">
                              <h2 class="text-xl font-bold mb-4">Mã giảm giá</h2>
                              <div id="coupon-area">
-                                <div class="flex">
-                                <input type="text" name="coupon_code" id="coupon-code-input" class="form-control flex-grow rounded-r-none focus:ring-0" placeholder="Nhập mã giảm giá..." {{ session('coupon_code') ? 'disabled' : '' }} value="{{ session('coupon_code') }}">
-                                <button type="button" id="apply-coupon-btn" class="bg-orange-500 text-white px-5 rounded-l-none rounded-r-lg hover:bg-orange-600 font-semibold text-sm transition-colors border border-orange-500" {{ session('coupon_code') ? 'disabled' : '' }}>
-                                    Áp dụng
-                                </button>
-                            </div>
+                                @if(session('coupon_code'))
+                                    <div class="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200">
+                                        <div>
+                                            <span class="font-medium">Mã đã áp dụng: </span>
+                                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded font-medium">{{ session('coupon_code') }}</span>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                @if(session('coupon_type') == 'free_shipping')
+                                                    Miễn phí vận chuyển
+                                                @elseif(session('coupon_type') == 'percentage')
+                                                    Giảm {{ session('coupon_discount_percentage') ?? '' }}%
+                                                @elseif(session('coupon_type') == 'fixed_amount')
+                                                    Giảm {{ number_format(session('coupon_discount_amount')) }}đ
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <button type="button" id="remove-coupon-btn" class="text-red-500 hover:text-red-700 font-medium text-sm transition-colors">
+                                            <i class="fas fa-times-circle mr-1"></i> Xóa
+                                        </button>
+                                    </div>
+                                @else
+                                    <!-- Manual coupon code input -->
+                                    
+                                    <!-- Available discount codes as dropdown -->
+                                    @if(isset($availableDiscountCodes) && count($availableDiscountCodes) > 0)
+                                        <div class="mt-4">
+                                            <div class="relative">
+                                                <button type="button" id="discount-dropdown-btn" class="w-full flex justify-between items-center bg-white border border-gray-300 rounded-lg px-4 py-2 text-left focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                                    <span class="text-sm font-medium text-gray-700">Chọn mã giảm giá ({{ count($availableDiscountCodes) }})</span>
+                                                    <i class="fas fa-chevron-down text-gray-500"></i>
+                                                </button>
+                                                <div id="discount-dropdown-menu" class="hidden absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                                    @foreach($availableDiscountCodes as $code)
+                                                        <div class="coupon-item p-3 hover:bg-orange-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                                                            <div class="flex justify-between items-center">
+                                                                <div>
+                                                                    <div class="font-medium text-gray-800">{{ $code->name }}</div>
+                                                                    <div class="text-sm text-gray-600">Mã: <span class="font-medium text-orange-600">{{ $code->code }}</span></div>
+                                                                    <div class="text-sm text-gray-600">
+                                                                        @if($code->discount_type == 'percentage')
+                                                                            Giảm {{ $code->discount_value }}%
+                                                                            @if($code->max_discount_amount)
+                                                                                (tối đa {{ number_format($code->max_discount_amount) }}đ)
+                                                                            @endif
+                                                                        @elseif($code->discount_type == 'free_shipping')
+                                                                            Miễn phí vận chuyển
+                                                                        @else
+                                                                            Giảm {{ number_format($code->discount_value) }}đ
+                                                                        @endif
+                                                                    </div>
+                                                                    @if($code->min_requirement_value)
+                                                                        <div class="text-xs text-gray-500">Đơn tối thiểu: {{ number_format($code->min_requirement_value) }}đ</div>
+                                                                    @endif
+                                                                </div>
+                                                                <button type="button" class="apply-coupon-btn bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 font-medium text-sm transition-colors" data-code="{{ $code->code }}">
+                                                                    Áp dụng
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="text-gray-500 text-center py-4 mt-2">Không có mã giảm giá nào khả dụng</div>
+                                    @endif
+                                @endif
                                 <div id="coupon-feedback" class="mt-2 text-sm"></div>
                              </div>
                         </div>
@@ -385,8 +505,8 @@
                                 @endphp
                                 <div class="flex items-center gap-4">
                                     <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($isCombo && $combo && $combo->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($combo->primary_image->img) }}"
+                                        @if ($isCombo && $combo && $combo->image)
+                                            <img src="{{ Storage::disk('s3')->url($combo->image) }}"
                                                  alt="{{ $combo->name }}"
                                                  class="object-cover w-full h-full">
                                         @elseif ($product && $product->primary_image)
@@ -459,13 +579,33 @@
 
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Phí giao hàng</span>
-                                <span id="shipping-fee-display" data-value="{{ $shipping }}">Đang tính...</span>
+                                <span id="shipping-fee-display" class="text-sm font-medium text-orange-600" data-value="{{ $shipping }}">Nhập địa chỉ để tính toán</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 flex items-center">
+                                    Thời gian giao hàng dự kiến
+                                    <span id="delivery-time-indicator" class="ml-1 text-xs text-green-500 opacity-0 transition-opacity duration-300">●</span>
+                                </span>
+                                <span id="delivery-time-display" class="text-sm font-medium text-orange-600">Nhập địa chỉ để tính toán</span>
                             </div>
 
                             <div id="coupon-discount-row" class="flex justify-between text-green-600 font-semibold {{ $discount > 0 ? '' : 'hidden' }}">
                                 <span>Giảm giá (voucher)</span>
                                 <span id="coupon-discount-display" data-value="{{ $discount }}">-{{ number_format($discount) }}đ</span>
                             </div>
+                            
+                            <script>
+                            // Cập nhật hiển thị giảm giá khi trang tải xong
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // Kiểm tra nếu có mã giảm giá miễn phí vận chuyển
+                                const couponType = '{{ session('coupon_type') ?? '' }}';
+                                if (couponType === 'free_shipping') {
+                                    // Gọi hàm updateOrderTotal để cập nhật hiển thị
+                                    updateOrderTotal();
+                                }
+                            });
+                            </script>
 
 
                             <hr class="border-t border-gray-200">
@@ -487,6 +627,9 @@
                                     Tôi đã đọc và đồng ý với <a href="/terms"
                                         class="text-orange-500 hover:underline">điều khoản và điều kiện</a> của website
                                 </label>
+                            </div>
+                            <div id="terms-error" class="text-red-500 text-xs mt-1 hidden">
+                                Vui lòng đồng ý với điều khoản và điều kiện để tiếp tục
                             </div>
                             <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 rounded-lg">
                                 Đặt Hàng
@@ -731,16 +874,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn tỉnh/thành phố, load quận/huyện
     citySelect.addEventListener('change', function() {
-        const cityCode = this.selectedOptions[0]?.dataset?.code;
         districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!cityCode) return;
-        fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+        
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
                 data.districts.forEach(d => {
                     districtSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                 });
+            })
+            .catch(error => {
+                console.error('Error loading districts:', error);
             });
     });
 
@@ -749,14 +900,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Khi chọn quận/huyện, load xã/phường và geocode
     districtSelect.addEventListener('change', function() {
-        const districtCode = this.selectedOptions[0]?.dataset?.code;
+        const districtName = this.value;
         wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-        if (!districtCode) return;
+        if (!districtName) return;
         
-        fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+        // Sử dụng file JSON thay vì API
+        fetch('/data/hanoi-districts.json')
             .then(res => res.json())
             .then(data => {
-                data.wards.forEach(w => {
+                if (!data.districts || !Array.isArray(data.districts)) {
+                    console.error('Invalid districts data format');
+                    return;
+                }
+                
+                const district = data.districts.find(d => d.name === districtName);
+                if (!district || !district.wards || !Array.isArray(district.wards)) {
+                    console.error('District not found or has no wards');
+                    return;
+                }
+                
+                district.wards.forEach(w => {
                     wardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                 });
             })
@@ -773,9 +936,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const city = citySelect.value;
         const district = districtSelect.value;
         const ward = wardSelect.value;
-        const address = document.getElementById('address').value;
+        const address = document.getElementById('address').value.trim();
         
-        if (!district || !ward) return;
+        // Check if all required fields are filled
+        if (!city || !district || !ward || !address) {
+            updateShippingFeeUI(-1); // Address is incomplete, reset shipping
+            return;
+        }
         
         let fullAddress = '';
         if (address) fullAddress += address + ', ';
@@ -858,17 +1025,72 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Check delivery distance for guest checkout
                         checkGuestDeliveryDistance(lat, lng);
+                    } else {
+                        // Even if geocoding doesn't find exact location, still check with current coordinates
+                        const currentLat = document.getElementById('latitude').value;
+                        const currentLng = document.getElementById('longitude').value;
+                        if (currentLat && currentLng) {
+                            checkGuestDeliveryDistance(parseFloat(currentLat), parseFloat(currentLng));
+                        }
                     }
                 }
             })
             .catch(error => {
-                // Silent error handling
+                // Silent error handling - still try to check with existing coordinates
+                const currentLat = document.getElementById('latitude').value;
+                const currentLng = document.getElementById('longitude').value;
+                if (currentLat && currentLng) {
+                    checkGuestDeliveryDistance(parseFloat(currentLat), parseFloat(currentLng));
+                }
             });
     }
     
-    // Add event listeners for address changes (district already handled above)
-    wardSelect.addEventListener('change', geocodeAndUpdateMap);
-    document.getElementById('address').addEventListener('blur', geocodeAndUpdateMap);
+    // Function to check if all address fields are filled
+    function isAddressComplete() {
+        const city = citySelect.value;
+        const district = districtSelect.value;
+        const ward = wardSelect.value;
+        const address = document.getElementById('address').value.trim();
+        
+        return city && district && ward && address;
+    }
+    
+    // Add event listeners for address changes
+    citySelect.addEventListener('change', function() {
+        // Existing city change logic is already handled above
+        // Check if address is complete after city change
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
+    
+    wardSelect.addEventListener('change', function() {
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
+    
+    // Add listeners for the address input field with debounce to avoid too many API calls
+    const addressInput = document.getElementById('address');
+    let geocodeTimeout;
+    
+    addressInput.addEventListener('input', function() {
+        clearTimeout(geocodeTimeout);
+        geocodeTimeout = setTimeout(() => {
+            if (isAddressComplete()) {
+                geocodeAndUpdateMap();
+            } else {
+                // Reset shipping display if address is incomplete
+                updateShippingFeeUI(-1);
+            }
+        }, 500); // Wait 500ms after user stops typing
+    });
+    
+    addressInput.addEventListener('blur', function() {
+        if (isAddressComplete()) {
+            geocodeAndUpdateMap();
+        }
+    });
 });
         // --- SHIPPING CONFIG ---
         const shippingConfig = {
@@ -878,9 +1100,166 @@ document.addEventListener('DOMContentLoaded', function() {
             maxDeliveryDistance: {{ \App\Models\GeneralSetting::getMaxDeliveryDistance() }}
         };
 
+        // --- DELIVERY TIME CONFIG ---
+        const deliveryConfig = {
+            defaultPreparationTime: {{ $deliveryConfig['defaultPreparationTime'] }},
+            averageSpeedKmh: {{ $deliveryConfig['averageSpeedKmh'] }},
+            bufferTime: {{ $deliveryConfig['bufferTime'] }}
+        };
+        
+        // Cart items preparation times
+        const itemPreparationTimes = [
+            @foreach($cartItems as $item)
+                @if($item->variant && $item->variant->product)
+                    {{ $item->variant->product->preparation_time_minutes ?? 0 }},
+                @elseif($item->combo)
+                    {{ $item->combo->preparation_time_minutes ?? 0 }},
+                @else
+                    0,
+                @endif
+            @endforeach
+        ];
+
         // Debug: Log shipping config values
         console.log('Shipping Config:', shippingConfig);
+        console.log('Delivery Config:', deliveryConfig);
+        
+        // Global variables for delivery time tracking
+        let currentDeliveryDistance = 0;
+        let deliveryTimeInterval = null;
+        
+        // Khởi động timer cập nhật thời gian giao hàng mỗi phút
+        document.addEventListener('DOMContentLoaded', function() {
+            startDeliveryTimeUpdater();
+            console.log('Delivery time updater started - will update every minute');
+        });
+        
+        // Dừng timer khi người dùng rời khỏi trang để tránh memory leak
+        window.addEventListener('beforeunload', function() {
+            stopDeliveryTimeUpdater();
+        });
+        
+        // Dừng timer khi trang bị ẩn (tab switching)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopDeliveryTimeUpdater();
+            } else {
+                startDeliveryTimeUpdater();
+                // Cập nhật ngay lập tức khi quay lại tab
+                if (currentDeliveryDistance > 0) {
+                    updateDeliveryTimeDisplay(currentDeliveryDistance, true); // Show indicator when returning to tab
+                }
+            }
+        });
 
+        /**
+         * Tính thời gian giao hàng dự kiến
+         * @param {number} distance - Khoảng cách tính bằng km
+         * @returns {number} Thời gian dự kiến tính bằng phút
+         */
+        function calculateEstimatedDeliveryTime(distance) {
+            // 1. Tìm thời gian chuẩn bị lâu nhất
+            let maxPreparationTime = Math.max(...itemPreparationTimes);
+            
+            // Nếu không có sản phẩm nào có thời gian, sử dụng giá trị mặc định
+            if (maxPreparationTime === 0 || maxPreparationTime === -Infinity) {
+                maxPreparationTime = deliveryConfig.defaultPreparationTime;
+            }
+            
+            // 2. Tính thời gian di chuyển
+            let travelTime = 0;
+            if (deliveryConfig.averageSpeedKmh > 0 && distance > 0) {
+                travelTime = (distance / deliveryConfig.averageSpeedKmh) * 60; // Đổi sang phút
+            }
+            
+            // 3. Cộng tổng với thời gian dự phòng và làm tròn lên
+            const totalMinutes = maxPreparationTime + travelTime + deliveryConfig.bufferTime;
+            
+            return Math.ceil(totalMinutes);
+        }
+        
+        /**
+         * Cập nhật hiển thị thời gian giao hàng dự kiến
+         * @param {number} distance - Khoảng cách tính bằng km
+         * @param {boolean} showIndicator - Có hiển thị indicator cập nhật không
+         */
+        function updateDeliveryTimeDisplay(distance, showIndicator = false) {
+            const deliveryTimeEl = document.getElementById('delivery-time-display');
+            const indicatorEl = document.getElementById('delivery-time-indicator');
+            
+            if (distance <= 0) {
+                deliveryTimeEl.textContent = 'Nhập địa chỉ để tính toán';
+                deliveryTimeEl.classList.remove('text-red-500');
+                deliveryTimeEl.classList.add('text-orange-600');
+                return;
+            }
+            
+            if (distance > shippingConfig.maxDeliveryDistance) {
+                deliveryTimeEl.textContent = 'Không khả dụng';
+                deliveryTimeEl.classList.remove('text-orange-600');
+                deliveryTimeEl.classList.add('text-red-500');
+                return;
+            }
+            
+            // Tính thời gian giao hàng dự kiến
+            const estimatedMinutes = calculateEstimatedDeliveryTime(distance);
+            const now = new Date();
+            const estimatedTime = new Date(now.getTime() + estimatedMinutes * 60000);
+            
+            // Format thời gian hiển thị
+            const startTime = estimatedTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const endTime = new Date(estimatedTime.getTime() + 15 * 60000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Kiểm tra xem có phải hôm nay không
+            const isToday = now.toDateString() === estimatedTime.toDateString();
+            const dateDisplay = isToday ? 'Hôm nay' : estimatedTime.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            
+            deliveryTimeEl.textContent = `${dateDisplay}, ${startTime} - ${endTime}`;
+            deliveryTimeEl.classList.remove('text-red-500');
+            deliveryTimeEl.classList.add('text-orange-600');
+            
+            // Hiển thị indicator khi cập nhật tự động
+            if (showIndicator && indicatorEl) {
+                indicatorEl.classList.remove('opacity-0');
+                indicatorEl.classList.add('opacity-100');
+                
+                // Ẩn indicator sau 2 giây
+                setTimeout(() => {
+                    indicatorEl.classList.remove('opacity-100');
+                    indicatorEl.classList.add('opacity-0');
+                }, 2000);
+            }
+        }
+        
+        /**
+         * Khởi tạo timer cập nhật thời gian giao hàng mỗi phút
+         */
+        function startDeliveryTimeUpdater() {
+            // Clear existing interval if any
+            if (deliveryTimeInterval) {
+                clearInterval(deliveryTimeInterval);
+            }
+            
+            // Update every minute (60000ms)
+            deliveryTimeInterval = setInterval(() => {
+                if (currentDeliveryDistance > 0 && currentDeliveryDistance <= shippingConfig.maxDeliveryDistance) {
+                    updateDeliveryTimeDisplay(currentDeliveryDistance, true); // Show indicator for auto-update
+                    console.log('Delivery time updated automatically at', new Date().toLocaleTimeString());
+                }
+            }, 60000);
+        }
+        
+        /**
+         * Dừng timer cập nhật thời gian giao hàng
+         */
+        function stopDeliveryTimeUpdater() {
+            if (deliveryTimeInterval) {
+                clearInterval(deliveryTimeInterval);
+                deliveryTimeInterval = null;
+                console.log('Delivery time updater stopped');
+            }
+        }
+        
         /**
          * Tính phí vận chuyển ở phía client.
          * @param {number} distance - Khoảng cách tính bằng km.
@@ -948,16 +1327,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const subtotal = parseFloat(document.getElementById('subtotal-display')?.dataset?.value || 0);
             const shippingFee = calculateShippingFee(distance, subtotal);
             const shippingFeeEl = document.getElementById('shipping-fee-display');
+            const deliveryTimeEl = document.getElementById('delivery-time-display');
 
             if (shippingFeeEl) {
                 if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;
                     shippingFeeEl.textContent = shippingFee > 0 ? formatCurrency(shippingFee) : 'Miễn phí';
                     shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi có địa chỉ hợp lệ
+                    updateDeliveryTimeDisplay(distance);
                 } else {
                     shippingFeeEl.dataset.value = 0;
                     shippingFeeEl.textContent = 'Ngoài vùng phục vụ';
                     shippingFeeEl.classList.add('text-red-500', 'font-semibold');
+                    
+                    // Cập nhật thời gian giao hàng khi ngoài vùng phục vụ
+                    if (deliveryTimeEl) {
+                        deliveryTimeEl.textContent = 'Không khả dụng';
+                        deliveryTimeEl.classList.remove('text-orange-600');
+                        deliveryTimeEl.classList.add('text-red-500');
+                    }
                 }
             }
 
@@ -1051,7 +1441,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const shippingFee = calculateShippingFee(distance, subtotal);
                 const shippingFeeEl = document.getElementById('shipping-fee-display');
 
-                if (shippingFee >= 0) {
+                // Cập nhật biến global và thời gian giao hàng
+                currentDeliveryDistance = distance;
+                updateDeliveryTimeDisplay(distance);
+
+                if (distance <= 0) {
+                    // No address selected or invalid distance
+                    shippingFeeEl.dataset.value = 0;
+                    shippingFeeEl.textContent = 'Nhập địa chỉ để tính toán';
+                    shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
+                } else if (shippingFee >= 0) {
                     shippingFeeEl.dataset.value = shippingFee;
                     shippingFeeEl.textContent = shippingFee > 0 ? formatCurrency(shippingFee) : 'Miễn phí';
                     shippingFeeEl.classList.remove('text-red-500', 'font-semibold');
@@ -1139,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             function initializeCheckoutPage() {
                 if (typeof turf === 'undefined' || !branchLat || !branchLng) {
                     document.getElementById('shipping-fee-display').textContent = 'Lỗi cấu hình';
+                    document.getElementById('delivery-time-display').textContent = 'Lỗi cấu hình';
                     toggleCheckoutButton(false, 'Lỗi cấu hình chi nhánh, không thể đặt hàng.');
                     return;
                 }
@@ -1171,11 +1571,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } else if (addressLabels.length === 0) {
                         updateShippingFeeUI(-1); // No addresses, so invalid
+                        document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                     }
                 } else if ({{ Auth::check() ? 'true' : 'false' }} && addressLabels.length === 0) {
                     updateShippingFeeUI(-1); // Logged in but no addresses
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
+                    toggleCheckoutButton(false, 'Vui lòng thêm địa chỉ giao hàng để tiếp tục');
                 } else if (!{{ Auth::check() ? 'true' : 'false' }}) {
-                    document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ';
+                    document.getElementById('shipping-fee-display').textContent = 'Nhập địa chỉ để tính toán';
+                    document.getElementById('delivery-time-display').textContent = 'Nhập địa chỉ để tính toán';
                 }
 
                 // 2. Defer calculation for the rest of the addresses
@@ -1285,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let bgColor = 'bg-green-500';
                 if (type === 'error') bgColor = 'bg-red-500';
                 
-                toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-50 ${bgColor}`;
+                toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-[9999] ${bgColor}`;
                 toast.textContent = message;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 4000);
@@ -1304,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let bgColor = 'bg-green-500';
             if (type === 'error') bgColor = 'bg-red-500';
             
-            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white ${bgColor}`;
+            toast.className = `fixed top-4 right-4 z-[9999] px-6 py-3 rounded-lg shadow-lg text-white ${bgColor}`;
             toast.textContent = message;
             
             // Add to page
@@ -1457,16 +1861,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When city changes, load districts
                 newCitySelect.addEventListener('change', function() {
-                    const cityCode = this.selectedOptions[0]?.dataset?.code;
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!cityCode) return;
-                    fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`)
+                    
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
                             data.districts.forEach(d => {
                                 newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}">${d.name}</option>`;
                             });
+                        })
+                        .catch(error => {
+                            console.error('Error loading districts:', error);
                         });
                 });
                 
@@ -1479,14 +1891,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // When district changes, load wards and geocode
                 newDistrictSelect.addEventListener('change', function() {
-                    const districtCode = this.selectedOptions[0]?.dataset?.code;
+                    const districtName = this.value;
                     newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                    if (!districtCode) return;
+                    if (!districtName) return;
                     
-                    fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                    // Sử dụng file JSON thay vì API
+                    fetch('/data/hanoi-districts.json')
                         .then(res => res.json())
                         .then(data => {
-                            data.wards.forEach(w => {
+                            if (!data.districts || !Array.isArray(data.districts)) {
+                                console.error('Invalid districts data format');
+                                return;
+                            }
+                            
+                            const district = data.districts.find(d => d.name === districtName);
+                            if (!district || !district.wards || !Array.isArray(district.wards)) {
+                                console.error('District not found or has no wards');
+                                return;
+                            }
+                            
+                            district.wards.forEach(w => {
                                 newWardSelect.innerHTML += `<option value="${w.name}">${w.name}</option>`;
                             });
                         })
@@ -1495,10 +1919,44 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     
                     // Also trigger geocoding after district selection
-                    geocodeNewAddress();
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
                 });
-                newWardSelect.addEventListener('change', geocodeNewAddress);
-                document.getElementById('new_address_line').addEventListener('blur', geocodeNewAddress);
+                
+                newWardSelect.addEventListener('change', function() {
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
+                
+                // Add listener for city select
+                newCitySelect.addEventListener('change', function() {
+                    // City change logic is already handled above
+                    // Check if address is complete after city change
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
+                
+                // Add listeners for the new address input field with debounce
+                const newAddressInput = document.getElementById('new_address_line');
+                let newGecodeTimeout;
+                
+                newAddressInput.addEventListener('input', function() {
+                    clearTimeout(newGecodeTimeout);
+                    newGecodeTimeout = setTimeout(() => {
+                        if (isNewAddressComplete()) {
+                            geocodeNewAddress();
+                        }
+                    }, 500); // Wait 500ms after user stops typing
+                });
+                
+                newAddressInput.addEventListener('blur', function() {
+                    if (isNewAddressComplete()) {
+                        geocodeNewAddress();
+                    }
+                });
             }
             
             // Function to update map location with marker
@@ -1580,12 +2038,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newWardSelect = document.getElementById('new_ward');
                 
                 try {
-                    // Load districts for Hà Nội
-                    const districtResponse = await fetch('https://provinces.open-api.vn/api/p/1?depth=2');
+                    // Load districts for Hà Nội from JSON file
+                    const districtResponse = await fetch('/data/hanoi-districts.json');
                     const districtData = await districtResponse.json();
                     
                     // Populate districts
                     newDistrictSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+                    if (!districtData.districts || !Array.isArray(districtData.districts)) {
+                        console.error('Invalid districts data format');
+                        return;
+                    }
+                    
                     districtData.districts.forEach(d => {
                         const selected = d.name === targetDistrict ? 'selected' : '';
                         newDistrictSelect.innerHTML += `<option value="${d.name}" data-code="${d.code}" ${selected}>${d.name}</option>`;
@@ -1595,12 +2058,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (targetDistrict) {
                         const selectedDistrict = districtData.districts.find(d => d.name === targetDistrict);
                         if (selectedDistrict) {
-                            const wardResponse = await fetch(`https://provinces.open-api.vn/api/d/${selectedDistrict.code}?depth=2`);
-                            const wardData = await wardResponse.json();
-                            
-                            // Populate wards
+                            // Populate wards from the same JSON data
                             newWardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
-                            wardData.wards.forEach(w => {
+                            if (!selectedDistrict.wards || !Array.isArray(selectedDistrict.wards)) {
+                                console.error('District has no wards');
+                                return;
+                            }
+                            
+                            selectedDistrict.wards.forEach(w => {
                                 const selected = w.name === targetWard ? 'selected' : '';
                                 newWardSelect.innerHTML += `<option value="${w.name}" ${selected}>${w.name}</option>`;
                             });
@@ -1611,14 +2076,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
+            // Function to check if all new address fields are filled
+            function isNewAddressComplete() {
+                const city = document.getElementById('new_city').value;
+                const district = document.getElementById('new_district').value;
+                const ward = document.getElementById('new_ward').value;
+                const address = document.getElementById('new_address_line').value.trim();
+                
+                return city && district && ward && address;
+            }
+
             // Geocode new address and update map
             function geocodeNewAddress() {
                 const city = document.getElementById('new_city').value;
                 const district = document.getElementById('new_district').value;
                 const ward = document.getElementById('new_ward').value;
-                const address = document.getElementById('new_address_line').value;
+                const address = document.getElementById('new_address_line').value.trim();
                 
-                if (!district || !ward) return;
+                // Check if all required fields are filled
+                if (!city || !district || !ward || !address) {
+                    // Address is incomplete, do not proceed with geocoding
+                    return;
+                }
                 
                 let fullAddress = '';
                 if (address) fullAddress += address + ', ';
@@ -1793,6 +2272,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Open modal for adding new address
             if (openAddAddressModalBtn) {
                 openAddAddressModalBtn.addEventListener('click', function() {
+                    openAddressModal('add');
+                });
+            }
+            
+            // Connect new "Add Address" button from notification to modal
+            const addAddressBtn = document.getElementById('add-address-btn');
+            if (addAddressBtn) {
+                addAddressBtn.addEventListener('click', function() {
                     openAddressModal('add');
                 });
             }
@@ -2453,8 +2940,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
             
-            // Enhanced toast notification function
-            function showEnhancedToast(message, type = 'info', options = {}) {
+            // Enhanced toast notification function - Make it globally accessible
+            window.showEnhancedToast = function(message, type = 'info', options = {}) {
                 const {
                     icon = type === 'success' ? 'fas fa-check-circle' : 
                           type === 'error' ? 'fas fa-times-circle' : 
@@ -2471,7 +2958,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 const toast = document.createElement('div');
-                toast.className = `fixed ${position === 'top-right' ? 'top-4 right-4' : 'bottom-4 right-4'} ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg border-l-4 max-w-sm z-50 transform transition-all duration-300 translate-x-full opacity-0`;
+                toast.className = `fixed ${position === 'top-right' ? 'top-4 right-4' : 'bottom-4 right-4'} ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg border-l-4 max-w-sm z-[9999] transform transition-all duration-300 translate-x-full opacity-0`;
                 
                 toast.innerHTML = `
                     <div class="flex items-center">
@@ -2514,6 +3001,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(removeToast, duration);
                 
                 return toast;
+            };
+            
+            // Also create a local reference for backward compatibility
+            function showEnhancedToast(message, type = 'info', options = {}) {
+                return window.showEnhancedToast(message, type, options);
             }
             
             // Enhanced error display function
@@ -2654,13 +3146,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             closeModal();
                         }, 500);
                         
-                        // Handle first address scenario
-                        const addressComponent = document.getElementById('address-component');
-                        if (addressComponent && addressComponent.style.display === 'none') {
-                            addressComponent.style.display = 'block';
-                            const manualForm = document.querySelector('.bg-white.rounded-lg.shadow-sm.p-6.mb-6:has(#full_name)');
-                            if (manualForm) {
-                                manualForm.style.display = 'none';
+                        // Handle first address scenario - refresh page to show proper address UI
+                        const userHasAddresses = {{ ($userAddresses && $userAddresses->count() > 0) ? 'true' : 'false' }};
+                        if (!userHasAddresses && !isEdit) {
+                            // This is the first address being added, refresh the page to show proper address selection UI
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            // Normal address update/addition handling
+                            const addressComponent = document.getElementById('address-component');
+                            if (addressComponent && addressComponent.style.display === 'none') {
+                                addressComponent.style.display = 'block';
+                                const manualForm = document.querySelector('.bg-white.rounded-lg.shadow-sm.p-6.mb-6:has(#full_name)');
+                                if (manualForm) {
+                                    manualForm.style.display = 'none';
+                                }
                             }
                         }
                         
@@ -3207,5 +3708,534 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         })();
+        
+        // Coupon code application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Discount dropdown functionality
+            const discountDropdownBtn = document.getElementById('discount-dropdown-btn');
+            const discountDropdownMenu = document.getElementById('discount-dropdown-menu');
+            
+            if (discountDropdownBtn && discountDropdownMenu) {
+                // Toggle dropdown when button is clicked
+                discountDropdownBtn.addEventListener('click', function() {
+                    discountDropdownMenu.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!discountDropdownBtn.contains(event.target) && !discountDropdownMenu.contains(event.target)) {
+                        discountDropdownMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Handle coupon item clicks
+                const couponItems = discountDropdownMenu.querySelectorAll('.coupon-item');
+                couponItems.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        // Don't trigger if the apply button was clicked (it has its own handler)
+                        if (!e.target.closest('.apply-coupon-btn')) {
+                            const applyBtn = this.querySelector('.apply-coupon-btn');
+                            if (applyBtn) {
+                                applyBtn.click();
+                            }
+                        }
+                    });
+                });
+            }
+            
+            const applyCouponBtn = document.getElementById('apply-coupon-btn');
+            const couponCodeInput = document.getElementById('coupon-code-input');
+            const couponFeedback = document.getElementById('coupon-feedback');
+            
+            if (applyCouponBtn && couponCodeInput && couponFeedback) {
+                applyCouponBtn.addEventListener('click', function() {
+                    // Validate input
+                    const couponCode = couponCodeInput.value.trim();
+                    if (!couponCode) {
+                        couponFeedback.innerHTML = '<span class="text-red-500">Vui lòng nhập mã giảm giá</span>';
+                        return;
+                    }
+                    
+                    // Disable button and show loading state
+                    applyCouponBtn.disabled = true;
+                    applyCouponBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    couponFeedback.innerHTML = '<span class="text-gray-500">Đang kiểm tra mã...</span>';
+                    
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    // Send AJAX request
+                    fetch('/coupon/apply', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            coupon_code: couponCode
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Success - update UI
+                            couponFeedback.innerHTML = `<span class="text-green-500">${data.message}</span>`;
+                            
+                            // Update discount display
+                            const discountRow = document.getElementById('coupon-discount-row');
+                            const discountDisplay = document.getElementById('coupon-discount-display');
+                            
+                            if (discountRow && discountDisplay) {
+                                discountRow.classList.remove('hidden');
+                                
+                                // Kiểm tra nếu là mã free shipping
+                                const shippingElement = document.getElementById('shipping-fee-display');
+                                const shippingValue = shippingElement ? parseInt(shippingElement.getAttribute('data-value') || 0) : 0;
+                                
+                                if (data.coupon.code === 'FREESHIP' || data.coupon.type === 'free_shipping') {
+                                    // Hiển thị giá trị phí vận chuyển như là số tiền giảm giá
+                                    discountDisplay.textContent = '-' + new Intl.NumberFormat('vi-VN').format(shippingValue) + 'đ';
+                                    discountDisplay.setAttribute('data-value', shippingValue);
+                                } else {
+                                    // Hiển thị giá trị giảm giá thông thường
+                                    discountDisplay.textContent = '-' + new Intl.NumberFormat('vi-VN').format(data.coupon.discount_amount) + 'đ';
+                                    discountDisplay.setAttribute('data-value', data.coupon.discount_amount);
+                                }
+                            }
+                            
+                            // Update total
+                            updateOrderTotal();
+                            
+                            // Disable input and button
+                            couponCodeInput.disabled = true;
+                            applyCouponBtn.disabled = true;
+                            applyCouponBtn.innerHTML = 'Đã áp dụng';
+                            
+                            // Add remove button
+                            const removeBtn = document.createElement('button');
+                            removeBtn.type = 'button';
+                            removeBtn.className = 'text-red-500 text-sm ml-2';
+                            removeBtn.innerHTML = '<i class="fas fa-times"></i> Hủy mã';
+                            removeBtn.addEventListener('click', removeCoupon);
+                            couponFeedback.appendChild(removeBtn);
+                            
+                            // Reload page after 1.5 seconds to reflect changes
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            // Error - show message
+                            couponFeedback.innerHTML = `<span class="text-red-500">${data.message}</span>`;
+                            applyCouponBtn.disabled = false;
+                            applyCouponBtn.innerHTML = 'Áp dụng';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error applying coupon:', error);
+                        couponFeedback.innerHTML = '<span class="text-red-500">Đã xảy ra lỗi. Vui lòng thử lại.</span>';
+                        applyCouponBtn.disabled = false;
+                        applyCouponBtn.innerHTML = 'Áp dụng';
+                    });
+                });
+            }
+            
+            // Function to remove coupon
+            function removeCoupon() {
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Send AJAX request to remove coupon
+                fetch('/coupon/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload page to reflect changes
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error removing coupon:', error);
+                    showEnhancedToast('Đã xảy ra lỗi khi hủy mã giảm giá', 'error');
+                });
+            }
+            
+            // Function to update order total
+            function updateOrderTotal() {
+                const subtotalElement = document.getElementById('subtotal-display');
+                const shippingElement = document.getElementById('shipping-fee-display');
+                const discountElement = document.getElementById('coupon-discount-display');
+                const totalElement = document.getElementById('total-amount-display');
+                
+                if (subtotalElement && shippingElement && totalElement) {
+                    const subtotal = parseInt(subtotalElement.getAttribute('data-value') || 0);
+                    const shipping = parseInt(shippingElement.getAttribute('data-value') || 0);
+                    const discount = discountElement ? parseInt(discountElement.getAttribute('data-value') || 0) : 0;
+                    
+                    // Kiểm tra xem có mã giảm giá miễn phí vận chuyển được áp dụng không
+                    let isFreeShipping = false;
+                    
+                    // Lấy mã giảm giá từ session nếu có
+                    const couponCode = '{{ session('coupon_code') }}';
+                    const couponType = '{{ session('coupon_type') ?? '' }}';
+                    
+                    // Kiểm tra nếu mã giảm giá là loại miễn phí vận chuyển
+                    if (couponType === 'free_shipping') {
+                        isFreeShipping = true;
+                    } else {
+                        // Kiểm tra trong nội dung trang
+                        const couponInfoElements = document.querySelectorAll('.text-sm.text-gray-600');
+                        couponInfoElements.forEach(element => {
+                            if (element.textContent.includes('Miễn phí vận chuyển')) {
+                                isFreeShipping = true;
+                            }
+                        });
+                    }
+                    
+                    let total = 0;
+                    
+                    if (isFreeShipping) {
+                        // Nếu là free shipping, hiển thị phí vận chuyển như là số tiền giảm giá
+                        if (shipping > 0) {
+                            // Hiển thị phí vận chuyển như là số tiền giảm giá
+                            const shippingDiscount = shipping;
+                            
+                            // Cập nhật hiển thị phí vận chuyển
+                            shippingElement.innerHTML = '<span class="line-through text-gray-400">' + 
+                                new Intl.NumberFormat('vi-VN').format(shipping) + 'đ</span> ' +
+                                '<span class="text-green-600 font-medium">Miễn phí</span>';
+                            
+                            // Hiển thị phần giảm giá
+                            const discountRow = document.getElementById('coupon-discount-row');
+                            if (discountRow) {
+                                discountRow.classList.remove('hidden');
+                                if (discountElement) {
+                                    discountElement.textContent = '-' + new Intl.NumberFormat('vi-VN').format(shippingDiscount) + 'đ';
+                                    discountElement.setAttribute('data-value', shippingDiscount);
+                                }
+                            }
+                            
+                            // Đặt giá trị phí vận chuyển thành 0 để tính toán đúng
+                            shippingElement.setAttribute('data-value', 0);
+                            
+                            // Tính tổng tiền
+                            total = subtotal - shippingDiscount;
+                        } else {
+                            total = subtotal - discount;
+                        }
+                        
+                        // Đảm bảo tổng tiền không âm
+                        if (total < 0) total = 0;
+                    } else {
+                        // Nếu không phải free shipping, tính bình thường
+                        total = subtotal + shipping - discount;
+                        
+                        // Đảm bảo tổng tiền không âm
+                        if (total < 0) total = 0;
+                    }
+                    
+                    totalElement.textContent = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
+                    totalElement.setAttribute('data-value', total);
+                }
+            }
+        });
+        
+        // Terms checkbox validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('checkout-form');
+            const termsCheckbox = document.getElementById('terms');
+            const termsError = document.getElementById('terms-error');
+            
+            if (form && termsCheckbox && termsError) {
+                form.addEventListener('submit', function(e) {
+                    if (!termsCheckbox.checked) {
+                        e.preventDefault();
+                        termsError.classList.remove('hidden');
+                        termsCheckbox.focus();
+                        return false;
+                    }
+                    termsError.classList.add('hidden');
+                });
+                
+                // Hide error when checkbox is checked
+                termsCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        termsError.classList.add('hidden');
+                    }
+                });
+            }
+        });
+        // ========== CHECKOUT FORM VALIDATION ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkoutForm = document.getElementById('checkout-form');
+            const checkoutBtn = document.querySelector('#checkout-form button[type="submit"]');
+            
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Always prevent default first
+                    
+                    // Check if user is authenticated
+                    const isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
+                    
+                    if (isAuthenticated) {
+                        // For authenticated users, check if address is selected
+                        const hasUserAddresses = {{ ($userAddresses && $userAddresses->count() > 0) ? 'true' : 'false' }};
+                        
+                        if (!hasUserAddresses) {
+                            // No addresses saved - show notification to add address
+                            showAddressRequiredNotification();
+                            return false;
+                        }
+                        
+                        // Check if an address is selected
+                        const selectedAddressInput = document.getElementById('hidden_address_id');
+                        const selectedAddressRadio = document.querySelector('input[name="selected_address_option"]:checked');
+                        
+                        if (!selectedAddressInput?.value && !selectedAddressRadio?.value) {
+                            // No address selected - show notification
+                            showAddressSelectionNotification();
+                            return false;
+                        }
+                    } else {
+                        // For guest users, validate address fields
+                        const requiredFields = ['full_name', 'phone', 'email', 'city', 'district', 'ward', 'address', 'latitude', 'longitude'];
+                        const missingFields = [];
+                        
+                        requiredFields.forEach(fieldName => {
+                            const field = document.getElementById(fieldName);
+                            if (!field || !field.value.trim()) {
+                                missingFields.push(fieldName);
+                            }
+                        });
+                        
+                        if (missingFields.length > 0) {
+                            showGuestFieldsRequiredNotification(missingFields);
+                            return false;
+                        }
+                    }
+                    
+                    // Check terms acceptance
+                    const termsCheckbox = document.getElementById('terms');
+                    if (!termsCheckbox?.checked) {
+                        showTermsRequiredNotification();
+                        return false;
+                    }
+                    
+                    // All validations passed - submit the form
+                    checkoutForm.submit();
+                });
+            }
+            
+            // Show notification for users without any addresses
+            function showAddressRequiredNotification() {
+                showEnhancedToast(
+                    'Vui lòng thêm địa chỉ giao hàng trước khi đặt hàng', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-map-marker-alt',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight the add address button
+                const addAddressBtn = document.getElementById('add-address-btn');
+                if (addAddressBtn) {
+                    addAddressBtn.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        addAddressBtn.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for users who haven't selected an address
+            function showAddressSelectionNotification() {
+                showEnhancedToast(
+                    'Vui lòng chọn địa chỉ giao hàng để tiếp tục đặt hàng', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-map-marker-alt',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight the address component
+                const addressComponent = document.getElementById('address-component');
+                if (addressComponent) {
+                    addressComponent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    addressComponent.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        addressComponent.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for guest users with missing fields
+            function showGuestFieldsRequiredNotification(missingFields) {
+                const fieldNames = {
+                    'full_name': 'Họ và tên',
+                    'phone': 'Số điện thoại',
+                    'email': 'Email',
+                    'city': 'Tỉnh/Thành phố',
+                    'district': 'Quận/Huyện', 
+                    'ward': 'Xã/Phường',
+                    'address': 'Số nhà, đường',
+                    'latitude': 'Tọa độ',
+                    'longitude': 'Tọa độ'
+                };
+                
+                const missingFieldNames = missingFields.map(field => fieldNames[field] || field).join(', ');
+                
+                showEnhancedToast(
+                    `Vui lòng điền đầy đủ thông tin: ${missingFieldNames}`, 
+                    'warning', 
+                    {
+                        icon: 'fas fa-exclamation-triangle',
+                        duration: 7000
+                    }
+                );
+                
+                // Highlight first missing field
+                const firstMissingField = document.getElementById(missingFields[0]);
+                if (firstMissingField) {
+                    firstMissingField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstMissingField.focus();
+                    firstMissingField.classList.add('border-red-500', 'animate-pulse');
+                    setTimeout(() => {
+                        firstMissingField.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Show notification for missing terms acceptance
+            function showTermsRequiredNotification() {
+                showEnhancedToast(
+                    'Vui lòng đồng ý với điều khoản và điều kiện để tiếp tục', 
+                    'warning', 
+                    {
+                        icon: 'fas fa-file-contract',
+                        duration: 5000
+                    }
+                );
+                
+                // Highlight terms checkbox
+                const termsCheckbox = document.getElementById('terms');
+                if (termsCheckbox) {
+                    termsCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    termsCheckbox.parentElement.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        termsCheckbox.parentElement.classList.remove('animate-pulse');
+                    }, 3000);
+                }
+            }
+            
+            // Xử lý áp dụng mã giảm giá từ danh sách
+            const couponFeedback = document.getElementById('coupon-feedback');
+            const couponDiscountRow = document.getElementById('coupon-discount-row');
+            const couponDiscountDisplay = document.getElementById('coupon-discount-display');
+            const removeCouponBtn = document.getElementById('remove-coupon-btn');
+            
+            // Xử lý nút xóa mã giảm giá nếu đã có mã được áp dụng
+            if (removeCouponBtn) {
+                removeCouponBtn.addEventListener('click', removeCoupon);
+            }
+            
+            // Xử lý các nút áp dụng mã giảm giá trong danh sách
+            const applyCouponBtns = document.querySelectorAll('.apply-coupon-btn');
+            if (applyCouponBtns.length > 0) {
+                applyCouponBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const couponCode = this.getAttribute('data-code');
+                        
+                        if (!couponCode) {
+                            couponFeedback.innerHTML = '<span class="text-red-500">Mã giảm giá không hợp lệ</span>';
+                            return;
+                        }
+                        
+                        // Hiển thị trạng thái đang xử lý
+                        const originalBtnText = this.innerHTML;
+                        const allBtns = document.querySelectorAll('.apply-coupon-btn');
+                        allBtns.forEach(b => b.disabled = true);
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        couponFeedback.innerHTML = '<span class="text-blue-500">Đang kiểm tra mã giảm giá...</span>';
+                        
+                        // Gửi yêu cầu AJAX để áp dụng mã giảm giá
+                        fetch('/coupon/apply', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ coupon_code: couponCode })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Tải lại trang để cập nhật trạng thái
+                                window.location.reload();
+                            } else {
+                                // Hiển thị thông báo lỗi
+                                couponFeedback.innerHTML = `<span class="text-red-500">${data.message}</span>`;
+                                allBtns.forEach(b => b.disabled = false);
+                                this.innerHTML = originalBtnText;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            couponFeedback.innerHTML = '<span class="text-red-500">Đã xảy ra lỗi khi áp dụng mã giảm giá</span>';
+                            allBtns.forEach(b => b.disabled = false);
+                            this.innerHTML = originalBtnText;
+                        });
+                    });
+                });
+            }
+            
+            // Hàm xóa mã giảm giá
+            function removeCoupon() {
+                fetch('/coupon/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Tải lại trang để cập nhật trạng thái
+                        window.location.reload();
+                    } else {
+                        couponFeedback.innerHTML = `<span class="text-red-500">${data.message}</span>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    couponFeedback.innerHTML = '<span class="text-red-500">Đã xảy ra lỗi khi xóa mã giảm giá</span>';
+                });
+            }
+            
+            // Hàm cập nhật tổng tiền
+            function updateOrderTotal() {
+                const subtotalElement = document.getElementById('subtotal-display');
+                const shippingElement = document.getElementById('shipping-fee-display');
+                const discountElement = document.getElementById('coupon-discount-display');
+                const totalElement = document.getElementById('total-amount-display');
+                
+                if (subtotalElement && shippingElement && totalElement) {
+                    const subtotal = parseInt(subtotalElement.getAttribute('data-value')) || 0;
+                    const shipping = parseInt(shippingElement.getAttribute('data-value')) || 0;
+                    const discount = parseInt(discountElement?.getAttribute('data-value')) || 0;
+                    
+                    const total = subtotal + shipping - discount;
+                    totalElement.textContent = `${new Intl.NumberFormat('vi-VN').format(total)}đ`;
+                }
+            }
+        });
     </script>
 @endsection

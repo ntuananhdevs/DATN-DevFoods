@@ -401,139 +401,143 @@
     .reply-item {
         display: flex;
         align-items: flex-start;
-        gap: 12px;
-        margin-left: 44px;
-        margin-top: 10px;
+        gap: 0;
+        margin-left: 56px;
+        margin-top: 12px;
         position: relative;
-        animation: fadeInReply 0.4s;
     }
-    @keyframes fadeInReply {
-        from { opacity: 0; transform: translateY(-8px);}
-        to { opacity: 1; transform: translateY(0);}
+    
+    /* Đường kẻ dọc kiểu Facebook */
+    .reply-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: -12px;
+        width: 2px;
+        height: 24px;
+        background-color: #e5e7eb;
     }
-    .reply-arrow {
-        width: 24px;
-        display: flex;
-        align-items: flex-start;
-        margin-top: 8px;
-        flex-shrink: 0;
+    
+    /* Đường kẻ ngang */
+    .reply-item::after {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 12px;
+        width: 20px;
+        height: 2px;
+        background-color: #e5e7eb;
     }
+    
     .reply-item .reply-bubble {
-        background: #f4f6fb;
-        border: 1px solid #e3e8f0;
-        border-radius: 12px 12px 12px 4px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         padding: 12px 16px;
         min-width: 0;
-        box-shadow: 0 2px 8px rgba(80, 120, 200, 0.04);
-        transition: box-shadow 0.2s;
-        position: relative;
+        flex: 1;
+        margin-left: 8px;
     }
-    .reply-item .reply-bubble:hover {
-        box-shadow: 0 4px 16px rgba(80, 120, 200, 0.10);
-    }
+    
     .reply-item .reply-header {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
+    
     .reply-item .reply-author {
         font-weight: 600;
-        color: #2563eb;
-        font-size: 1rem;
+        color: #1e40af;
+        font-size: 0.9rem;
     }
+    
     .reply-item .reply-time {
-        font-size: 0.85rem;
-        color: #94a3b8;
+        font-size: 0.8rem;
+        color: #64748b;
     }
+    
     .reply-item .reply-actions {
         margin-left: auto;
         display: flex;
-        gap: 8px;
+        gap: 6px;
     }
+    
     .reply-item .reply-actions button {
         background: none;
         border: none;
-        color: #f87171;
-        font-size: 0.9rem;
+        color: #ef4444;
+        font-size: 0.75rem;
         cursor: pointer;
-        padding: 0 4px;
+        padding: 2px 6px;
         border-radius: 4px;
-        transition: background 0.15s;
     }
-    .reply-item .reply-actions button:hover {
-        background: #fee2e2;
-    }
+    
     .reply-item .reply-content {
-        color: #334155;
-        font-size: 1rem;
-        line-height: 1.5;
+        color: #374151;
+        font-size: 0.9rem;
+        line-height: 1.4;
         word-break: break-word;
     }
-    /* Modal báo cáo review tối ưu lại, ngắn gọn hơn */
+    /* Modal báo cáo review */
     #report-review-modal .bg-white {
-        max-width: 40rem;
+        max-width: 36rem;
         width: 100%;
-        padding: 1rem 1.25rem;
+        padding: 1.5rem;
         margin: 0;
-        max-height: 80vh;
+        max-height: 85vh;
         overflow-y: auto;
     }
-    #report-review-modal .flex.items-center.mb-4 {
-        padding-bottom: 0.25rem;
-        margin-bottom: 0.5rem;
-    }
-    #report-review-modal .bg-gray-50 {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0.5rem;
-    }
     #report-review-modal .reason-option {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    #report-review-modal .reason-option:hover {
+        border-color: #f97316;
+        background-color: #fef3e2;
+    }
+    #report-review-modal .reason-option input:checked + div {
+        color: #f97316;
+    }
+    #report-review-modal .reason-option input:checked {
+        border-color: #f97316;
+        background-color: #fef3e2;
     }
     #report-review-modal .reason-option .font-semibold {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
     }
     #report-review-modal .reason-option .text-xs {
-        font-size: 0.78rem;
-        line-height: 1.2;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.75rem;
+        line-height: 1.3;
+        color: #6b7280;
     }
     #report-review-modal textarea {
-        min-height: 36px;
-        font-size: 0.95rem;
-        padding: 0.4rem 0.6rem;
+        min-height: 80px;
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
         resize: vertical;
     }
-    #report-review-modal .bg-blue-50 {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.9rem;
-        margin-bottom: 0.3rem;
-    }
-    #report-review-modal .flex.justify-end.gap-2.pt-2 {
-        padding-top: 0.3rem;
-    }
-    #report-review-modal label.block.font-medium.mb-2 {
-        margin-bottom: 0.3rem;
-    }
-    #report-review-modal .grid {
-        gap: 0.5rem;
-    }
     #report-review-modal .preview-binhluan {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
         background: #f9fafb;
-        border-left: 3px solid #ef4444;
+        border-left: 4px solid #ef4444;
+        border-radius: 6px;
         display: flex;
         gap: 0.75rem;
         align-items: flex-start;
     }
     #report-review-modal .preview-binhluan .avatar {
-        width: 2.2rem;
-        height: 2.2rem;
+        width: 2.5rem;
+        height: 2.5rem;
         font-size: 1.1rem;
+        border-radius: 50%;
     }
     #report-review-modal .preview-binhluan .info {
         flex: 1;
@@ -541,27 +545,31 @@
     }
     #report-review-modal .preview-binhluan .info .name {
         font-weight: 600;
-        font-size: 1rem;
-        color: #222;
+        font-size: 0.95rem;
+        color: #374151;
         margin-right: 0.5rem;
     }
     #report-review-modal .preview-binhluan .info .time {
-        font-size: 0.85rem;
-        color: #888;
+        font-size: 0.8rem;
+        color: #6b7280;
     }
     #report-review-modal .preview-binhluan .info .content {
-        font-size: 0.95rem;
-        color: #444;
-        margin-top: 0.1rem;
-        white-space: nowrap;
+        font-size: 0.9rem;
+        color: #4b5563;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
     }
-    @media (max-width: 700px) {
+    @media (max-width: 640px) {
         #report-review-modal .bg-white {
-            max-width: 98vw;
-            padding: 0.5rem 0.2rem;
+            max-width: 95vw;
+            padding: 1rem;
+        }
+        #report-review-modal .grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -854,14 +862,14 @@
                                 @endif
                                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
                                 <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
-                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 checked-indicator transition-transform duration-200"></div>
                                 </div>
                                 @if($selectedBranchId)
                                     @php
                                         $toppingStock = $topping->toppingStocks->first();
                                         $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
                                     @endphp
-                                    @if($stockQuantity < 5)
+                                    @if($stockQuantity <= 10)
                                         <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display">
                                             Còn {{ $stockQuantity }}
                                         </div>
@@ -972,7 +980,7 @@
                             <ul class="space-y-2">
                                 @foreach($product->ingredients as $ingredient)
                                     <li class="flex items-center space-x-2 text-gray-700">
-                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        {{-- <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span> --}} <!-- Ẩn ô tròn màu cam -->
                                         <span class="flex-1">{{ $ingredient }}</span>
                                     </li>
                                 @endforeach
@@ -1132,10 +1140,7 @@
                         <!-- Hiển thị các reply -->
                         @foreach($review->replies as $reply)
                             <div class="reply-item" data-reply-id="{{ $reply->id }}">
-                                <div class="reply-arrow">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                </div>
-                                <div class="reply-bubble flex-1">
+                                <div class="reply-bubble">
                                     <div class="reply-header">
                                         <span class="reply-author">{{ $reply->user->name }}</span>
                                         <span class="reply-time">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
@@ -1166,52 +1171,74 @@
 
                     {{-- Form gửi đánh giá hoặc phản hồi --}}
                     @auth
-                        <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                            <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
-                                @csrf
-                                <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
-                                <input type="hidden" name="type" value="product">
-                                <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
-                                <div id="replying-to" class="mb-2 hidden">
-                                    <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
-                                    <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
-                                </div>
-                                <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
-                                    <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
-                                    <div class="flex items-center" id="rating-stars">
-                                        @for($i = 1; $i <= 5; $i++)
-                                            <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
-                                            <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
-                                                <i class="fas fa-star"></i>
-                                            </label>
-                                        @endfor
+                        @php
+                            $currentBranchId = $currentBranch ? $currentBranch->id : null; // Sử dụng $currentBranch thay vì session
+                            // Kiểm tra user đã mua sản phẩm này ở chi nhánh hiện tại chưa
+                            $hasPurchasedAtBranch = false;
+                            if ($currentBranchId && Auth::user()) {
+                                $hasPurchasedAtBranch = Auth::user()->orders()
+                                    ->whereIn('status', ['delivered', 'item_received']) // Bao gồm cả item_received
+                                    ->where('branch_id', $currentBranchId)
+                                    ->whereHas('orderItems.productVariant', function($q) use ($product) {
+                                        $q->where('product_id', $product->id);
+                                    })
+                                    ->exists();
+                            }
+                        @endphp
+                        
+                        @if($hasPurchasedAtBranch)
+                            <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                                <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
+                                    @csrf
+                                    <input type="hidden" name="branch_id" value="{{ $currentBranchId }}">
+                                    <input type="hidden" name="type" value="product">
+                                    <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
+                                    <div id="replying-to" class="mb-2 hidden">
+                                        <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
+                                        <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
                                     </div>
-                                </div>
-                                <div id="review-message" class="mb-4 text-center"></div>
-                                <div>
-                                    <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
-                                    <div class="flex items-center justify-between gap-4 flex-wrap">
-                                        <div>
-                                            <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
-                                            <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
-                                                <i class="fas fa-camera text-3xl text-orange-500"></i>
-                                                <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
-                                                <button type="button" id="remove_preview_image" class="absolute top-0 right-0 m-1 bg-white bg-opacity-80 rounded-full p-1 shadow text-gray-700 hover:bg-red-500 hover:text-white hidden" style="z-index:2;" title="Xoá ảnh">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </label>
+                                    <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
+                                        <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
+                                        <div class="flex items-center" id="rating-stars">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
+                                                <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
+                                                    <i class="fas fa-star"></i>
+                                                </label>
+                                            @endfor
                                         </div>
                                     </div>
-                                </div>
-                                <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
-                            </form>
-                        </div>
+                                    <div id="review-message" class="mb-4 text-center"></div>
+                                    <div>
+                                        <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
+                                        <div class="flex items-center justify-between gap-4 flex-wrap">
+                                            <div>
+                                                <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
+                                                <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
+                                                    <i class="fas fa-camera text-3xl text-orange-500"></i>
+                                                    <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                                                    <button type="button" id="remove_preview_image" class="absolute top-0 right-0 m-1 bg-white bg-opacity-80 rounded-full p-1 shadow text-gray-700 hover:bg-red-500 hover:text-white hidden" style="z-index:2;" title="Xoá ảnh">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
+                                </form>
+                            </div>
+                        @else
+                            <div class="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p class="text-yellow-800 text-center">Bạn chỉ có thể đánh giá sản phẩm đã mua tại chi nhánh này.</p>
+                            </div>
+                        @endif
                     @else
                         <div class="mt-8 p-6 bg-gray-50 rounded-lg border text-center">
                             <p class="text-gray-600 mb-4">Vui lòng <a href="{{ route('customer.login') }}" class="text-orange-500 font-semibold hover:underline">đăng nhập</a> để gửi đánh giá cho sản phẩm này.</p>
+                        </div>
                     @endauth
 
                     @if($product->reviews->count() > 0)
@@ -1475,7 +1502,7 @@
 @endsection
 
 @section('scripts')
-<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+<script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
 <script>
     window.selectedBranchId = {{ $selectedBranchId ? $selectedBranchId : 'null' }};
     window.productId = {{ $product->id }};
@@ -1597,5 +1624,24 @@
         });
     });
 })();
+</script>
+<script>
+    // Chỉ hiện ô tròn màu cam khi topping được chọn
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.topping-input').forEach(function(checkbox) {
+            function updateIndicator() {
+                const indicator = checkbox.closest('label').querySelector('.checked-indicator');
+                if (checkbox.checked) {
+                    indicator.classList.remove('scale-0');
+                    indicator.classList.add('scale-100');
+                } else {
+                    indicator.classList.remove('scale-100');
+                    indicator.classList.add('scale-0');
+                }
+            }
+            checkbox.addEventListener('change', updateIndicator);
+            updateIndicator(); // init
+        });
+    });
 </script>
 @endsection

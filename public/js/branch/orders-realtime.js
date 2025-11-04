@@ -11,6 +11,74 @@ class BranchOrdersRealtime {
         this.init();
     }
 
+    updateOrderCardStatus(orderCard, newStatus) {
+        console.log('🎨 Cập nhật status card:', newStatus);
+        const statusBadge = orderCard.querySelector('.status-badge');
+        const statusContainer = orderCard.querySelector('.order-status-container');
+
+        if (!statusContainer) {
+            console.log('❌ Không tìm thấy status container');
+            return;
+        }
+
+        const statusTexts = {
+            'awaiting_confirmation': 'Chờ xác nhận',
+            'confirmed': 'Đã xác nhận',
+            'awaiting_driver': 'Chờ tài xế',
+            'driver_assigned': 'Đã gán tài xế',
+            'driver_confirmed': 'Tài xế đã xác nhận',
+            'waiting_driver_pick_up': 'Chờ tài xế lấy hàng',
+            'driver_picked_up': 'Tài xế đã nhận đơn',
+            'in_transit': 'Đang giao',
+            'delivered': 'Đã giao',
+            'item_received': 'Đã nhận hàng',
+            'cancelled': 'Đã hủy',
+            'refunded': 'Đã hoàn tiền',
+            'payment_failed': 'Thanh toán thất bại',
+            'payment_received': 'Đã nhận thanh toán',
+            'order_failed': 'Đơn thất bại'
+        };
+
+        const statusColors = {
+            'awaiting_confirmation': '#f59e0b',
+            'confirmed': '#3b82f6',
+            'awaiting_driver': '#60a5fa',
+            'driver_assigned': '#6366f1',
+            'driver_confirmed': '#2563eb',
+            'waiting_driver_pick_up': '#a78bfa',
+            'driver_picked_up': '#8b5cf6',
+            'in_transit': '#06b6d4',
+            'delivered': '#10b981',
+            'item_received': '#059669',
+            'cancelled': '#ef4444',
+            'refunded': '#6b7280',
+            'payment_failed': '#ef4444',
+            'payment_received': '#84cc16',
+            'order_failed': '#dc2626'
+        };
+
+        const statusText = statusTexts[newStatus] || newStatus;
+        const statusColor = statusColors[newStatus] || '#6b7280';
+
+        // Cập nhật text và màu sắc của status badge
+        if (statusBadge) {
+            statusBadge.textContent = statusText;
+            statusBadge.style.backgroundColor = statusColor;
+        }
+
+        // Cập nhật action buttons
+        this.updateOrderCardActions(orderCard, newStatus);
+    }
+
+    updateOrderCardActions(orderCard, newStatus) {
+        const actionsContainer = orderCard.querySelector('.quick-actions');
+        if (!actionsContainer) return;
+
+        const orderId = orderCard.getAttribute('data-order-id');
+        const quickActionsHtml = this.getQuickActionsHTML(orderId, newStatus);
+        actionsContainer.innerHTML = quickActionsHtml;
+    }
+
     init() {
         // Luôn bind events để xử lý click
         this.bindEvents();
@@ -50,12 +118,12 @@ class BranchOrdersRealtime {
                 // Disconnected
             });
 
+            // Subscribe to private branch channel for new orders
             const channelName = `private-branch.${this.branchId}.orders`;
-            
             this.channel = this.pusher.subscribe(channelName);
 
             this.channel.bind('pusher:subscription_succeeded', () => {
-                // Successfully subscribed
+                // Successfully subscribed to private branch channel
             });
 
             this.channel.bind('pusher:subscription_error', (status) => {
@@ -66,8 +134,32 @@ class BranchOrdersRealtime {
                 this.handleNewOrder(data);
             });
 
-            this.channel.bind('order-status-updated', (data) => {
-                this.handleStatusUpdate(data);
+            // Subscribe to public branch orders channel for status updates
+            this.branchOrdersChannel = this.pusher.subscribe('branch-orders-channel');
+            
+            this.branchOrdersChannel.bind('pusher:subscription_succeeded', () => {
+                // Successfully subscribed to branch orders channel
+            });
+
+            this.branchOrdersChannel.bind('order-status-updated', (data) => {
+                // Only handle updates for this branch
+                if (data.branch_id == this.branchId) {
+                    this.handleStatusUpdate(data);
+                }
+            });
+
+            // Subscribe to order status updates channel for additional coverage
+            this.orderStatusChannel = this.pusher.subscribe('order-status-updates');
+            
+            this.orderStatusChannel.bind('pusher:subscription_succeeded', () => {
+                // Successfully subscribed to order status updates channel
+            });
+
+            this.orderStatusChannel.bind('order-status-updated', (data) => {
+                // Only handle updates for this branch
+                if (data.branch_id == this.branchId) {
+                    this.handleStatusUpdate(data);
+                }
             });
 
         } catch (error) {
@@ -453,8 +545,21 @@ class BranchOrdersRealtime {
             oldStatus = statusMap[statusText] || statusText?.toLowerCase().replace(/\s/g, '_');
         }
         
-        // Xóa thẻ khỏi tab hiện tại
-        orderCard.remove();
+        // Kiểm tra tab hiện tại và chỉ ẩn đơn hàng nếu cần thiết
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentTabStatus = urlParams.get('status') || 'all';
+        
+        // Nếu đang ở tab "Tất cả", cập nhật trạng thái thay vì xóa
+        if (currentTabStatus === 'all') {
+            // Cập nhật trạng thái của đơn hàng thay vì xóa
+            this.updateOrderCardStatus(orderCard, newStatus);
+            return;
+        }
+        
+        // Nếu đang ở tab cụ thể và đơn hàng không còn thuộc tab này, thì ẩn
+        if (currentTabStatus !== 'all' && currentTabStatus !== newStatus) {
+            orderCard.style.display = 'none';
+        }
         
         // Cập nhật URL nếu đang ở tab cụ thể và không còn đơn hàng nào
         const currentTab = document.querySelector('.status-tab.active');
@@ -756,14 +861,27 @@ class BranchOrdersRealtime {
             this.pollingInterval = null;
         }
         
-        // Disconnect Pusher
+        // Unsubscribe from all channels
         if (this.pusher) {
+            if (this.channel) {
+                this.pusher.unsubscribe(`private-branch.${this.branchId}.orders`);
+            }
+            if (this.branchOrdersChannel) {
+                this.pusher.unsubscribe('branch-orders-channel');
+            }
+            if (this.orderStatusChannel) {
+                this.pusher.unsubscribe('order-status-updates');
+            }
+            
+            // Disconnect Pusher
             this.pusher.disconnect();
             this.pusher = null;
         }
         
-        // Clear channel
+        // Clear channel references
         this.channel = null;
+        this.branchOrdersChannel = null;
+        this.orderStatusChannel = null;
     }
 }
 

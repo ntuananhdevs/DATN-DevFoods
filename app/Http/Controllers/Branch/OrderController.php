@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Branch;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Branch;
 use App\Models\Order;
+use App\Models\DriverLocation;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\Order\OrderStatusUpdated;
@@ -31,11 +33,13 @@ class OrderController extends Controller
 
             if ($lastOrderTime) {
                 $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('status', '!=', 'pending_payment')
                     ->where('created_at', '>', $lastOrderTime)
                     ->exists();
             } else {
                 // If no last_order_time provided, check if there are any orders created in the last 5 minutes
                 $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('status', '!=', 'pending_payment')
                     ->where('created_at', '>', now()->subMinutes(5))
                     ->exists();
             }
@@ -61,7 +65,8 @@ class OrderController extends Controller
             'cancellation.cancelledBy',
             'payment',
             'address' // Đảm bảo load address
-        ])->where('branch_id', $branch->id);
+        ])->where('branch_id', $branch->id)
+          ->where('status', '!=', 'pending_payment'); // Ẩn đơn hàng chưa thanh toán
 
         // Search filter
         if ($request->filled('search')) {
@@ -71,7 +76,7 @@ class OrderController extends Controller
                     ->orWhere('guest_name', 'like', "%{$search}%")
                     ->orWhere('guest_phone', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('name', 'like', "%{$search}%")
+                        $customerQuery->where('full_name', 'like', "%{$search}%")
                             ->orWhere('phone', 'like', "%{$search}%");
                     });
             });
@@ -107,6 +112,13 @@ class OrderController extends Controller
             });
         }
 
+        // Payment status filter
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $query->whereHas('payment', function ($q) use ($request) {
+                $q->where('payment_status', $request->payment_status);
+            });
+        }
+
         // Luôn sắp xếp đơn hàng mới nhất lên đầu
         $query->orderBy('order_date', 'desc');
 
@@ -124,11 +136,12 @@ class OrderController extends Controller
             }
         }
 
-        // Get status counts
+        // Get status counts (excluding pending_payment orders)
         $statusCounts = [
-            'all' => Order::where('branch_id', $branch->id)->count(),
+            'all' => Order::where('branch_id', $branch->id)->where('status', '!=', 'pending_payment')->count(),
             'awaiting_confirmation' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_confirmation')->count(),
             'awaiting_driver' => Order::where('branch_id', $branch->id)
+                ->where('status', '!=', 'pending_payment')
                 ->whereIn('status', [
                     'confirmed',
                     'awaiting_driver',
@@ -159,10 +172,19 @@ class OrderController extends Controller
             ['key' => 'balance', 'label' => 'Số dư tài khoản'],
         ];
 
+        // Get payment statuses for filter
+        $paymentStatuses = [
+            ['key' => 'all', 'label' => 'Tất cả'],
+            ['key' => 'pending', 'label' => 'Chờ xử lý'],
+            ['key' => 'completed', 'label' => 'Thành công'],
+            ['key' => 'failed', 'label' => 'Thất bại'],
+            ['key' => 'refunded', 'label' => 'Đã hoàn tiền'],
+        ];
+
         if ($request->ajax()) {
             return response()->view('branch.orders.partials.orders_grid', compact('orders'));
         }
-        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods', 'branch'));
+        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods', 'paymentStatuses', 'branch'));
     }
 
     public function show($id)
@@ -183,7 +205,23 @@ class OrderController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        return view('branch.orders.show', compact('order'));
+        // Get branch coordinates
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+        
+        // Get customer coordinates
+        $customerLat = null;
+        $customerLng = null;
+        
+        if ($order->address) {
+            $customerLat = $order->address->latitude;
+            $customerLng = $order->address->longitude;
+        } else {
+            $customerLat = $order->guest_latitude;
+            $customerLng = $order->guest_longitude;
+        }
+
+        return view('branch.orders.show',  compact('order', 'branchLat', 'branchLng', 'customerLat', 'customerLng'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -245,8 +283,8 @@ class OrderController extends Controller
         ]);
 
         // Broadcast sự kiện cập nhật trạng thái đơn hàng
-        event(new OrderStatusUpdated($freshOrder)); //
-
+        event(new OrderStatusUpdated($freshOrder, false, $oldStatus, $newStatus));
+        
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật trạng thái đơn hàng thành công.',
@@ -342,6 +380,7 @@ class OrderController extends Controller
     private function getStatusText($status)
     {
         $statusTexts = [
+            'pending_payment' => 'Chưa thanh toán',
             'awaiting_confirmation' => 'Chờ xác nhận',
             'awaiting_driver' => 'Chờ tài xế',
             'in_transit' => 'Đang giao',
@@ -386,12 +425,21 @@ class OrderController extends Controller
             'changed_at' => now()
         ]);
 
+        // Lấy lại đơn hàng với dữ liệu mới nhất
+        $freshOrder = $order->fresh();
+        
+        // Broadcast sự kiện cập nhật trạng thái đơn hàng
+        event(new OrderStatusUpdated($freshOrder, false, $order->getOriginal('status'), 'cancelled'));
+
         return response()->json([
             'success' => true,
             'message' => 'Hủy đơn hàng thành công'
         ]);
     }
 
+    /**
+     * Lấy stage của đơn hàng để hủy
+     */
     private function getCancellationStage($status)
     {
         $stageMap = [
@@ -460,7 +508,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast event để cập nhật realtime
-            event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
+            event(new OrderStatusUpdated($order, false, 'awaiting_confirmation', 'confirmed'));
 
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));
@@ -490,6 +538,8 @@ class OrderController extends Controller
 
 
 
+
+
     /**
      * Trả về HTML partial card cho 1 order (dùng cho realtime)
      */
@@ -500,5 +550,161 @@ class OrderController extends Controller
             ->where('branch_id', $branch->id)
             ->findOrFail($id);
         return view('branch.orders.partials.order_card', compact('order'));
+    }
+
+    /**
+     * Lấy danh sách tài xế khả dụng cho bản đồ
+     */
+    public function getAvailableDrivers($orderId)
+    {
+        try {
+            $branch = Auth::guard('manager')->user()->branch;
+            $order = Order::where('branch_id', $branch->id)->findOrFail($orderId);
+            
+            // Lấy tọa độ giao hàng
+            $deliveryLat = $order->address->latitude ?? $order->guest_latitude;
+            $deliveryLng = $order->address->longitude ?? $order->guest_longitude;
+            
+            if (!$deliveryLat || !$deliveryLng) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có thông tin tọa độ giao hàng',
+                    'drivers' => []
+                ]);
+            }
+            
+            // Truy vấn tài xế khả dụng với vị trí hiện tại từ driver_locations
+            $drivers = DB::table('drivers')
+                ->join('driver_locations', function($join) {
+                    $join->on('drivers.id', '=', 'driver_locations.driver_id')
+                         ->whereRaw('driver_locations.id = (
+                             SELECT MAX(id) FROM driver_locations dl 
+                             WHERE dl.driver_id = drivers.id
+                         )');
+                })
+                ->select(
+                    'drivers.id',
+                    'drivers.full_name',
+                    'drivers.phone_number',
+                    'drivers.is_available',
+                    'driver_locations.latitude',
+                    'driver_locations.longitude',
+                    'driver_locations.updated_at as location_updated_at',
+                    DB::raw('(
+                        6371 * acos(
+                            cos(radians(' . $deliveryLat . '))
+                            * cos(radians(driver_locations.latitude))
+                            * cos(radians(driver_locations.longitude) - radians(' . $deliveryLng . '))
+                            + sin(radians(' . $deliveryLat . '))
+                            * sin(radians(driver_locations.latitude))
+                        )
+                    ) AS distance')
+                )
+                ->where('drivers.is_available', true)
+                ->where('drivers.status', 'active')
+                ->whereNotNull('driver_locations.latitude')
+                ->whereNotNull('driver_locations.longitude')
+                ->whereRaw('(
+                    6371 * acos(
+                        cos(radians(' . $deliveryLat . '))
+                        * cos(radians(driver_locations.latitude))
+                        * cos(radians(driver_locations.longitude) - radians(' . $deliveryLng . '))
+                        + sin(radians(' . $deliveryLat . '))
+                        * sin(radians(driver_locations.latitude))
+                    )
+                ) <= 10') // Trong bán kính 10km
+                ->orderBy('distance')
+                ->limit(20)
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'drivers' => $drivers
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy danh sách tài xế khả dụng', [
+                'order_id' => $orderId,
+                'message' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi lấy danh sách tài xế',
+                'drivers' => []
+            ], 500);
+        }
+    }
+    
+    /**
+     * Lấy thông tin tài xế được gán cho đơn hàng
+     */
+    public function getAssignedDriver($orderId, $driverId)
+    {
+        try {
+            $branch = Auth::guard('manager')->user()->branch;
+            $order = Order::where('branch_id', $branch->id)->findOrFail($orderId);
+            
+            // Kiểm tra tài xế có được gán cho đơn hàng này không
+            if ($order->driver_id != $driverId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tài xế không được gán cho đơn hàng này',
+                    'driver' => null
+                ]);
+            }
+            
+            // Lấy tọa độ giao hàng
+            $deliveryLat = $order->address->latitude ?? $order->guest_latitude;
+            $deliveryLng = $order->address->longitude ?? $order->guest_longitude;
+            
+            // Lấy thông tin tài xế với vị trí hiện tại từ driver_locations
+            $driver = DB::table('drivers')
+                ->join('driver_locations', function($join) {
+                    $join->on('drivers.id', '=', 'driver_locations.driver_id')
+                         ->whereRaw('driver_locations.id = (
+                             SELECT MAX(id) FROM driver_locations dl 
+                             WHERE dl.driver_id = drivers.id
+                         )');
+                })
+                ->select(
+                    'drivers.id',
+                    'drivers.full_name',
+                    'drivers.phone_number',
+                    'drivers.is_available',
+                    'driver_locations.latitude',
+                    'driver_locations.longitude',
+                    'driver_locations.updated_at as location_updated_at'
+                )
+                ->where('drivers.id', $driverId)
+                ->first();
+            
+            if ($driver && $deliveryLat && $deliveryLng && $driver->latitude && $driver->longitude) {
+                // Tính khoảng cách
+                $distance = $this->calculateDistance(
+                    $deliveryLat, $deliveryLng,
+                    $driver->latitude, $driver->longitude
+                );
+                $driver->distance = $distance;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'driver' => $driver
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Lỗi lấy thông tin tài xế được gán', [
+                'order_id' => $orderId,
+                'driver_id' => $driverId,
+                'message' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi lấy thông tin tài xế',
+                'driver' => null
+            ], 500);
+        }
     }
 }

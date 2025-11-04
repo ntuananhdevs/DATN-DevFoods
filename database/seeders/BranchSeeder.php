@@ -43,7 +43,7 @@ class BranchSeeder extends Seeder
                 'opening_hour' => '07:30',
                 'closing_hour' => '22:30',
                 'branch_code' => 'HN002',
-                'manager_user_id' => $managers['manager1@devfoods.com']->id ?? null,
+                'manager_user_id' => $managers['manager2@devfoods.com']->id ?? null,
             ],
             [
                 'name' => 'Chi nhánh Hà Đông',
@@ -55,17 +55,21 @@ class BranchSeeder extends Seeder
                 'opening_hour' => '07:30',
                 'closing_hour' => '22:30',
                 'branch_code' => 'HN003',
-                'manager_user_id' => $managers['manager1@devfoods.com']->id ?? null,
+                'manager_user_id' => $managers['manager3@devfoods.com']->id ?? null,
             ],
         ];
 
         foreach ($fixedBranches as $branchData) {
-            Branch::create(array_merge($branchData, [
-                'active' => true,
-                'balance' => rand(5000, 10000),
-                'rating' => rand(40, 50) / 10,
-                'reliability_score' => rand(90, 100),
-            ]));
+            // Idempotent seeding: cập nhật nếu đã tồn tại theo branch_code, tạo mới nếu chưa có
+            Branch::updateOrCreate(
+                ['branch_code' => $branchData['branch_code']],
+                array_merge($branchData, [
+                    'active' => true,
+                    'balance' => rand(5000, 10000),
+                    'rating' => rand(40, 50) / 10,
+                    'reliability_score' => rand(90, 100),
+                ])
+            );
         }
     }
 }

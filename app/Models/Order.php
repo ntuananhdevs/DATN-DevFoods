@@ -16,6 +16,8 @@ class Order extends Model
         'customer_id',
         'branch_id',
         'driver_id',
+        'batch_id',
+        'batch_order',
         'address_id',
         'discount_code_id',
         'payment_id', // Thêm payment_id vào fillable
@@ -134,6 +136,22 @@ class Order extends Model
     {
         return $this->hasMany(ProductReview::class);
     }
+    
+    /**
+     * Get the driver rating for the order.
+     */
+    public function driverRating()
+    {
+        return $this->hasOne(DriverRating::class);
+    }
+
+    /**
+     * Get the refund requests for the order.
+     */
+    public function refundRequests()
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
 
 
     /**
@@ -159,9 +177,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderStatusHistory::class);
     }
-
+    
     /**
-     * Get the cancellation information for the order.
+     * Get the cancellation record for this order.
      */
     public function cancellation()
     {
@@ -207,10 +225,11 @@ class Order extends Model
     protected function paymentMethodText(): Attribute
     {
         return Attribute::make(
-            get: fn() => match ($this->payment_method) {
-                'cod' => 'COD (Thanh toán khi nhận hàng)',
-                'vnpay' => 'VNPAY',
-                'balance' => 'Số dư tài khoản',
+            get: fn() => match ($this->payment->payment_method ?? 'unknown') {
+                'cash' => 'Tiền mặt',
+                'cod' => 'Thanh toán khi nhận hàng (COD)',
+                'vnpay' => 'Thanh toán qua VNPAY',
+                'balance' => 'Thanh toán bằng số dư tài khoản',
                 default => 'Không xác định',
             }
         );
@@ -231,11 +250,23 @@ class Order extends Model
 
     // Định nghĩa tĩnh các thuộc tính trạng thái
     private static array $statusAttributes = [
+        'pending_payment' => [
+            'text' => 'Chưa thanh toán',
+            'bg' => '#fef3c7', // Vàng nhạt hơn
+            'text_color' => '#92400e',
+            'icon' => 'fas fa-credit-card'
+        ],
         'awaiting_confirmation' => [
             'text' => 'Chờ xác nhận',
             'bg' => '#fde68a', // Vàng nhạt
             'text_color' => '#78350f',
             'icon' => 'fas fa-hourglass-half'
+        ],
+        'confirmed' => [
+            'text' => 'Đang tìm tài xế',
+            'bg' => '#dbeafe', // Xanh dương nhạt
+            'text_color' => '#1e40af',
+            'icon' => 'fas fa-search'
         ],
         'awaiting_driver' => [
             'text' => 'Chờ tài xế',
@@ -388,7 +419,7 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => $this->delivery_address_line_snapshot
-                ?? ($this->address ? $this->address->address_line : $this->guest_address)
+                ?? $this->delivery_address
                 ?? 'Không có địa chỉ'
         );
     }
@@ -499,5 +530,67 @@ class Order extends Model
         return Attribute::make(
             get: fn() => $this->calculatedSubtotal + $this->delivery_fee - $this->discount_amount
         );
+    }
+
+    /**
+     * Lấy các đơn hàng có thể ghép với đơn hàng này
+     * Chỉ cần cùng tài xế và có ít nhất 2 đơn
+     */
+    public function getBatchableOrders()
+    {
+        if (!$this->driver_id) {
+            return collect();
+        }
+
+        // Lấy tất cả đơn hàng khác của cùng tài xế
+        return static::where('driver_id', $this->driver_id)
+            ->where('id', '!=', $this->id)
+            ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])
+            ->with(['address'])
+            ->get();
+    }
+
+    /**
+     * Kiểm tra xem đơn hàng này có đang trong một batch hay không
+     */
+    public function isPartOfBatch(): bool
+    {
+        // Nếu đơn hàng đã giao hoặc bị hủy thì không còn trong batch
+        if (in_array($this->status, ['delivered', 'cancelled'])) {
+            return false;
+        }
+        
+        // Kiểm tra xem có ít nhất 2 đơn hàng của cùng tài xế hay không
+        $batchOrders = $this->getBatchOrders();
+        return $batchOrders->count() > 1;
+    }
+
+
+
+    /**
+     * Lấy ID nhóm đơn ghép dựa trên tài xế và thời gian
+     */
+    public function getBatchGroupId(): string
+    {
+        return 'BATCH_' . $this->driver_id . '_' . $this->updated_at->format('YmdH');
+    }
+
+    /**
+     * Lấy tất cả đơn hàng trong cùng nhóm ghép
+     */
+    public function getBatchOrders()
+    {
+        if (!$this->driver_id) {
+            return collect([$this]);
+        }
+
+        $batchableOrders = $this->getBatchableOrders();
+        
+        // Chỉ thêm đơn hàng hiện tại nếu nó chưa được giao
+        if (in_array($this->status, ['driver_assigned', 'driver_confirmed', 'waiting_driver_pick_up', 'driver_picked_up'])) {
+            $batchableOrders->prepend($this);
+        }
+        
+        return $batchableOrders->sortBy('id');
     }
 }

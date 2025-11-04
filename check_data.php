@@ -45,7 +45,7 @@ if ($firstUser && $firstAddress && $firstProduct) {
     echo "{\n";
     echo "  \"user_id\": {$firstUser->id},\n";
     echo "  \"address_id\": {$firstAddress->id},\n";
-    echo "  \"payment_method\": \"cod\",\n";
+    echo "  \"payment_method\": \"cash\",\n";
     echo "  \"note\": \"Test order via API\",\n";
     echo "  \"items\": [\n";
     echo "    {\"product_id\": {$firstProduct->id}, \"quantity\": 2}";
@@ -58,4 +58,4 @@ if ($firstUser && $firstAddress && $firstProduct) {
     echo "❌ Not enough data in database for testing\n";
 }
 
-?> 
+?>
