@@ -17,6 +17,10 @@ use Illuminate\Http\Request;
 |
 */
 
+// Healthcheck endpoint for Railway
+Route::get('/up', function () {
+    return response()->json(['status' => 'ok'], 200);
+})->middleware([]);
 
 Route::middleware([
     'auth:sanctum',
@@ -54,10 +58,10 @@ Route::post('/api/test-notification', function () {
     if (!$order) {
         return response()->json(['error' => 'No order found'], 404);
     }
-    
+
     // Trigger the event
     event(new \App\Events\Order\OrderStatusUpdated($order, false, $order->status, $order->status));
-    
+
     return response()->json([
         'success' => true,
         'order_id' => $order->id,
@@ -101,7 +105,6 @@ Route::post('/update-product-quantity', function (Request $request) {
             'product' => $product->name,
             'quantity' => $request->quantity
         ]);
-
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
@@ -144,12 +147,11 @@ Route::get('/test-update-burger-quantity/{quantity}', function ($quantity) {
         );
 
         return "✅ Cập nhật thành công!<br>" .
-               "Sản phẩm: {$product->name}<br>" .
-               "Branch: {$branch->name}<br>" .
-               "Số lượng: {$quantity}<br>" .
-               "Variant ID: {$variant->id}<br>" .
-               "Branch ID: {$branch->id}";
-
+            "Sản phẩm: {$product->name}<br>" .
+            "Branch: {$branch->name}<br>" .
+            "Số lượng: {$quantity}<br>" .
+            "Variant ID: {$variant->id}<br>" .
+            "Branch ID: {$branch->id}";
     } catch (\Exception $e) {
         return "❌ Lỗi: " . $e->getMessage();
     }
@@ -203,8 +205,8 @@ Route::get('/test-update-burger-all-variants/{quantity}', function ($quantity) {
             }
         }
         return "✅ Đã cập nhật thành công cho {$count} biến thể/chi nhánh và {$toppingCount} topping/chi nhánh!<br>" .
-               "Sản phẩm: {$product->name}<br>" .
-               "Số lượng mỗi variant/topping/branch: {$quantity}";
+            "Sản phẩm: {$product->name}<br>" .
+            "Số lượng mỗi variant/topping/branch: {$quantity}";
     } catch (\Exception $e) {
         return "❌ Lỗi: " . $e->getMessage();
     }
