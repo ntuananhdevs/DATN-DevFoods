@@ -17,10 +17,15 @@ use Illuminate\Http\Request;
 |
 */
 
-// Healthcheck endpoint for Railway
+// Healthcheck endpoint for Railway - must be first route, no middleware
 Route::get('/up', function () {
-    return response()->json(['status' => 'ok'], 200);
-})->middleware([]);
+    try {
+        // Simple healthcheck - just return OK
+        return response('OK', 200)->header('Content-Type', 'text/plain');
+    } catch (\Exception $e) {
+        return response('Error: ' . $e->getMessage(), 500);
+    }
+});
 
 Route::middleware([
     'auth:sanctum',
