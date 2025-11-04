@@ -1,0 +1,14 @@
+{
+    "$schema": "https://railway.app/railway.schema.json",
+    "build": {
+        "builder": "NIXPACKS",
+        "buildCommand": "composer install --no-dev --optimize-autoloader && npm ci && npm run production"
+    },
+    "deploy": {
+        "startCommand": "php artisan migrate --force && php artisan storage:link && php artisan config:cache && php artisan route:cache && php artisan view:cache && php -S 0.0.0.0:$PORT -t public",
+        "healthcheckPath": "/",
+        "healthcheckTimeout": 100,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10
+    }
+}

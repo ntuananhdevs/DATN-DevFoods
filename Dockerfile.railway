@@ -1,0 +1,65 @@
+# Dockerfile cho Railway - Sử dụng PHP 8.2 với Apache
+FROM php:8.2-apache
+
+# Cài đặt các extension PHP cần thiết
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    libonig-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip mbstring \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Bật mod_rewrite cho Apache
+RUN a2enmod rewrite
+
+# Cấu hình Apache DocumentRoot
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Đặt thư mục làm việc
+WORKDIR /var/www/html
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Cài đặt Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Cài đặt dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Cài đặt Node.js và npm (nếu cần)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Cài đặt npm dependencies và build assets
+RUN npm ci && npm run production
+
+# Copy toàn bộ code
+COPY . .
+
+# Tạo quyền ghi cho storage và bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
+
+# Expose port (Railway sẽ tự động set PORT env variable)
+# Railway sẽ tự động map PORT, không cần expose cụ thể
+EXPOSE $PORT
+
+# Script khởi động
+COPY railway-start.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/railway-start.sh
+
+CMD ["/usr/local/bin/railway-start.sh"]
+

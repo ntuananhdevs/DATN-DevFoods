@@ -1,0 +1,23 @@
+# Nixpacks configuration for Railway
+# Nixpacks sẽ tự động detect Laravel, nhưng file này giúp customize build process
+
+[phases.setup]
+nixPkgs = ["php82", "nodejs-18_x", "composer"]
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+  "npm ci --production=false",
+  "npm run production"
+]
+
+[phases.build]
+cmds = [
+  "php artisan config:cache || true",
+  "php artisan route:cache || true",
+  "php artisan view:cache || true"
+]
+
+[start]
+cmd = "php artisan migrate --force && php artisan storage:link && php -S 0.0.0.0:$PORT -t public"
+
