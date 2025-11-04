@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Customer\RefundController;
 use App\Services\ShippingService;
 
 /*
@@ -144,7 +145,15 @@ Route::get('/locations/districts/{code}/wards', function ($code) {
     ]);
 });
 
-// API routes will be added here when needed
+// Refund Request API endpoints
+Route::middleware('auth:sanctum')->prefix('refunds')->name('api.refunds.')->group(function () {
+    // Customer refund routes
+    Route::get('/', [RefundController::class, 'index'])->name('index');
+    Route::post('/', [RefundController::class, 'store'])->name('store');
+    Route::get('/{id}', [RefundController::class, 'show'])->name('show');
+    Route::patch('/{id}/cancel', [RefundController::class, 'cancel'])->name('cancel');
+    Route::get('/history/statistics', [RefundController::class, 'statistics'])->name('statistics');
+});
 
 // Driver API endpoints
 

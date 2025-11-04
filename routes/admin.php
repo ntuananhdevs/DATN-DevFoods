@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\UserRankHistoryController;
 use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\GeneralSettingController;
 use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\RefundController as AdminRefundController;
 use App\Http\Controllers\Admin\WalletController as AdminWalletController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -417,6 +418,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/reports', [\App\Http\Controllers\Admin\ReviewController::class, 'reports'])->name('reports');
         Route::get('/{id}/show', [\App\Http\Controllers\Admin\ReviewController::class, 'show'])->name('show');
         Route::get('/report/{id}', [\App\Http\Controllers\Admin\ReviewController::class, 'showReport'])->name('report.show');
+    });
+
+    // Refund Requests Management
+    Route::prefix('refunds')->name('refunds.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\RefundController::class, 'show'])->name('show');
+        Route::patch('/{id}/status', [\App\Http\Controllers\Admin\RefundController::class, 'updateStatus'])->name('update-status');
+        Route::patch('/{id}/approve', [\App\Http\Controllers\Admin\RefundController::class, 'approve'])->name('approve');
+        Route::patch('/{id}/reject', [\App\Http\Controllers\Admin\RefundController::class, 'reject'])->name('reject');
+        Route::patch('/{id}/complete', [\App\Http\Controllers\Admin\RefundController::class, 'complete'])->name('complete');
+        Route::get('/statistics/overview', [\App\Http\Controllers\Admin\RefundController::class, 'statistics'])->name('statistics');
     });
 });
 

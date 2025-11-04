@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 // Customer Controllers
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
@@ -86,6 +87,8 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 });
 
 
+
+
 // Authentication (login / logout / register)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
@@ -164,6 +167,33 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
         Route::get('/vnpay/return', [WalletController::class, 'vnpayReturn'])->name('vnpay.return');
         Route::post('/vnpay/ipn', [WalletController::class, 'vnpayIpn'])->name('vnpay.ipn');
     });
+    
+    // Refund Request routes
+    Route::prefix('refunds')->name('customer.refunds.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Customer\RefundController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Customer\RefundController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Customer\RefundController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Customer\RefundController::class, 'show'])->name('show');
+        Route::patch('/{id}/cancel', [\App\Http\Controllers\Customer\RefundController::class, 'cancel'])->name('cancel');
+    });
+    
+    // Debug route for refund testing
+
+Route::get('/refunds/debug', function (Request $request) {
+    $orderId = $request->get('order_id', 1);
+    $order = \App\Models\Order::with('payment')->find($orderId);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Debug route working',
+        'user_id' => Auth::id() ?? 'not logged in',
+        'order_id' => $orderId,
+        'order_status' => $order ? $order->status : 'Order not found',
+        'payment_method' => $order && $order->payment ? $order->payment->payment_method : 'Payment not found',
+        'is_eligible' => $order ? (in_array($order->status, ['item_received', 'completed']) && in_array($order->payment?->payment_method ?? '', ['vnpay'])) : false,
+        'request_data' => $request->all()
+    ]);
+})->name('customer.refunds.debug');
 });
 
 // Phone Required routes (không cần phone.required middleware)

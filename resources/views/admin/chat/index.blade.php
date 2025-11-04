@@ -65,11 +65,11 @@
                         <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
                             @php
                                 $statusLabels = [
-                                    'new' => 'Chờ phản hồi',
-                                    'distributed' => 'Đã phân phối',
-                                    'active' => 'Đang xử lý',
-                                    'resolved' => 'Đã giải quyết',
-                                    'closed' => 'Đã đóng',
+                                    'new' => ['text' => 'Chờ phản hồi', 'class' => 'badge badge-warning', 'icon' => '⏳'],
+                                    'distributed' => ['text' => 'Đã phân phối', 'class' => 'badge badge-info', 'icon' => '📋'],
+                                    'active' => ['text' => 'Đang xử lý', 'class' => 'badge badge-primary', 'icon' => '💬'],
+                                    'resolved' => ['text' => 'Đã giải quyết', 'class' => 'badge badge-success', 'icon' => '✅'],
+                                    'closed' => ['text' => 'Đã đóng', 'class' => 'badge badge-secondary', 'icon' => '🔒'],
                                 ];
                                 $lastMsg = $conv->messages->last();
                                 $isAdminMsg =
@@ -79,7 +79,7 @@
                             @endphp
                             <span class="{{ $statusLabels[$conv->status]['class'] ?? 'badge' }}">
                                 {{ $statusLabels[$conv->status]['icon'] ?? '' }}
-                                {{ $statusLabels[$conv->status] }}
+                                {{ $statusLabels[$conv->status]['text'] ?? $conv->status }}
                             </span>
                             <span class="badge badge-branch">{{ $conv->branch?->name }}</span>
                         </div>
@@ -113,7 +113,7 @@
                     </div>
                     <div class="chat-header-actions" id="chat-header-actions">
                         <span class="badge status-badge status-{{ $currentConversation->status }}">
-                            {{ $statusLabels[$currentConversation->status] ?? $currentConversation->status }}
+                            {{ $statusLabels[$currentConversation->status]['text'] ?? $currentConversation->status }}
                         </span>
                         @if ($currentConversation->branch)
                             <span class="badge badge-xs branch-badge ml-2"
@@ -172,7 +172,7 @@
                 </div>
                 <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold" id="chat-info-status">
                         @if ($hasConversation && $currentConversation)
-                            {{ $statusLabels[$currentConversation->status] ?? $currentConversation->status }}
+                            {{ $statusLabels[$currentConversation->status]['text'] ?? $currentConversation->status }}
                         @endif
                     </span></div>
                 <div class="text-xs text-gray-500">Lần cuối hoạt động: @if ($hasConversation && $currentConversation)
