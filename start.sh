@@ -21,6 +21,10 @@ php artisan route:clear || true
 php artisan view:clear || true
 php artisan cache:clear || true
 
+# Test Laravel bootstrap
+echo "Testing Laravel bootstrap..."
+php -r "require 'vendor/autoload.php'; \$app = require 'bootstrap/app.php'; echo 'Laravel bootstrap: OK\n';" || echo "WARNING: Laravel bootstrap test failed"
+
 # Set error reporting
 export PHP_IDE_CONFIG="serverName=railway"
 export APP_DEBUG=false
