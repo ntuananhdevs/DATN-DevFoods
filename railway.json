@@ -6,7 +6,7 @@
     },
     "deploy": {
         "startCommand": "bash start.sh",
-        "healthcheckPath": "/up",
+        "healthcheckPath": "/health.php",
         "healthcheckTimeout": 600,
         "healthcheckInterval": 30,
         "restartPolicyType": "ON_FAILURE",
