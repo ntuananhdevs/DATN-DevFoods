@@ -19,8 +19,13 @@ echo "Clearing caches..."
 php artisan config:clear || true
 php artisan route:clear || true
 php artisan view:clear || true
+php artisan cache:clear || true
 
-# Start PHP built-in server
+# Set error reporting
+export PHP_IDE_CONFIG="serverName=railway"
+export APP_DEBUG=false
+
+# Start PHP built-in server with error logging
 echo "Starting PHP server on port $PORT..."
-php -S 0.0.0.0:$PORT -t public
+php -S 0.0.0.0:$PORT -t public 2>&1 | tee /tmp/php-server.log
 
